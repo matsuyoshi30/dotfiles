@@ -1,0 +1,14 @@
+# -*- mode: snippet -*-
+# name: cppbeg
+# key: cppbeg
+# cpp template
+# --
+#include <bits/stdc++.h>
+#define rep(i, n) for(i = 0; i < n; i++)
+using namespace std;
+
+int main() {
+  $0
+
+  return 0;
+}
