@@ -3,8 +3,7 @@
 
 # Export paths
 export GOPATH=$HOME/go
-export PATH=$PATH:$GOPATH/bin
-export PATH=$PATH:/Users/matsuyoshi30/.nodebrew/current/bin
+export PATH=$PATH:$GOPATH/bin:$HOME/.nodebrew/current/bin
 
 # Prompt setting
 source /usr/local/etc/bash_completion.d/git-prompt.sh
@@ -36,8 +35,11 @@ promps
 
 # Common aliases
 alias l='ls -1FG'
-alias ll='ls -lG'
-alias la='ls -laG'
+alias ls='ls -1FG'
+alias ll='ls -lFG'
+alias la='ls -laFG'
+alias lt='ls -ltFG'
+alias lta='ls -ltaFG'
 
 alias cp="cp -i"
 alias mv="mv -i"
