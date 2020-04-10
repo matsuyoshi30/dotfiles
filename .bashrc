@@ -32,6 +32,7 @@ function promps {
     PS1="\n${BLUE}${TIME} \w ${GREEN}\u ${RED}\$(parse_git_branch)\n${BLUE}$ \[\033[0m\]"
 }
 promps
+export PROMPT_COMMAND='echo -ne "\033];${PWD##*/}\007"'
 
 # less
 export PAGER=less
