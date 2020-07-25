@@ -11,6 +11,11 @@
   (menu-bar-mode 0))
 
 ;; C-t でウインドウ切り替え
+(defun other-window-or-split ()
+  (interactive)
+  (when (one-window-p)
+    (split-window-horizontally))
+  (other-window 1))
 (define-key global-map (kbd "C-t") 'other-window)
 
 ;; 少しずつスクロール(C-s-n, C-s-p)
