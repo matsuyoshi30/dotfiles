@@ -133,6 +133,7 @@
 ;; http://emacs.rubikitch.com/elscreen/
 (setq elscreen-prefix-key (kbd "C-z"))
 (elscreen-start)
+(setq elscreen-display-tab nil)
 (setq elscreen-tab-display-kill-screen nil)
 (setq elscreen-tab-display-control nil)
 (setq elscreen-buffer-to-nickname-alist
