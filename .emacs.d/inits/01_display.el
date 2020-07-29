@@ -18,14 +18,6 @@
   (other-window 1))
 (define-key global-map (kbd "C-t") 'other-window)
 
-;; 少しずつスクロール(C-s-n, C-s-p)
-(define-key global-map (kbd "C-s-n") 'scroll-down-in-place)
-(define-key global-map (kbd "C-s-p") 'scroll-up-in-place)
-
-;; 複数行移動
-(global-set-key "\M-n" (kbd "C-u 5 C-n"))
-(global-set-key "\M-p" (kbd "C-u 5 C-p"))
-
 ;; 行列数表示
 (column-number-mode t)
 (line-number-mode t)
