@@ -2,6 +2,8 @@
 export PATH="$HOME/bin:$PATH";
 # Add `~/.local/bin` to the `$PATH`
 export PATH="$HOME/.local/bin:$PATH";
+# Add `~/usr/local/sbin` to the `$PATH`
+export PATH="/usr/local/sbin:$PATH";
 
 # Load the shell dotfiles, and then some:
 # * ~/.path can be used to extend `$PATH`.
