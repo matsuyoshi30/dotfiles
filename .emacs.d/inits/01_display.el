@@ -94,7 +94,7 @@
 ;; window の透過
 (if window-system
     (progn
-      (set-frame-parameter nil 'alpha 90)))
+      (set-frame-parameter nil 'alpha 100)))
 
 ;; smart-mode-line
 (setq sml/active-background-color "gray60")
