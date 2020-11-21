@@ -1,8 +1,0 @@
-# -*- mode: snippet -*-
-# name: [%- IF ... -%] ... [%- END # ... -%]
-# key: xslateif
-
-[%- IF ${1:condition} -%]
-`yas/selected-text`$0
-${2:[%- ELSE # IF $1 -%]}
-[%- END # IF $1 -%]
