@@ -48,6 +48,9 @@
 ;; バックアップファイルを作らない
 (setq make-backup-files nil)
 
+;; ロックファイルを作らない
+(setq create-lockfiles nil)
+
 ;; Symbolic linkを避ける
 (setq vc-follow-symlinks t)
 
