@@ -2,21 +2,6 @@
 (setq major-mode 'text-mode)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; html-mode設定
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(add-to-list 'auto-mode-alist '("\\.[sx]?html?\\(\\.[a-zA-Z_]+\\)?\\'" . nxml-mode))
-;; </を入力すると自動的にタグを閉じる
-(setq nxml-slash-auto-complete-flag t)
-;; M-TABでタグ補完
-(setq nxml-bind-meta-tab-to-complete-flag t)
-;; nxml-modeでauto-complete-modeを利用
-(add-to-list 'ac-modes 'nxml-mode)
-;; 子要素のインデント幅を設定
-(setq nxml-child-indent 2)
-;; 属性値のインデント幅を設定
-(setq nxml-attribute-indent 2)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; cssモード設定
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (autoload 'css-mode "css-mode" nil t)
@@ -74,7 +59,10 @@
 ;; web mode
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (autoload 'web-mode "web-mode" nil t)
+(add-to-list 'auto-mode-alist '("\\.ts[x]?$". web-mode))
 (add-to-list 'auto-mode-alist '("\\.js[x]?$". web-mode))
+(add-to-list 'auto-mode-alist '("\\.vue?$". web-mode))
+(add-to-list 'auto-mode-alist '("\\.html?$". web-mode))
 (defvar web-mode-content-types-alist
   '(("jsx" . "\\.js[x]?")))
 (add-hook 'web-mode-hook
@@ -87,6 +75,7 @@
              (setq web-mode-css-indent-offset 2)
              (setq web-mode-code-indent-offset 2)
              (setq web-mode-sql-indent-offset 2)
+             (setq web-mode-script-padding 0)
              (setq indent-tabs-mode nil)
              (setq tab-width 2)
              ))
