@@ -1,9 +1,23 @@
-# Add `~/bin` to the `$PATH`
-export PATH="$HOME/bin:$PATH";
-# Add `~/.local/bin` to the `$PATH`
-export PATH="$HOME/.local/bin:$PATH";
-# Add `~/usr/local/sbin` to the `$PATH`
-export PATH="/usr/local/sbin:$PATH";
+# Add `~/bin`, `~/.local/bin`, and `/usr/local/sbin` to the `$PATH`
+export PATH="$PATH:$HOME/bin:$HOME/.local/bin:/usr/local/sbin";
+
+# nodebrew path
+export PATH="$PATH:$HOME/.nodebrew/current/bin"
+
+# Go path
+export GOPATH="$HOME/go"
+export PATH="$PATH:$GOPATH/bin"
+
+# Rust path
+export PATH="$PATH:$HOME/.cargo/bin"
+export RUST_SRC_PATH="$HOME/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src"
+
+# anyenv path
+export PATH="$PATH:$HOME/.anyenv/bin"
+eval "$(anyenv init -)"
+
+# direnv path
+eval "$(direnv hook zsh)"
 
 # Load the shell dotfiles, and then some:
 # * ~/.path can be used to extend `$PATH`.
@@ -14,21 +28,3 @@ done;
 unset file;
 
 eval "$(ssh-agent -s)"
-
-# nodebrew path
-export PATH="$HOME/.nodebrew/current/bin:$PATH"
-
-# Go path
-export GOPATH="$HOME/go"
-export PATH="$PATH:$GOPATH/bin"
-
-# Rust path
-export PATH="/usr/local/bin:$HOME/bin:$PATH:$HOME/.cargo/bin"
-export RUST_SRC_PATH="$HOME/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src"
-
-# anyenv path
-export PATH="$HOME/.anyenv/bin:$PATH"
-eval "$(anyenv init -)"
-
-# direnv path
-eval "$(direnv hook zsh)"
