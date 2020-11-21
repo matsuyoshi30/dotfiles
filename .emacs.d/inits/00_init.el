@@ -54,5 +54,8 @@
 ;; Symbolic linkを避ける
 (setq vc-follow-symlinks t)
 
+;; 終了時は確認する
+(setq confirm-kill-emacs 'y-or-n-p)
+
 (provide '00_init)
 ;;; 00_init.el ends here
