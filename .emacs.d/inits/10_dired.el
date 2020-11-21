@@ -1,5 +1,10 @@
 (ffap-bindings)
 
+;; 補完から無視
+(setq completion-ignored-extensions
+      (append completion-ignored-extensions
+              '("./" "../" ".DS_Store")))
+
 ;; dired文字コードの設定
 (setq dired-default-file-coding-system 'utf-8-unix)
 
