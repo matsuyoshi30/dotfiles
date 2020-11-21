@@ -1,0 +1,21 @@
+dotfiles
+========
+
+    git clone https://github.com/matsuyoshi30/dotfiles
+
+
+Emacs
+-----
+
+symbolic link to home directory
+
+    ln -s ./projects/dotfiles/.emacs.d ~/
+
+
+Zsh
+---
+
+symbolic link to home directory
+
+    ln -s ./projects/dotfiles/.zsh/.zprofile ~/
+    ln -s ./projects/dotfiles/.zsh/.zshrc ~/
