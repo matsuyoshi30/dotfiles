@@ -7,12 +7,8 @@
 
 ;;; General
 
-;; package
-(require 'package)
-(add-to-list 'package-archives '("org" . "https://orgmode.org/elpa/"))
-(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
-(add-to-list 'package-archives '("gnu" . "https://elpa.gnu.org/packages/"))
-(package-initialize)
+(add-to-list 'load-path (locate-user-emacs-file "~/.emacs.d/elisp/"))
+(add-to-list 'load-path (locate-user-emacs-file "~/.emacs.d/elpa/"))
 
 ;; add-to-load-path 定義
 (defun add-to-load-path (&rest paths)
@@ -24,6 +20,13 @@
       (if (fboundp 'normal-top-level-add-subdirs-to-load-path)
           (normal-top-level-add-subdirs-to-load-path)))))
 (add-to-load-path "elisp" "elpa")
+
+;; package
+(require 'package)
+(add-to-list 'package-archives '("org" . "https://orgmode.org/elpa/"))
+(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
+(add-to-list 'package-archives '("gnu" . "https://elpa.gnu.org/packages/"))
+(package-initialize)
 
 ;; Ctrl to Emacs
 (when (eq system-type 'darwin)
@@ -50,13 +53,13 @@
 
 (setq-default tab-width 2 indent-tabs-mode nil)
 
-(global-auto-revert-mode 1)
+(global-auto-revert-mode 1) ;; read buffer automatically
 
 (setq auto-save-default nil)
 (setq make-backup-files nil)
 (setq create-lockfiles nil)
 
-(setq vc-follow-symlinks t)
+(setq vc-follow-symlinks t) ;; avoid symbolic link
 
 (setq confirm-kill-emacs 'y-or-n-p)
 
@@ -222,6 +225,7 @@
 (column-number-mode t)
 (line-number-mode t)
 
+;; avoid wired split when display-buffer
 (setq pop-up-windows nil)
 (setq split-height-threshold nil)
 (setq split-width-threshold nil)
@@ -314,6 +318,7 @@
               (dired up))
             (dired-goto-file dir))))))
 
+;; save sort result when go to another directory
 (defadvice dired-advertised-find-file
     (around dired-sort activate)
   (let ((sw dired-actual-switches))
@@ -541,7 +546,7 @@
     ;; describe-bindingsをAnythingに置き換える
     (descbinds-anything-install)))
 
-;;;  flymake
+;;; flymake
 (require 'flymake)
 
 (set-face-background 'flymake-errline "red4")
