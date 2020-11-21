@@ -25,3 +25,10 @@ export PATH="$PATH:$GOPATH/bin"
 # Rust path
 export PATH="/usr/local/bin:$HOME/bin:$PATH:$HOME/.cargo/bin"
 export RUST_SRC_PATH="$HOME/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src"
+
+# anyenv path
+export PATH="$HOME/.anyenv/bin:$PATH"
+eval "$(anyenv init -)"
+
+# direnv path
+eval "$(direnv hook zsh)"
