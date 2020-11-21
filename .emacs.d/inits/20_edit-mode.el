@@ -2,6 +2,31 @@
 (setq major-mode 'text-mode)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Goモード設定
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(autoload 'go-mode "go-mode" nil t)
+(add-hook 'go-mode-hook
+          '(lambda()
+            (setq c-basic-offset 4)
+            (setq indent-tabs-mode t)
+            (local-set-key (kbd "M-.") 'godef-jump)
+            (local-set-key (kbd "C-c C-r") 'go-remove-unused-imports)
+            (local-set-key (kbd "C-c i") 'go-goto-imports)
+            (local-set-key (kbd "C-c d") 'godoc)))
+
+(add-hook 'before-save-hook 'gofmt-before-save)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Markdownモード設定
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(autoload 'markdown-mode "markdown-mode" nil t)
+(add-to-list 'auto-mode-alist '("\\.markdown\\'" . markdown-mode))
+(add-to-list 'auto-mode-alist '("\\.md\\'" . markdown-mode))
+(add-hook 'markdown-mode-hook
+          '(lambda ()
+             (electric-indent-local-mode -1)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; cssモード設定
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (autoload 'css-mode "css-mode" nil t)
@@ -10,6 +35,48 @@
 ;; lessモード設定
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (autoload 'less-css-mode "less-css-mode" nil t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; lispモード設定
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(autoload 'lisp-mode "lisp-mode" nil t)
+(add-to-list 'auto-mode-alist '("Cask$" . emacs-lisp-mode))
+
+(autoload 'paredit "paredit" nil t)
+(add-hook 'emacs-lisp-mode-hook 'enable-paredit-mode)
+(add-hook 'lisp-interaction-mode-hook 'enable-paredit-mode)
+(add-hook 'lisp-mode-hook 'enable-paredit-mode)
+(add-hook 'ielm-mode-hook 'enable-paredit-mode)
+
+;; lispxmp
+(autoload 'lispxmp "lispxmp" nil t)
+
+;; edit-list
+(autoload 'edit-list "edit-list" nil t)
+
+;;; 自動byte compile
+;; (require 'auto-async-byte-compile)
+;; (setq auto-async-byte-compile-exclude-files-regexp "/junk/\\|/myprojects/\\|/inits/\\|setup.el")
+;; (add-hook 'emacs-lisp-mode-hook 'enable-auto-async-byte-compile-mode)
+
+;;; eldoc
+(autoload 'eldoc "eldoc" nil t)
+
+(autoload 'eldoc-extension "eldoc-extension" nil t)
+(setq eldoc-idle-delay 0.2)
+(setq eldoc-echo-area-use-multiline-p t)
+(add-hook 'emacs-lisp-mode-hook 'turn-on-eldoc-mode)
+(add-hook 'lisp-interaction-mode-hook 'turn-on-eldoc-mode)
+(add-hook 'ielm-mode-hook 'turn-on-eldoc-mode)
+(setq eldoc-minor-mode-string "")
+
+;;; 強制キーバインドマイナーモード
+(define-minor-mode overriding-minor-mode
+  "強制的にC-tを割り当てる"             ;説明文字列
+  t                                     ;デフォルトで有効にする
+  ""                                    ;モードラインに表示しない
+  `((,(kbd "C-t") . other-window-or-split)))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; pythonモード設定
