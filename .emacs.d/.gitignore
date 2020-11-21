@@ -1,6 +1,3 @@
-ac-comphist.dat
-kkcrc
-abbrev_defs
-auto-save-list
-network-security.data
-/elisp/init-loader
+elpa/
+elisp/
+cache/

@@ -57,5 +57,14 @@
 ;; 終了時は確認する
 (setq confirm-kill-emacs 'y-or-n-p)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; log, cache
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(setq ac-comphist-file "~/.emacs.d/cache/auto-complete/ac-comphist.dat")
+(setq eshell-directory-name "~/.emacs.d/cache/eshell/")
+(setq auto-save-list-file-prefix "~/.emacs.d/cache/auto-save-list/.saves-")
+
+
 (provide '00_init)
 ;;; 00_init.el ends here
