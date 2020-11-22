@@ -470,6 +470,14 @@
              ))
 (local-set-key (kbd "RET") 'newline-and-indent)
 
+;; json mode
+(autoload 'json-mode "json-mode" nil t)
+(add-to-list 'auto-mode-alist '("\\.json$" . json-mode))
+(add-hook 'json-mode-hook
+          (lambda ()
+            (make-local-variable 'js-indent-level)
+            (setq js-indent-level 2)))
+
 ;; Markdown mode
 (autoload 'markdown-mode "markdown-mode" nil t)
 (add-to-list 'auto-mode-alist '("\\.markdown\\'" . markdown-mode))
