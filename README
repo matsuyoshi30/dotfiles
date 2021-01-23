@@ -10,6 +10,8 @@ Emacs
 symbolic link to home directory
 
     ln -s ./projects/dotfiles/.emacs.d ~/
+    cd .emacs.d
+    emacs --script bytecompile.elc
 
 
 Zsh
