@@ -563,6 +563,14 @@
 (add-hook 'racer-mode-hook (lambda ()
                              (company-mode)))
 
+;; dockerfile mode
+(autoload 'dockerfile-mode "dockerfile-mode" nil t)
+(add-to-list 'auto-mode-alist '("Dockerfile\\'" . dockerfile-mode))
+
+;; docker-compose mode
+(autoload 'docker-compose-mode "docker-compose-mode" nil t)
+(add-to-list 'auto-mode-alist '("docker-compose\\'" . docker-compose-mode))
+
 ;; yaml mode
 (autoload 'yaml-mode "yaml-mode" nil t)
 (add-to-list 'auto-mode-alist '("\\.yml$" . yaml-mode))
