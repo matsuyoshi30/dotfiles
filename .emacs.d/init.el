@@ -429,7 +429,7 @@
 (require 'flycheck)
 (setq flycheck-highlighting-mode 'lines)
 
-;;; Edit moe
+;;; Edit mode
 
 ;; default mode is text mode
 (setq major-mode 'text-mode)
@@ -448,15 +448,30 @@
 
 ;; web mode
 (autoload 'web-mode "web-mode" nil t)
-(add-to-list 'auto-mode-alist '("\\.ts[x]?$". web-mode))
-(add-to-list 'auto-mode-alist '("\\.js[x]?$". web-mode))
-(add-to-list 'auto-mode-alist '("\\.vue?$". web-mode))
-(add-to-list 'auto-mode-alist '("\\.html?$". web-mode))
-(defvar web-mode-content-types-alist
-  '(("jsx" . "\\.js[x]?")))
+(add-to-list 'auto-mode-alist '("\\.jsx?$". web-mode))
+(add-to-list 'auto-mode-alist '("\\.tsx?$". web-mode))
+(add-to-list 'auto-mode-alist '("\\.vue$". web-mode))
+(add-to-list 'auto-mode-alist '("\\.html$". web-mode))
+(defun setup-tide-mode ()
+	(interactive)
+	(tide-setup)
+	(flycheck-mode +1)
+	(setq flycheck-check-syntax-automatically '(save mode-enabled))
+	(eldoc-mode +1)
+	(tide-hl-identifier-mode +1)
+	(company-mode +1))
 (add-hook 'web-mode-hook
           '(lambda ()
-             (add-to-list 'web-mode-comment-formats '("jsx" . "//"))))
+             (when (string-equal "js" (file-name-extension buffer-file-name))
+               (setup-tide-mode))
+             (when (string-equal "ts" (file-name-extension buffer-file-name))
+               (setup-tide-mode))
+             (when (string-equal "jsx" (file-name-extension buffer-file-name))
+               (setup-tide-mode))
+             (when (string-equal "tsx" (file-name-extension buffer-file-name))
+               (setup-tide-mode))))
+(flycheck-add-mode 'javascript-eslint 'web-mode)
+(flycheck-add-mode 'typescript-tslint 'web-mode)
 (add-hook 'web-mode-hook
           '(lambda ()
              (setq web-mode-attr-indent-offset nil)
