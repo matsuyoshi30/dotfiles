@@ -91,10 +91,8 @@ alias rm="rm -i"
 alias cp="cp -i"
 alias mv="mv -i"
 
-alias grep='grep --color=auto'
-alias fgrep='fgrep --color=auto'
-alias egrep='egrep --color=auto'
-
 alias gst='git status'
 alias gd='git diff'
 alias ga='git add -p'
+alias gco='git branch|peco|xargs git checkout'
+alias gdl='git branch|peco|xargs git branch -D'
