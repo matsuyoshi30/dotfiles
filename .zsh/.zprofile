@@ -13,11 +13,17 @@ export PATH="$PATH:$HOME/.cargo/bin"
 export RUST_SRC_PATH="$HOME/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src"
 
 # anyenv path
-export PATH="$PATH:$HOME/.anyenv/bin"
-eval "$(anyenv init -)"
+anyenv=$(which anyenv)
+if [ -x "anyenv" ] ; then
+    export PATH="$PATH:$HOME/.anyenv/bin"
+    eval "$(anyenv init -)"
+fi
 
 # direnv path
-eval "$(direnv hook zsh)"
+direnv=$(which direnv)
+if [ -x "direnv" ] ; then
+    eval "$(direnv hook zsh)"
+fi
 
 # Load the shell dotfiles, and then some:
 # * ~/.path can be used to extend `$PATH`.
