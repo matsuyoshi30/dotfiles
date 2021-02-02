@@ -94,5 +94,7 @@ alias mv="mv -i"
 alias gst='git status'
 alias gd='git diff'
 alias ga='git add -p'
+alias glo='git log --oneline'
+alias glon='git log --oneline --name-only'
 alias gco='git branch|peco|xargs git checkout'
 alias gdl='git branch|peco|xargs git branch -D'
