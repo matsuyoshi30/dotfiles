@@ -575,6 +575,11 @@
 (autoload 'yaml-mode "yaml-mode" nil t)
 (add-to-list 'auto-mode-alist '("\\.yml$" . yaml-mode))
 
+;; terraform mode
+(autoload 'terraform-mode "terraform-mode" nil t)
+(add-to-list 'auto-mode-alist '("\\.tf" . terraform-mode))
+(add-hook 'terraform-mode-hook #'terraform-format-on-save-mode)
+
 ;; sh mode
 (add-to-list 'auto-mode-alist '("\\.sh$" . sh-mode))
 
