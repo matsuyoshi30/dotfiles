@@ -18,9 +18,6 @@ SAVEHIST=1000000
 # prompt
 autoload -Uz add-zsh-hook
 
-PROMPT="%{${fg[green]}%}[%n@%m] %D{%Y-%m-%d} %*%{${reset_color}%} %~ '${vcs_info_msg_0_}'
-%# "
-
 ########################################
 # vcs_info
 autoload -Uz vcs_info
@@ -28,18 +25,18 @@ setopt prompt_subst
 
 zstyle ':vcs_info:*' formats '%F{green}(%s)-[%b] %m'
 zstyle ':vcs_info:*' actionformats '%F{red}(%s)-[%b|%a] %m'
-_vcs_precmd () { vcs_info }
-add-zsh-hook precmd _vcs_precmd
 zstyle ':vcs_info:git+set-message:*' hooks git-config-user
 
-function +vi-git-config-user(){
+function git-config-user(){
   hook_com[misc]+=`git config user.email`
 }
 
 function _update_vcs_info_msg() {
     LANG=en_US.UTF-8 vcs_info
-    PROMPT="%{${fg[green]}%}[%n@%m] %D{%Y-%m-%d} %*%{${reset_color}%} %~ ${vcs_info_msg_0_}%f
-%# "
+    local p_info="${fg[green]}%}%D{%Y-%m-%d} %*%{${reset_color}%}"
+    local p_dir="%~ ${vcs_info_msg_0_}%f"$'\n'
+    local p_mark="%B%(?,${fg[green]},%F{red})%(!,#,%%)%f%b"
+    PROMPT="$p_info $p_dir$p_mark "
 }
 
 add-zsh-hook precmd _update_vcs_info_msg
