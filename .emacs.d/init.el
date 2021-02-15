@@ -190,7 +190,9 @@
 (size-indication-mode t)
 
 (setq display-time-day-and-date t)
-(setq display-time-24hr-format t)
+(setq display-time-string-forms
+      '(month "/" day " " dayname " "
+              24-hours ":" minutes " "))
 (display-time-mode t)
 
 (display-battery-mode t)
