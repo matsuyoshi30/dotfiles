@@ -28,13 +28,17 @@ zstyle ':vcs_info:*' actionformats '%F{red}(%s)-[%b|%a] %m'
 zstyle ':vcs_info:git+set-message:*' hooks git-config-user
 
 function git-config-user(){
-  hook_com[misc]+=`git config user.email`
+    hook_com[misc]+=`git config user.email`
+}
+
+function shpwd() {
+    echo ${${:-/${(j:/:)${(M)${(s:/:)${(D)PWD:h}}#(|.)[^.]}}/${PWD:t}}//\/~/\~}
 }
 
 function _update_vcs_info_msg() {
     LANG=en_US.UTF-8 vcs_info
     local p_info="${fg[green]}%}%D{%Y-%m-%d} %*%{${reset_color}%}"
-    local p_dir="%~ ${vcs_info_msg_0_}%f"$'\n'
+    local p_dir="$(shpwd) ${vcs_info_msg_0_}%f"$'\n'
     local p_mark="%B%(?,${fg[green]},%F{red})%(!,#,%%)%f%b"
     PROMPT="$p_info $p_dir$p_mark "
 }
