@@ -591,6 +591,9 @@
 (autoload 'crontab-mode "crontab-mode" nil t)
 (add-to-list 'auto-mode-alist '("crontab$" . crontab-mode))
 
+;; rfc mode
+(setq rfc-mode-directory (expand-file-name "~/Documents/rfc/"))
+
 ;;; anything
 
 (when (require 'anything nil t)
