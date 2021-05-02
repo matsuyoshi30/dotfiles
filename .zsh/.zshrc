@@ -37,9 +37,9 @@ function shpwd() {
 
 function _update_vcs_info_msg() {
     LANG=en_US.UTF-8 vcs_info
-    local p_info="${fg[green]}%}%D{%Y-%m-%d} %*%{${reset_color}%}"
+    local p_info="%{${fg[green]}%}%D{%Y-%m-%d} %*%{${reset_color}%}"
     local p_dir="$(shpwd) ${vcs_info_msg_0_}%f"$'\n'
-    local p_mark="%B%(?,${fg[green]},%F{red})%(!,#,%%)%f%b"
+    local p_mark="%B%(?,%{${fg[green]}%},%F{red})%(!,#,%%)%f%b"
     PROMPT="$p_info $p_dir$p_mark "
 }
 
