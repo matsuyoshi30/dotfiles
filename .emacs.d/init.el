@@ -583,6 +583,10 @@
 (add-to-list 'auto-mode-alist '("\\.tf" . terraform-mode))
 (add-hook 'terraform-mode-hook #'terraform-format-on-save-mode)
 
+;; protobuf mode
+(autoload 'protobuf-mode "protobuf-mode" nil t)
+(add-to-list 'auto-mode-alist '("\\.proto" . protobuf-mode))
+
 ;; sh mode
 (add-to-list 'auto-mode-alist '("\\.sh$" . sh-mode))
 
