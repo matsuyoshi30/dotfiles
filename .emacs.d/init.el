@@ -169,7 +169,14 @@
 
 ;;; Display
 
-(load-theme 'monokai t)
+(require 'modus-themes)
+(setq modus-themes-italic-constructs t
+      modus-themes-bold-constructs nil
+      modus-themes-region 'bg-only)
+(modus-themes-load-themes)
+;;(modus-themes-load-operandi)
+(modus-themes-load-vivendi)
+(global-set-key (kbd "<f5>") 'modus-themes-toggle)
 
 (when window-system
   (tool-bar-mode 0)    ;; tool-bar
@@ -771,8 +778,6 @@
 (global-set-key (kbd "M-P") 'previous-error)
 
 (global-set-key (kbd "C-x v") 'magit-status)
-
-(global-set-key (kbd "<f5>") 'slime-js-reload)
 
 (global-set-key (kbd "C-M-g") 'ack)
 (global-set-key (kbd "C-M-f") 'find-dired)
