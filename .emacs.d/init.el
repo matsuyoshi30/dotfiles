@@ -402,8 +402,6 @@
 
 ;; web mode
 (autoload 'web-mode "web-mode" nil t)
-(add-to-list 'auto-mode-alist '("\\.jsx?$". web-mode))
-(add-to-list 'auto-mode-alist '("\\.tsx?$". web-mode))
 (add-to-list 'auto-mode-alist '("\\.vue$". web-mode))
 (add-to-list 'auto-mode-alist '("\\.html$". web-mode))
 (defun setup-tide-mode ()
@@ -420,10 +418,7 @@
                (setup-tide-mode))
              (when (string-equal "ts" (file-name-extension buffer-file-name))
                (setup-tide-mode))
-             (when (string-equal "jsx" (file-name-extension buffer-file-name))
-               (setup-tide-mode))
-             (when (string-equal "tsx" (file-name-extension buffer-file-name))
-               (setup-tide-mode))))
+             ))
 (add-hook 'web-mode-hook
           '(lambda ()
              (setq web-mode-attr-indent-offset nil)
@@ -436,6 +431,11 @@
              (setq tab-width 2)
              ))
 (local-set-key (kbd "RET") 'newline-and-indent)
+
+;; rjsx mode
+(autoload 'rjsx-mode "rjsx-mode" nil t)
+(add-to-list 'auto-mode-alist '("\\.jsx$". rjsx-mode))
+(add-to-list 'auto-mode-alist '("\\.tsx$". rjsx-mode))
 
 ;; json mode
 (autoload 'json-mode "json-mode" nil t)
