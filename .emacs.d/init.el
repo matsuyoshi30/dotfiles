@@ -1,13 +1,18 @@
-;;; init.el --- init.el
+;;; init.el -*- lexical-binding: t -*-
+
 ;; Author: matsuyoshi30
-;; Version:
+
 ;;; Commentary:
+
 ;; This program is Emacs init.el
+
 ;;; Code:
 
 ;;; Measurement
 
 (defconst my-before-load-init-time (current-time))
+(defconst my-loading-profile-p nil
+  "If non-nil, show tick while booting. Do not use `my-profiler-p' with this.")
 
 (defun my-load-init-time ()
   "Loading time of user init files including time for `after-init-hook'."
@@ -44,30 +49,32 @@
 
 ;;; General
 
-(add-to-list 'load-path (locate-user-emacs-file "~/.emacs.d/elisp/"))
-(add-to-list 'load-path (locate-user-emacs-file "~/.emacs.d/elpa/"))
+;; (eval-when-compile
+;;   (setq byte-compile-warnings '(cl-functions)))
 
-;; add-to-load-path 定義
-(defun add-to-load-path (&rest paths)
-  (let (path)
-    (dolist (path paths paths)
-      (let ((default-directory
-              (expand-file-name (concat user-emacs-directory path)))))
-      (add-to-list 'load-path default-directory)
-      (if (fboundp 'normal-top-level-add-subdirs-to-load-path)
-          (normal-top-level-add-subdirs-to-load-path)))))
-(add-to-load-path "elisp" "elpa")
+(eval-and-compile
+  (prog1 "initialize leaf.el"
+    (customize-set-variable
+     'package-archives '(("org"   . "https://orgmode.org/elpa/")
+                         ("melpa" . "https://melpa.org/packages/")
+                         ("gnu"   . "https://elpa.gnu.org/packages/")))
+    (package-initialize)
+    (unless (package-installed-p 'leaf)
+      (package-refresh-contents)
+      (package-install 'leaf))
+    (leaf leaf-keywords
+      :ensure t
+      :init
+      (leaf el-get :ensure t)
+      :config
+      (leaf-keywords-init))))
 
-;; package
-(require 'package)
-(add-to-list 'package-archives '("org" . "https://orgmode.org/elpa/"))
-(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
-(add-to-list 'package-archives '("gnu" . "https://elpa.gnu.org/packages/"))
-(package-initialize)
+(leaf cus-edit
+  :doc "tools for customizing Emacs and Lisp packages"
+  :custom `((custom-file . ,(locate-user-emacs-file "custom.el"))))
 
-;; Ctrl to Emacs
 (when (eq system-type 'darwin)
-  (setq mac-pass-control-to-system t))
+  (defvar mac-pass-control-to-system t)) ;; Ctrl to Emacs
 
 (set-language-environment "Japanese")
 
@@ -84,7 +91,7 @@
 
 (setq completion-ignore-case t)
 
-(fset 'yes-or-no-p 'y-or-n-p)
+(defalias 'yes-or-no-p 'y-or-n-p)
 
 (setq kill-whole-line t)
 
@@ -100,9 +107,9 @@
 
 (setq confirm-kill-emacs 'y-or-n-p)
 
-(setq ac-comphist-file "~/.emacs.d/cache/auto-complete/ac-comphist.dat")
-(setq eshell-directory-name "~/.emacs.d/cache/eshell/")
-(setq auto-save-list-file-prefix "~/.emacs.d/cache/auto-save-list/.saves-")
+(defvar ac-comphist-file "~/.emacs.d/cache/auto-complete/ac-comphist.dat")
+(defvar eshell-directory-name "~/.emacs.d/cache/eshell/")
+(defvar auto-save-list-file-prefix "~/.emacs.d/cache/auto-save-list/.saves-")
 
 ;;; Path
 
@@ -115,49 +122,6 @@
 
 ;;; Utility
 
-;; chomp 定義
-(defun chomp (str)
-  (replace-regexp-in-string "[\n\r]+$" "" str))
-
-;; git
-(defun git-project-p ()
-  (string=
-   (chomp
-    (shell-command-to-string "git rev-parse --is-inside-work-tree"))
-   "true"))
-
-(defun git-root-directory ()
-  (cond ((git-project-p)
-         (chomp
-          (shell-command-to-string "git rev-parse --show-toplevel")))
-         (t
-          "")))
-
-(defun git-cdup ()
-  (cond ((git-project-p)
-         (chomp
-          (shell-command-to-string "git rev-parse --show-cdup")))
-        (t
-         "")))
-
-;; iterm
-(defun execute-on-iterm (command)
-  (interactive "MCommand: ")
-  (do-applescript
-   (format "tell application \"iTerm\"
-              active
-              tell current session of current terminal
-                write text \"%s\"
-              end tell
-            end tell"
-           command)))
-
-(defun what-face (pos)
-  (interactive "d")
-  (let ((face (or (get-char-property (point) 'read-face-name)
-                  (get-char-property (point) 'face))))
-    (if face (message "Face: %s" face) (message "No face at %d" pos))))
-
 ;; vs code
 (defun open-by-vscode ()
   (interactive)
@@ -166,6 +130,7 @@
            (buffer-file-name)
            (line-number-at-pos)
            (current-column))))
+(define-key global-map (kbd "C-c C-v") 'open-by-vscode)
 
 ;;; Display
 
@@ -178,46 +143,47 @@
 (modus-themes-load-vivendi)
 (global-set-key (kbd "<f5>") 'modus-themes-toggle)
 
-(when window-system
-  (tool-bar-mode 0)    ;; tool-bar
-  (scroll-bar-mode 0)) ;; scroll-bar
+(setq inhibit-startup-screen 0)
 
-(unless (eq window-system 'ns)
-  (menu-bar-mode 0))
+(when window-system
+  (tool-bar-mode 0)
+  (scroll-bar-mode 0)
+  (create-fontset-from-ascii-font "Ricty-14:weight=normal:slant=normal" nil "ricty")
+    (set-fontset-font "fontset-ricty"
+                      'unicode
+                      (font-spec :family "Ricty")
+                      nil
+                      'append)
+    (add-to-list 'default-frame-alist '(font . "fontset-ricty"))
+    (defvar my:font-size 14)
+    (progn
+      (cond
+       ((eq window-system 'ns) ; for Macintosh
+        (setq initial-frame-alist
+              (append
+               '((top . 22)
+                 (left . 55)
+                 (width . 120)
+                 (height . 65)
+                 (cursor-height . 0)
+                 (vertical-scroll-bar . nil)
+                 ) initial-frame-alist)))))
+    (progn
+      (setq default-frame-alist initial-frame-alist)))
 
 (column-number-mode t)
 (line-number-mode t)
 
-(setq inhibit-startup-screen 0)
-
 (show-paren-mode t)
-
 (transient-mark-mode t)
-
 (size-indication-mode t)
 
 (setq display-time-day-and-date t)
-(setq display-time-string-forms
+(defvar display-time-string-forms
       '(month "/" day " " dayname " "
               24-hours ":" minutes " "))
 (display-time-mode t)
-
 (display-battery-mode t)
-
-(if window-system (progn
-  (cond
-   ((eq window-system 'ns) ; for Macintosh
-    (setq initial-frame-alist
-          (append
-           '((top . 22)
-             (left . 55)
-             (width . 120)
-             (height . 65)
-             (cursor-height . 0)
-             (vertical-scroll-bar . nil)
-             ) initial-frame-alist))))))
-(if window-system (progn
-  (setq default-frame-alist initial-frame-alist)))
 
 (defvar delete-trailing-whitespace-before-save t)
 (defun my-delete-trailing-whitespace ()
@@ -244,32 +210,15 @@
 (setq whitespace-space-regexp "\\(\u3000+\\)")
 (global-whitespace-mode 1)
 
-(when window-system
-    (create-fontset-from-ascii-font "Ricty-14:weight=normal:slant=normal" nil "ricty")
-    (set-fontset-font "fontset-ricty"
-                      'unicode
-                      (font-spec :family "Ricty")
-                      nil
-                      'append)
-    (add-to-list 'default-frame-alist '(font . "fontset-ricty"))
-    (defvar my:font-size 14))
-(if window-system
-    (progn
-      (set-frame-parameter nil 'alpha 100)))
-
-(setq sml/active-background-color "gray60")
-(setq sml/modified-char "*")
-(setq sml/no-confirm-load-theme t)
-(setq sml/theme 'dark)
-(setq sml/shorten-directory -1)
+;; smart mode line
+(defvar sml/active-background-color "gray60")
+(defvar sml/modified-char "*")
+(defvar sml/no-confirm-load-theme t)
+(defvar sml/theme 'dark)
+(defvar sml/shorten-directory -1)
 (sml/setup)
 
-(require 'diminish)
-(diminish 'jiggle-mode) ;; Hide jiggle-mode lighter from mode line
-(diminish 'abbrev-mode "Abv")
-
-(column-number-mode t)
-(line-number-mode t)
+(leaf diminish :ensure t)
 
 ;; avoid wired split when display-buffer
 (setq pop-up-windows nil)
@@ -277,7 +226,7 @@
 (setq split-width-threshold nil)
 
 ;; elscreen
-(setq elscreen-prefix-key (kbd "C-z"))
+(defvar elscreen-prefix-key (kbd "C-z"))
 (elscreen-start)
 (setq elscreen-display-tab nil)
 (setq elscreen-tab-display-kill-screen nil)
@@ -299,9 +248,6 @@
         ("compilation" . "compile")))
 
 ;;; Dired
-
-(ffap-bindings)
-
 (setq completion-ignored-extensions
       (append completion-ignored-extensions
               '("./" "../" ".DS_Store")))
@@ -341,7 +287,7 @@
   (interactive)
   (let ((kill-target (current-buffer))
         (check-file (dired-get-filename)))
-    (funcall 'dired-advertised-find-file)
+    (funcall 'dired-find-file)
     (if (file-directory-p check-file)
         (kill-buffer kill-target))))
 
@@ -434,9 +380,7 @@
                     :foreground "red")
 
 ;;; flycheck
-
-(require 'flycheck)
-(setq flycheck-highlighting-mode 'lines)
+(leaf flycheck :ensure t)
 
 ;;; Edit mode
 
@@ -480,8 +424,6 @@
                (setup-tide-mode))
              (when (string-equal "tsx" (file-name-extension buffer-file-name))
                (setup-tide-mode))))
-(flycheck-add-mode 'javascript-eslint 'web-mode)
-(flycheck-add-mode 'typescript-tslint 'web-mode)
 (add-hook 'web-mode-hook
           '(lambda ()
              (setq web-mode-attr-indent-offset nil)
@@ -544,14 +486,14 @@
   ""                                    ;モードラインに表示しない
   `((,(kbd "C-t") . other-window-or-split)))
 
+(define-key emacs-lisp-mode-map (kbd "C-c C-d") 'lispxmp)
 
 ;; python mode
 (autoload 'python-mode "python-mode" nil t)
 (setq auto-mode-alist (cons '("\\.py\\'" . python-mode) auto-mode-alist))
-;; indent to space
 (add-hook 'python-mode-hook
           (function (lambda ()
-                      (setq indent-tabs-mode nil))))
+                      (setq indent-tabs-mode nil)))) ;; indent to space
 
 ;; c mode
 (add-hook 'c-mode-common-hook
@@ -573,122 +515,17 @@
 (add-hook 'racer-mode-hook (lambda ()
                              (company-mode)))
 
-;; dockerfile mode
-(autoload 'dockerfile-mode "dockerfile-mode" nil t)
-(add-to-list 'auto-mode-alist '("Dockerfile\\'" . dockerfile-mode))
-
-;; docker-compose mode
-(autoload 'docker-compose-mode "docker-compose-mode" nil t)
-(add-to-list 'auto-mode-alist '("docker-compose\\'" . docker-compose-mode))
-
-;; yaml mode
-(autoload 'yaml-mode "yaml-mode" nil t)
-(add-to-list 'auto-mode-alist '("\\.yml$" . yaml-mode))
-
-;; terraform mode
-(autoload 'terraform-mode "terraform-mode" nil t)
-(add-to-list 'auto-mode-alist '("\\.tf" . terraform-mode))
-(add-hook 'terraform-mode-hook #'terraform-format-on-save-mode)
-
-;; protobuf mode
-(autoload 'protobuf-mode "protobuf-mode" nil t)
-(add-to-list 'auto-mode-alist '("\\.proto" . protobuf-mode))
+(leaf dockerfile-mode :ensure t)
+(leaf docker-compose-mode :ensure t)
+(leaf yaml-mode :ensure t)
+(leaf terraform-mode :ensure t)
+(leaf protobuf-mode :ensure t)
 
 ;; sh mode
 (add-to-list 'auto-mode-alist '("\\.sh$" . sh-mode))
 
-;; crontab mode
-(setq crontab-mode-map nil)
-(autoload 'crontab-mode "crontab-mode" nil t)
-(add-to-list 'auto-mode-alist '("crontab$" . crontab-mode))
-
 ;; rfc mode
-(setq rfc-mode-directory (expand-file-name "~/Documents/rfc/"))
-
-;;; anything
-
-(when (require 'anything nil t)
-  (setq
-   ;; 候補を表示する時間
-   anything-idle-delay 0.3
-   ;; タイプして再描写するまでの時間
-   anything-input-idle-delay 0.2
-   ;; 候補の最大表示数
-   anything-candidate-number-limit 100
-   ;; 候補が多いとき、体感速度を早くする
-   anything-quick-update t
-   ;; 候補選択ショートカットをアルファベットに
-   anything-enable-shortcuts 'alphabet)
-  (when (require 'anything-config nil t)
-    ;; root権限でアクションを実行するときのコマンド
-    (setq anything-su-or-sudo "sudo"))
-  (require 'anything-match-plugin nil t)
-  (when (and (executable-find "cmigemo")
-             (require 'migemo nil t))
-    (require 'anything-migemo nit t))
-  (when (require 'anything-complete nil t)
-    ;; lispシンボルの補完候補の再検索時間
-    (anything-lisp-complete-symbol-set-timer 150))
-  (require 'anything-show-completion nil t)
-  (when (require 'auto-install nil t)
-    (require 'anything-auto-install nil t))
-  (when (require 'descbinds-anything nil t)
-    ;; describe-bindingsをAnythingに置き換える
-    (descbinds-anything-install)))
-
-;;; flymake
-(require 'flymake)
-
-(set-face-background 'flymake-errline "red4")
-(set-face-foreground 'flymake-errline "black")
-(set-face-background 'flymake-warnline "yellow")
-(set-face-foreground 'flymake-warnline "black")
-
-;; output error on mini-buffer
-;; ref: http://d.hatena.ne.jp/xcezx/20080314/1205475020
-(defun flymake-display-err-minibuf ()
-  "Displays the error/warning for the current line in the minibuffer"
-  (interactive)
-  (let* ((line-no             (flymake-current-line-no))
-         (line-err-info-list  (nth 0 (flymake-find-err-info flymake-err-info line-no)))
-         (count               (length line-err-info-list)))
-    (while (> count 0)
-      (when line-err-info-list
-        (let* ((file       (flymake-ler-file (nth (1- count) line-err-info-list)))
-               (full-file  (flymake-ler-full-file (nth (1- count) line-err-info-list)))
-               (text (flymake-ler-text (nth (1- count) line-err-info-list)))
-               (line       (flymake-ler-line (nth (1- count) line-err-info-list))))
-          (message "[%s] %s" line text)))
-      (setq count (1- count)))))
-
-;; output error message by flymake on popup-tip
-;; ref: http://d.hatena.ne.jp/khiker/20100203/popup_flymake
-(require 'popup)
-(defun popup-flymake-display-error ()
-  (interactive)
-  (let* ((line-no (flymake-current-line-no))
-         (line-err-info-list (nth 0 (flymake-find-err-info flymake-err-info
-                                                           line-no)))
-         (count (length line-err-info-list)))
-    (while (> count 0)
-      (when line-err-info-list
-        (let* ((file (flymake-ler-file (nth (1- count)
-                                                  line-err-info-list)))
-               (full-file (flymake-ler-full-file (nth (1- count)
-                                                      line-err-info-list)))
-               (text (flymake-ler-text (nth (1- count)
-                                                 line-err-info-list)))
-               (line (flymake-ler-line (nth (1- count)
-                                                 line-err-info-list))))
-          (popup-tip (format "[%s] %s" line text))))
-      (setq count (1- count)))))
-
-(add-hook
- 'flymake-mode-hook
- '(lambda ()
-    (local-set-key (kbd "C-c n") 'flymake-goto-next-error)
-    (local-set-key (kbd "C-c p") 'flymake-goto-prev-error)
-    (local-set-key (kbd "C-c e") 'popup-flymake-display-error)))
+(defvar rfc-mode-directory (expand-file-name "~/Documents/rfc/"))
 
 ;;; Snippet
 
@@ -720,39 +557,22 @@
 ;; log when done
 (setq org-log-done 'time)
 
-;;; Region
-
-;; ref: http://d.hatena.ne.jp/sonota88/20110224/1298557375
-(defun count-lines-and-chars ()
-  (if mark-active
-      (format "%d lines, %d chars "
-              (count-lines (region-beginning) (region-end))
-              (- (region-end) (region-beginning)))
-    ;; echo area
-    (count-lines-region (region-beginning) (region-end))
-    ""
-    ))
+(define-key global-map (kbd "C-c l") 'org-store-link)
 
 ;;; Key bindings
 
-;; General
-(global-set-key "\C-h" 'delete-backward-char)
-(global-set-key "\C-x\C-i" 'indent-region) ; 選択範囲をインデント
-(global-set-key "\C-j" 'newline) ; 改行
+(global-set-key (kbd "C-h") 'delete-backward-char)
+(global-set-key (kbd "C-j") 'newline)
 (global-set-key (kbd "C-c a")   'align)
 (global-set-key (kbd "C-c M-a") 'align-regexp)
 (define-key global-map (kbd "C-c C-a") 'delete-trailing-whitespace)
-(global-set-key (kbd "C-t") 'other-window-or-split)
 
 ;; multi line move
 (global-set-key "\M-n" (kbd "C-u 5 C-n"))
 (global-set-key "\M-p" (kbd "C-u 5 C-p"))
 
-(define-key global-map (kbd "C-s-n") 'scroll-down-in-place)
-(define-key global-map (kbd "C-s-p") 'scroll-up-in-place)
-
 ;; full screen
-(global-set-key (kbd "C-x F") 'toggle-frame-maximized)
+(global-set-key (kbd "C-x F") 'toggle-fGrame-maximized)
 (global-set-key (kbd "C-x ?") 'help-command)
 
 (defun other-window-or-split ()
@@ -760,37 +580,12 @@
   (when (one-window-p)
     (split-window-horizontally))
   (other-window 1))
-(define-key global-map (kbd "C-t") 'other-window)
-
-;; for anything
-(global-set-key (kbd "C-;") 'anything-custom-filelist) ;;自分の定義
-(global-set-key (kbd "C-:") 'anything);;anything
-(global-set-key (kbd "C-x C-z") 'anything-resume)
-(global-set-key (kbd "M-y") 'anything-show-kill-ring)
-(define-key global-map [(control ?:)] 'anything-migemo)
-(global-set-key (kbd "C-c g") 'anything-git-grep-all)
-
-;; others
-
-(global-set-key (kbd "C-c C-g") 'git-grep)
+(global-set-key (kbd "C-t") 'other-window-or-split)
 
 (global-set-key (kbd "M-N") 'next-error)
 (global-set-key (kbd "M-P") 'previous-error)
 
-(global-set-key (kbd "C-x v") 'magit-status)
-
-(global-set-key (kbd "C-M-g") 'ack)
-(global-set-key (kbd "C-M-f") 'find-dired)
-
-(global-set-key (kbd "C-,") 'er/expand-region)
-(global-set-key (kbd "C-M-,") 'er/contract-region)
-
-;;; abbrev
 (global-set-key (kbd "M-SPC") 'expand-abbrev)
-
-;; point-undo
-(define-key global-map (kbd "<f7>") 'point-undo)
-(define-key global-map (kbd "S-<f7>") 'point-redo)
 
 ;; redo
 (global-set-key "\M-/" 'redo)
@@ -800,12 +595,6 @@
 
 ;;; auto-complete
 (define-key global-map (kbd "<C-tab>") 'ac-fuzzy-complete)
-
-;;; org-mode用
-(define-key global-map (kbd "C-c l") 'org-store-link)
-
-;;; lisp mode用
-(define-key emacs-lisp-mode-map (kbd "C-c C-d") 'lispxmp)
 
 ;;; for dired
 (define-key dired-mode-map "\C-m" 'dired-my-advertised-find-file)
@@ -828,21 +617,6 @@
 ;;; highlight-symbol
 (global-set-key (kbd "<f3>") 'highlight-symbol-at-point)
 (global-set-key (kbd "M-<f3>") 'highlight-symbol-remove-all)
-
-(global-set-key (kbd "C-x C-d") 'open-default-directory-on-iterm)
-
-;;; goto-last-change
-(define-key global-map (kbd "<f8>") 'goto-last-change)
-(define-key global-map (kbd "S-<f8>") 'goto-last-change-reverse)
-
-;;; auto-programming
-(global-set-key (kbd "M-l") 'auto-programming)
-
-;; google-translate
-(global-set-key (kbd "C-M-t") 'google-translate-enja-or-jaen)
-
-;; vs code
-(define-key global-map (kbd "C-c C-v") 'open-by-vscode)
 
 (provide 'init)
 ;;; init.el ends here

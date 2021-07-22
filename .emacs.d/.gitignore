@@ -1,4 +1,5 @@
-elpa/
-elisp/
-cache/
-*.elc
+/*
+
+!/mysnippets/
+!.gitignore
+!init.el

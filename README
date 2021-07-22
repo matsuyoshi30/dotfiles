@@ -11,7 +11,7 @@ symbolic link to home directory
 
     ln -s ./projects/dotfiles/.emacs.d ~/
     cd .emacs.d
-    emacs --script bytecompile.elc
+    emacs --batch -f batch-byte-compile init.el
 
 
 Zsh
