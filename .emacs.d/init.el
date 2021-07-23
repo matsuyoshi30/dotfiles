@@ -902,7 +902,7 @@
   ("C-j" . newline)
   ("C-c a" . align)
   ("C-c M-a" . align-regexp)
-  ("C-x F" . toggle-fGrame-maximized)
+  ("C-x F" . toggle-frame-maximized)
   ("C-x ?" . help-command)
   ("C-c C-j" . rg)
   ("C-c c" . quickrun-with-arg)
