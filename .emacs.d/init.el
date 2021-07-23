@@ -155,7 +155,7 @@
 (leaf recentf
   :custom
   ((recentf-max-saved-items . 2000)
-   (recentf-exclude . '("\\.elc$" "\\.o$" "~$")))
+   (recentf-exclude . '("\\.elc$" "\\.o$" "~$" "\\.undo-tree/" "PATH")))
   :init
   (recentf-mode t))
 
@@ -586,6 +586,19 @@
   :require smartrep
   :bind
   ("C-M-c" . mc/edit-lines))
+
+(leaf undo-tree
+  :ensure t
+  :require t
+  :diminish "UT"
+  :defvar undo-tree-visualizer-mode-map
+  :custom
+  (global-undo-tree-mode . t)
+  (undo-tree-enable-undo-in-region . nil)
+  (undo-tree-history-directory-alist . `(("" . ,(concat user-emacs-directory "undo-tree/"))))
+  (undo-tree-visualizer-timestamps . t)
+  :config
+  (define-key undo-tree-visualizer-mode-map (kbd "C-g") 'undo-tree-visualizer-quit))
 
 (leaf rg
   :ensure t
