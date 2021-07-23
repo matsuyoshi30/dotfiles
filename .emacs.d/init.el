@@ -909,6 +909,7 @@
   ("C-t" . other-window-or-split)
   ("C-c C-v" . open-by-vscode)
   ("C-c '" . google-this)
+  ("C-c w" . org2blog-user-interface)
 
   ("M-n" . "C-u 5 C-n")
   ("M-p" . "C-u 5 C-p")
