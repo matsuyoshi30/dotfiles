@@ -829,6 +829,13 @@
   :bind
   ("C-c l" . org-store-link))
 
+(leaf org2blog
+  :ensure t
+  :custom
+  (org2blog/wp-blog-alist . '(("blog"
+                               :url "https://diary.matsuyoshi30.net/xmlrpc.php"
+                               :username "matsuyoshi30"))))
+
 ;;; Utility
 
 (defun other-window-or-split ()
