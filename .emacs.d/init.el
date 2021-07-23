@@ -261,6 +261,7 @@
 (leaf smartparens
   :ensure t
   :require smartparens-config
+  :diminish smartparens-mode
   :defun sp-pair
   :custom (sp-escape-quotes-after-insert . nil)
   :bind (:smartparens-mode-map
@@ -423,6 +424,7 @@
 
 (leaf helm
   :ensure t
+  :diminish helm-mode
   :custom
   (helm-ff-file-name-history-use-recentf . t)
   :config
@@ -478,6 +480,7 @@
   :req "dash-2.12.1" "pkg-info-0.4" "let-alist-1.0.4" "seq-1.11" "emacs-24.3"
   :url "http://www.flycheck.org"
   :ensure t
+  :diminish flycheck-mode
   :bind (("M-N" . flycheck-next-error)
          ("M-P" . flycheck-previous-error))
   :global-minor-mode global-flycheck-mode)
@@ -530,6 +533,7 @@
   :ensure t
   :after t
   :require auto-complete-config
+  :diminish auto-complete-mode
   :defun ac-config-default ac-set-trigger-key
   :custom
   (ac-auto-show-menu . 0.4)
@@ -551,6 +555,7 @@
 (leaf yasnippet
   :ensure t
   :require t
+  :diminish yas-minor-mode
   :custom
   (yas-snippet-dirs . '("~/.emacs.d/mysnippets"))
   :bind (:yas-minor-mode-map
@@ -722,9 +727,11 @@
   :config
   (leaf elisp-slime-nav
     :ensure t
+    :diminish elisp-slime-nav-mode
     :bind (:elisp-slime-nav-mode-map ("C-c C-d" . helpful-at-point))
     :hook emacs-lisp-mode-hook help-mode-hook)
   (leaf eldoc
+    :diminish eldoc-mode
     :hook emacs-lisp-mode-hook ielm-mode-hook)
   (leaf flycheck-package
     :ensure t
