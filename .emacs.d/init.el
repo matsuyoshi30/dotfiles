@@ -851,6 +851,9 @@
 
 ;;; Utility
 
+(leaf google-this :ensure t)
+(leaf which-key :ensure t :custom (which-key-mode . 1))
+
 (defun other-window-or-split ()
   "Move to other window or split window."
   (interactive)
@@ -901,6 +904,7 @@
   ("C-c c" . quickrun-with-arg)
   ("C-t" . other-window-or-split)
   ("C-c C-v" . open-by-vscode)
+  ("C-c '" . google-this)
 
   ("M-n" . "C-u 5 C-n")
   ("M-p" . "C-u 5 C-p")
