@@ -252,11 +252,11 @@
              (set (make-local-variable 'delete-trailing-whitespace-before-save) nil)))
 
 (leaf nyan-mode
-  :require t
-  :custom
-  (nyan-bar-length . 16)
+  :ensure t
   :init
-  (nyan-mode 1))
+  (defvar nyan-bar-length 16)
+  :config
+  (nyan-mode t))
 
 (leaf smartparens
   :ensure t
