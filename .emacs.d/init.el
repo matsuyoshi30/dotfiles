@@ -193,18 +193,19 @@
 
 (leaf modus-themes
   :ensure t
+  :bind ("<f5>" . modus-themes-toggle)
   :custom
   (modus-themes-italic-constructs . t)
   (modus-themes-bold-constructs . nil)
-  (modus-themes-region 'bg-only)
-  (modus-themes-diffs 'deuteranopia)
-  (modus-themes-org-blocks 'gray-background)
-  (modus-themes-syntax 'faint)
-  (modus-themes-paren-match 'intense-bold))
-(modus-themes-load-themes)
-;;(modus-themes-load-operandi)
+  (modus-themes-region . 'bg-only)
+  (modus-themes-diffs . 'deuteranopia)
+  (modus-themes-org-blocks . 'gray-background)
+  (modus-themes-syntax . 'faint)
+  (modus-themes-paren-match . 'intense-bold)
+  :config
+  (modus-themes-load-themes))
+; (modus-themes-load-operandi)
 (modus-themes-load-vivendi)
-(global-set-key (kbd "<f5>") 'modus-themes-toggle)
 
 (when window-system
   (create-fontset-from-ascii-font "Ricty-14:weight=normal:slant=normal" nil "ricty")
