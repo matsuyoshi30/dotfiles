@@ -571,6 +571,10 @@
 
 ;;; Edit
 
+(leaf quickrun
+  :ensure t
+  :after t)
+
 (leaf anzu
   :doc "replace"
   :ensure t
