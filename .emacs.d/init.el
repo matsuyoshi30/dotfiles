@@ -819,8 +819,8 @@
 
 (leaf rfc-mode
   :require t
-  :config
-  (defvar rfc-mode-directory (expand-file-name "~/Documents/rfc")))
+  :custom
+  (rfc-mode-directory . "~/Documents/rfc"))
 
 (leaf pdf-tools
   :ensure t
