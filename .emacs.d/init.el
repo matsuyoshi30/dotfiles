@@ -642,9 +642,11 @@
                              (local-set-key (kbd "C-c C-r") 'go-remove-unused-imports)
                              (local-set-key (kbd "C-c i") 'go-goto-imports)
                              (local-set-key (kbd "C-c d") 'godoc)))
+  :custom
+  (gofmt-command . "goimports")
   :config
-  (defvar gofmt-command "goimports")
-  (add-hook 'before-save-hook 'gofmt-before-save))
+  (add-hook 'before-save-hook 'gofmt-before-save)
+  (add-hook 'go-mode-hook 'lsp-deferred))
 
 ;; web
 (leaf web-mode
