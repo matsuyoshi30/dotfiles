@@ -612,10 +612,14 @@
 (leaf lsp-mode
   :ensure t
   :after t
+  :defvar lsp-command-map
   :init
   (defun lsp-format-before-save ()
     (add-hook 'before-save-hook 'lsp-format-buffer nil t))
+  :bind (:lsp-mode-map
+         ("C-S-SPC" . nil))
   :config
+  (define-key lsp-mode-map (kbd "M-z") lsp-command-map)
   (leaf lsp-ui
     :ensure t
     :custom
@@ -657,14 +661,16 @@
   "\\.erb\\'"
   "\\.html?\\'"
   "\\.js\\'"
+  "\\.jsx\\'"
   "\\.ts\\'"
+  "\\.tsx\\'"
   "\\.tpl\\'"
   "\\.tmpl\\'"
   "\\.vue\\'"
   :init
-  ;; (defun web-mode-setup ()
-  ;;   (setq-local lsp-enabled-clients '(ts-ls eslint))
-  ;;   (lsp))
+  (defun web-mode-setup ()
+    (setq-local lsp-enabled-clients '(ts-ls eslint))
+    (lsp))
   (defun setup-tide-mode ()
 	  (interactive)
 	  (tide-setup)
@@ -673,7 +679,7 @@
 	  (eldoc-mode +1)
 	  (tide-hl-identifier-mode +1)
 	  (company-mode +1))
-  ;; :hook (web-mode-hook . web-mode-setup)
+  :hook (web-mode-hook . web-mode-setup)
   :custom
   (web-mode-attr-indent-offset . nil)
   (web-mode-code-indent-offset . 2)
@@ -693,11 +699,6 @@
                  (setup-tide-mode))
                ))
   (local-set-key (kbd "RET") 'newline-and-indent))
-
-;; jsx, tsx
-(leaf rjsx-mode
-  :ensure t
-  :mode  "\\.jsx$" "\\.tsx$")
 
 ;; json
 (leaf json-mode
