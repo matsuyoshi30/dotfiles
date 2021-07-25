@@ -426,16 +426,6 @@
       (append completion-ignored-extensions
               '("./" "../" ".DS_Store")))
 
-;;; helm
-
-(leaf helm
-  :ensure t
-  :diminish helm-mode
-  :custom
-  (helm-ff-file-name-history-use-recentf . t)
-  :config
-  (helm-mode 1))
-
 ;;; ivy
 
 (leaf ivy
