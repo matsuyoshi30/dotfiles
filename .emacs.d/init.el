@@ -470,6 +470,30 @@
   :custom ((ivy-prescient-retain-classic-highlighting . t))
   :global-minor-mode t)
 
+;;; magit
+
+(leaf magit
+  :ensure t
+  :bind (("C-x m" . magit-status)
+         ("C-c l" . magit-blame-addition))
+  :init
+  (setq-default magit-auto-revert-mode nil))
+
+;;; Projectile
+
+(leaf projectile
+  :ensure t
+  :defvar projectile-mode-map
+  :custom
+  (projectile-project-search-path . '("~/projects"))
+  :config
+  (projectile-mode t)
+  (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map)
+  (leaf counsel-projectile
+    :ensure t
+    :config
+    (counsel-projectile-mode t)))
+
 ;;; flycheck
 
 (leaf flycheck
