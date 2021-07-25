@@ -336,11 +336,6 @@
 ;;   (whitespace-tab . '((t (:foreground "#0C2B33"))))
 ;;   )
 
-;; avoid wired split when display-buffer
-(setq pop-up-windows nil)
-(setq split-height-threshold nil)
-(setq split-width-threshold nil)
-
 (leaf elscreen
   :init
   (custom-set-variables
