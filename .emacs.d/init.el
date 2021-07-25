@@ -317,6 +317,16 @@
 (size-indication-mode t)
 (setq-default tab-width 2 indent-tabs-mode nil)
 
+(leaf moom
+  :ensure t
+  :defvar moom-mode-map
+  :config
+  (moom-mode t)
+  ;;(define-key moom-mode-map (kbd "M-0") 'moom-move-frame)
+  (define-key moom-mode-map (kbd "M-1") 'moom-move-frame-left)
+  (define-key moom-mode-map (kbd "M-2") 'moom-move-frame-to-center)
+  (define-key moom-mode-map (kbd "M-3") 'moom-move-frame-right))
+
 ;; (leaf whitespace
 ;;   :require t
 ;;   :custom
