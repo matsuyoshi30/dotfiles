@@ -300,6 +300,21 @@
   scss-mode-hook
   web-mode-hook)
 
+
+;; all-the-icons
+
+(leaf all-the-icons
+  :ensure t
+  :custom
+  (all-the-icons-scale-factor . 1.0)
+  :config
+  (leaf all-the-icons-ivy
+    :require t
+    :init (add-hook 'after-init-hook 'all-the-icons-ivy-setup))
+  (leaf all-the-icons-dired
+    :require t
+    :diminish all-the-icons-dired-mode))
+
 ;; smart mode line
 (defvar sml/active-background-color "gray60")
 (defvar sml/modified-char "*")
@@ -391,6 +406,7 @@
                 (kill-buffer (current-buffer))
                 (dired up))
               (dired-goto-file dir))))))
+  :hook (dired-mode-hook . all-the-icons-dired-mode)
   :custom
   (dired-guess-shell-gnutar . "tar")
   (dired-guess-shell-alist-user . '(("\\.tar\\.gz\\'" "tar ztvf")
