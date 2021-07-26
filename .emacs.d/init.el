@@ -494,6 +494,7 @@
 
 (leaf projectile
   :ensure t
+  :diminish projectile-mode
   :defvar projectile-mode-map
   :custom
   (projectile-project-search-path . '("~/projects"))
