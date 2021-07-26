@@ -207,15 +207,12 @@
 ; (modus-themes-load-operandi)
 (modus-themes-load-vivendi)
 
+(setq default-frame-alist
+      (append (list
+              '(font . "HackGenNerd-13"))
+              default-frame-alist))
+
 (when window-system
-  (create-fontset-from-ascii-font "Ricty-14:weight=normal:slant=normal" nil "ricty")
-  (set-fontset-font "fontset-ricty"
-                    'unicode
-                    (font-spec :family "Ricty")
-                    nil
-                    'append)
-  (add-to-list 'default-frame-alist '(font . "fontset-ricty"))
-  (defvar my:font-size 14)
   (progn
     (cond
      ((eq window-system 'ns) ; for Macintosh
@@ -227,9 +224,7 @@
                (height . 65)
                (cursor-height . 0)
                (vertical-scroll-bar . nil)
-               ) initial-frame-alist)))))
-  (progn
-    (setq default-frame-alist initial-frame-alist)))
+               ) initial-frame-alist))))))
 
 (column-number-mode t)
 (line-number-mode t)
