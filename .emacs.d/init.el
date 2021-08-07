@@ -839,7 +839,10 @@
   :custom ((org-return-follows-link . t)
            (org-startup-truncated . nil)
            (org-todo-keywords . '((sequence "TODO(t)" "WAIT(w)" "|" "DONE(d)" "SOMEDAY(s)")))
-           (org-log-done . 'time))
+           (org-log-done . 'time)
+           (org-hide-leading-stars . t)
+           (org-edit-src-content-indentation . 0)
+           (org-src-preserve-indentation . nil))
   :bind
   ("C-c l" . org-store-link))
 
