@@ -838,11 +838,13 @@
   :ensure t
   :custom ((org-return-follows-link . t)
            (org-startup-truncated . nil)
-           (org-todo-keywords . '((sequence "TODO(t)" "WAIT(w)" "|" "DONE(d)" "SOMEDAY(s)")))
            (org-log-done . 'time)
            (org-hide-leading-stars . t)
            (org-edit-src-content-indentation . 0)
-           (org-src-preserve-indentation . nil))
+           (org-src-preserve-indentation . nil)
+           (org-todo-keywords . '((sequence "TODO(t)" "FOCUS(f)" "WAIT(w)" "|" "DONE(d)" "SOMEDAY(s)")))
+           (org-todo-keyword-faces . '(("FOCUS"    :foreground "#FF0000" :background "#FFCC66")
+                                       ("WAIT"     :foreground "#CCCCCC" :background "#666666"))))
   :bind
   ("C-c l" . org-store-link))
 
