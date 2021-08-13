@@ -696,7 +696,7 @@
 ;; json
 (leaf json-mode
   :ensure t
-  :hook (json-mode-hook . (lambda () (make-local-variable 'js-indent-level) (defvar js-indent-level 2))))
+  :init (add-hook 'json-mode-hook '(lambda () (make-local-variable 'js-indent-level) (setq js-indent-level 2))))
 
 ;; Markdown
 (leaf markdown-mode
