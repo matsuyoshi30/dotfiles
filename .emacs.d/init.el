@@ -837,6 +837,7 @@
 (leaf org
   :ensure t
   :custom ((org-return-follows-link . t)
+           (org-startup-folded . t)
            (org-startup-truncated . nil)
            (org-log-done . 'time)
            (org-hide-leading-stars . t)
