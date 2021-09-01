@@ -648,7 +648,7 @@
 ;; web
 (leaf web-mode
   :ensure t
-  :defvar lsp-enabled-clients
+  ;; :defvar lsp-enabled-clients
   :defun sp-local-pair
   :mode
   "\\.erb\\'"
@@ -661,9 +661,9 @@
   "\\.tmpl\\'"
   "\\.vue\\'"
   :init
-  (defun web-mode-setup ()
-    (setq-local lsp-enabled-clients '(ts-ls eslint))
-    (lsp))
+  ;; (defun web-mode-setup ()
+  ;;   (setq-local lsp-enabled-clients '(ts-ls eslint))
+  ;;   (lsp))
   (defun setup-tide-mode ()
 	  (interactive)
 	  (tide-setup)
@@ -672,7 +672,7 @@
 	  (eldoc-mode +1)
 	  (tide-hl-identifier-mode +1)
 	  (company-mode +1))
-  :hook (web-mode-hook . web-mode-setup)
+  ;; :hook (web-mode-hook . web-mode-setup)
   :custom
   (web-mode-attr-indent-offset . nil)
   (web-mode-code-indent-offset . 2)
