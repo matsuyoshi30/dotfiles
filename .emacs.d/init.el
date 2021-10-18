@@ -913,6 +913,7 @@
   ("C-c C-v" . open-by-vscode)
   ("C-c '" . google-this)
   ("C-c w" . org2blog-user-interface)
+  ("C-c t" . toggle-truncate-lines)
 
   ("M-n" . "C-u 5 C-n")
   ("M-p" . "C-u 5 C-p")
