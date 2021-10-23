@@ -9,7 +9,7 @@ Emacs
 
 symbolic link to home directory
 
-    ln -s ./projects/dotfiles/.emacs.d ~/
+    ln -s ./.emacs.d ~/
     cd .emacs.d
     emacs --batch -f batch-byte-compile init.el
 
@@ -19,5 +19,13 @@ Zsh
 
 symbolic link to home directory
 
-    ln -s ./projects/dotfiles/.zsh/.zprofile ~/
-    ln -s ./projects/dotfiles/.zsh/.zshrc ~/
+    ln -s ./.zsh/.zprofile ~/
+    ln -s ./.zsh/.zshrc ~/
+
+
+Tmux
+----
+
+symbolic link to home directory
+
+    ln -s ./tmux.conf ~/
