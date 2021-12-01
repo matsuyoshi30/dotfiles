@@ -860,6 +860,7 @@
 
 (leaf google-this :ensure t)
 (leaf which-key :ensure t :custom (which-key-mode . 1))
+(leaf germanium :ensure t :custom (germanium-check-options-each-execute-command . nil))
 
 (defun other-window-or-split ()
   "Move to other window or split window."
@@ -920,7 +921,10 @@
 
   ("M-SPC" . expand-abbrev)
   ("<f3>" . highlight-symbol-at-point)
-  ("M-<f3>" . highlight-symbol-remove-all))
+  ("M-<f3>" . highlight-symbol-remove-all)
+
+  ("C-x C-g" . germanium-buffer-to-png)
+  ("C-x C-q" . germanium-region-to-png))
 
 (provide 'init)
 ;;; init.el ends here
