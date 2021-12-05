@@ -916,6 +916,8 @@
   ("C-c w" . org2blog-user-interface)
   ("C-c t" . toggle-truncate-lines)
 
+  ("C-]" . consult-ghq-find)
+
   ("M-n" . "C-u 5 C-n")
   ("M-p" . "C-u 5 C-p")
 
