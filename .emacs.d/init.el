@@ -861,6 +861,18 @@
 (leaf google-this :ensure t)
 (leaf which-key :ensure t :custom (which-key-mode . 1))
 (leaf germanium :ensure t :custom (germanium-check-options-each-execute-command . nil))
+(leaf consult-ghq
+  :ensure t
+  :config
+  (leaf consult :ensure t)
+  (leaf affe
+    :ensure t
+    :config
+    (leaf orderless :ensure t)
+    :custom
+    (affe-find-command . "fd --color=never --full-path")
+    (affe-highlight-function . 'orderless-highlight-matches)
+    (affe-regexp-function . 'orderless-pattern-compiler)))
 
 (defun other-window-or-split ()
   "Move to other window or split window."
