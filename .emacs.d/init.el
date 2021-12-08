@@ -399,49 +399,40 @@
       (append completion-ignored-extensions
               '("./" "../" ".DS_Store")))
 
-;;; ivy
+;;; completion
 
-(leaf ivy
-  :doc "Incremental Vertical completYon"
-  :url "https://github.com/abo-abo/swiper"
+(leaf vertico
   :ensure t
-  :blackout t
-  :leaf-defer nil
-  :custom ((ivy-initial-inputs-alist . nil)
-           (ivy-use-selectable-prompt . t))
   :global-minor-mode t
+  :custom
+  (vertico-count . 20)
+  (completion-styles . '(orderless))
+  :hook
+  ((after-init-hook . savehist-mode))
   :config
-  (leaf swiper
-    :doc "Isearch with an overview. Oh, man!"
-    :url "https://github.com/abo-abo/swiper"
+  (leaf marginalia
     :ensure t
-    :bind (("C-s" . swiper)))
-
-  (leaf counsel
-    :doc "Various completion functions using Ivy"
-    :url "https://github.com/abo-abo/swiper"
+    :global-minor-mode t)
+  (leaf consult
     :ensure t
-    :blackout t
-    :bind (("C-S-s" . counsel-imenu)
-           ("C-x C-r" . counsel-recentf))
-    :custom `((counsel-yank-pop-separator . "\n----------\n")
-              (counsel-find-file-ignore-regexp . ,(rx-to-string '(or "./" "../") 'no-group)))
-    :global-minor-mode t))
-
-(leaf prescient
-  :doc "Better sorting and filtering"
-  :url "https://github.com/raxod502/prescient.el"
-  :ensure t
-  :custom ((prescient-aggressive-file-save . t))
-  :global-minor-mode prescient-persist-mode)
-
-(leaf ivy-prescient
-  :doc "prescient.el + Ivy"
-  :url "https://github.com/raxod502/prescient.el"
-  :ensure t
-  :after prescient ivy
-  :custom ((ivy-prescient-retain-classic-highlighting . t))
-  :global-minor-mode t)
+    :bind
+    (("C-s" . consult-line)
+     ("C-S-s" . consult-imenu)
+     ("C-x C-r" . consult-recentf-file))
+    :defvar vertico-map
+    :custom
+    (consult-find-command . "fd --color=never --full-path ARG OPTS")
+    :config
+    (define-key vertico-map (kbd "C-r") 'vertico-previous)
+    (define-key vertico-map (kbd "C-s") 'vertico-next))
+  (leaf embark
+    :ensure t
+    :bind (("C-." . embark-act)))
+  (leaf embark-consult
+    :ensure t
+    :after (embark consult)
+    :leaf-defer nil
+    :hook (embark-collect-mode . consult-preview-at-point-mode)))
 
 ;;; magit
 
