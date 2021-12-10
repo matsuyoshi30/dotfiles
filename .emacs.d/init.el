@@ -919,6 +919,8 @@
   ("C-c w" . org2blog-user-interface)
   ("C-c t" . toggle-truncate-lines)
 
+  ("C-c g" . affe-grep)
+
   ("C-]" . consult-ghq-find)
 
   ("M-n" . "C-u 5 C-n")
@@ -928,8 +930,8 @@
   ("<f3>" . highlight-symbol-at-point)
   ("M-<f3>" . highlight-symbol-remove-all)
 
-  ("C-x C-g" . germanium-buffer-to-png)
-  ("C-x C-q" . germanium-region-to-png))
+  ("C-x M-g" . germanium-buffer-to-png)
+  ("C-x M-q" . germanium-region-to-png))
 
 (provide 'init)
 ;;; init.el ends here
