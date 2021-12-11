@@ -895,6 +895,35 @@
             (lambda nil
               (linum-mode -1))))
 
+;;; elfeed
+
+(leaf elfeed
+  :ensure t
+  :bind
+  ("C-x w" . elfeed)
+  :defvar '(elfeed-feeds elfeed-search-filter elfeed-show-mode-hook elfeed-show-entry-switch)
+  :defun my-show-elfeed
+  :setq
+  (elfeed-feeds . '(("https://planet.emacslife.com/atom.xml" emacs)
+                    ("https://sachachua.com/blog/feed/" emacs)
+                    ("https://protesilaos.com/codelog.xml" emacs)
+                    ("https://www.youtube.com/feeds/videos.xml?channel_id=UC3ts8coMP645hZw9JSD3pqQ" youtube awesomekling)))
+  (elfeed-search-filter . "@3-days-ago +unread")
+  :config
+  (defun my-show-elfeed (buffer)
+    (with-current-buffer buffer
+      (setq buffer-read-only nil)
+      (goto-char (point-min))
+      (re-search-forward "\n\n")
+      (fill-individual-paragraphs (point) (point-max))
+      (setq buffer-read-only t))
+    (switch-to-buffer buffer))
+  (setq elfeed-show-mode-hook
+   (lambda ()
+	   (set-face-attribute 'variable-pitch (selected-frame) :font (font-spec :family "HackGenNerd" :size 13))
+	   (setq fill-column 120)
+	   (setq elfeed-show-entry-switch #'my-show-elfeed))))
+
 ;;; Org
 
 (leaf org
