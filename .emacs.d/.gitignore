@@ -2,4 +2,4 @@
 
 !/mysnippets/
 !.gitignore
-!init.el
+!*init.el

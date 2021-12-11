@@ -331,6 +331,10 @@
 
 ;;; IME
 
+;; reference
+;; https://qiita.com/takaxp/items/a86ee2aacb27c7c3a902
+;; https://masutaka.net/chalow/2015-01-04-1.html
+
 (defconst my-cur-color-ime '(:on "#FF9300" :off "#91C3FF"))
 (defconst my-cur-type-ime '(:on box :off box :invisible nil))
 (defvar my-ime-last nil)
