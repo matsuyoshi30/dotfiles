@@ -189,6 +189,7 @@
            ) initial-frame-alist)))
 
 (column-number-mode t)
+(global-hl-line-mode t)
 (line-number-mode t)
 
 (setq display-time-day-and-date t)
