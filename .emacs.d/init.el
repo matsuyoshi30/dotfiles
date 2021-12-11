@@ -174,7 +174,9 @@
               '(font . "HackGenNerd-13"))
               default-frame-alist))
 
-(when (equal window-system 'mac) ; for EMP
+;;; frame
+
+(when (eq window-system 'mac) ;; for EMP
   (setq initial-frame-alist
         (append
          '((top . 22)
@@ -183,8 +185,7 @@
            (height . 65)
            (cursor-height . 0)
            (vertical-scroll-bar . nil)
-           ) initial-frame-alist))
-  (mac-auto-ascii-mode 1))
+           ) initial-frame-alist)))
 
 (column-number-mode t)
 (line-number-mode t)
