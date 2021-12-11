@@ -174,19 +174,17 @@
               '(font . "HackGenNerd-13"))
               default-frame-alist))
 
-(when window-system
-  (progn
-    (cond
-     ((eq window-system 'ns) ; for Macintosh
-      (setq initial-frame-alist
-            (append
-             '((top . 22)
-               (left . 55)
-               (width . 170)
-               (height . 65)
-               (cursor-height . 0)
-               (vertical-scroll-bar . nil)
-               ) initial-frame-alist))))))
+(when (equal window-system 'mac) ; for EMP
+  (setq initial-frame-alist
+        (append
+         '((top . 22)
+           (left . 55)
+           (width . 170)
+           (height . 65)
+           (cursor-height . 0)
+           (vertical-scroll-bar . nil)
+           ) initial-frame-alist))
+  (mac-auto-ascii-mode 1))
 
 (column-number-mode t)
 (line-number-mode t)
