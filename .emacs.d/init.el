@@ -184,7 +184,6 @@
            (left . 55)
            (width . 170)
            (height . 65)
-           (cursor-height . 0)
            (vertical-scroll-bar . nil)
            ) initial-frame-alist)))
 
@@ -329,6 +328,74 @@
        ("compilation" . "compile")))
    )
   (elscreen-start))
+
+;;; IME
+
+(defconst my-cur-color-ime '(:on "#FF9300" :off "#91C3FF"))
+(defconst my-cur-type-ime '(:on box :off box :invisible nil))
+(defvar my-ime-last nil)
+(defvar mac-win-last-ime-status 'off)
+(defun mac-win-save-last-ime-status ()
+  "Save IME status by input source."
+  (setq mac-win-last-ime-status
+        (if (string-match "\\.\\(Roman\\|US\\)$" (mac-input-source))
+            'off 'on)))
+(defun advice:mac-auto-ascii-setup-input-source (&optional _prompt)
+  "Extension to store IME status."
+  (mac-win-save-last-ime-status))
+
+(when (eq window-system 'mac) ; for EMP
+  (when (fboundp 'mac-input-source)
+    (defun my-mac-keyboard-input-source ()
+	    (if (string-match "\\.US$" (mac-input-source))
+	        (progn
+	          (setq cursor-type (plist-get my-cur-type-ime :off))
+	          (add-to-list 'default-frame-alist
+			                   `(cursor-type . ,(plist-get my-cur-type-ime :off)))
+	          (set-cursor-color (plist-get my-cur-color-ime :off)))
+	      (progn
+	        (setq cursor-type (plist-get my-cur-type-ime :on))
+	        (add-to-list 'default-frame-alist
+			                 `(cursor-type . ,(plist-get my-cur-type-ime :on)))
+	        (set-cursor-color (plist-get my-cur-color-ime :on)))))
+
+	  (mac-auto-ascii-mode 1)
+	  ;; IME ON/OFF でカーソルの種別や色を替える
+	  (add-hook 'mac-selected-keyboard-input-source-change-hook
+		          #'my-mac-keyboard-input-source)
+	  ;; IME ON の英語入力＋決定後でもカーソルの種別や色を替える
+	  (add-hook 'mac-enabled-keyboard-input-sources-change-hook
+	            #'my-mac-keyboard-input-source)
+	  (declare-function my-mac-keyboard-input-source "init" nil)
+	  (my-mac-keyboard-input-source)
+
+    (defun mac-win-restore-ime ()
+      (when (and mac-auto-ascii-mode (eq mac-win-last-ime-status 'on))
+        (mac-select-input-source
+         "com.google.inputmethod.Japanese.base")))
+
+    (advice-add 'mac-auto-ascii-setup-input-source :before
+                #'advice:mac-auto-ascii-setup-input-source)
+
+    (defun mac-win-restore-ime-target-commands ()
+      (when (and mac-auto-ascii-mode
+                 (eq mac-win-last-ime-status 'on))
+        (mapc (lambda (command)
+                (when (string-match
+                       (format "^%s" command) (format "%s" this-command))
+                  (mac-select-input-source
+                   "com.google.inputmethod.Japanese.base")))
+              mac-win-target-commands)))
+    (add-hook 'pre-command-hook 'mac-win-restore-ime-target-commands)
+
+    ;; M-x でのコマンド選択でもIMEを戻せる．
+    ;; ただし，移動先で q が効かないことがある（要改善）
+    (add-hook 'minibuffer-setup-hook 'mac-win-save-last-ime-status)
+    (add-hook 'minibuffer-exit-hook 'mac-win-restore-ime)
+
+    ;; 自動で ASCII入力から日本語入力に引き戻したい関数（デフォルト設定）
+    (defvar mac-win-target-commands
+      '(find-file save-buffer other-window delete-window split-window))))
 
 ;;; dired
 
