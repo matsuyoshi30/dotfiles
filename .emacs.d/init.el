@@ -164,6 +164,7 @@
   (modus-themes-org-blocks . 'gray-background)
   (modus-themes-syntax . 'faint)
   (modus-themes-paren-match . 'intense-bold)
+  (modus-themes-hl-line . 'accented)
   :config
   (modus-themes-load-themes))
 ; (modus-themes-load-operandi)
