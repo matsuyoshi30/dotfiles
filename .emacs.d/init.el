@@ -185,7 +185,8 @@
            (width . 170)
            (height . 65)
            (vertical-scroll-bar . nil)
-           ) initial-frame-alist)))
+           ) initial-frame-alist))
+  (setq frame-title-format (format (if (buffer-file-name) "%%f" "%%b"))))
 
 (column-number-mode t)
 (global-hl-line-mode t)
