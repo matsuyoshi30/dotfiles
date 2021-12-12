@@ -515,6 +515,35 @@
   :init
   (setq-default magit-auto-revert-mode nil))
 
+
+;;; libvterm
+
+(leaf vterm
+  ;; requirements: brew install cmake libvterm libtool
+  :ensure t
+  :bind
+  ("<f2>" . vterm-toggle)
+  :custom
+  (vterm-max-scrollback . 10000)
+  (vterm-buffer-name-string . "vterm: %s")
+  (vterm-keymap-exceptions . '("<f1>" "<f2>" "C-c" "C-x" "C-g" "C-l" "M-x" "C-v" "M-v" "C-y" "C-t" "C-z")))
+
+(leaf vterm-toggle
+  :ensure t
+  :custom
+  (vterm-toggle-scope . 'project)
+  :config
+  (add-to-list 'display-buffer-alist
+               '((lambda (bufname _) (with-current-buffer bufname (eq major-mode ' vterm-mode)))
+                 (display-buffer-reuse-window display-buffer-in-direction)
+                 (direction . bottom)
+                 (reusable-frames . visible)
+                 (window-height . 0.4)))
+  (defun my/vterm-new-buffer-in-current-window ()
+    (interactive)
+    (let ((display-buffer-alist nil))
+      (vterm))))
+
 ;;; Projectile
 
 (leaf projectile
