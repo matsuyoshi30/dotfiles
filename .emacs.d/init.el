@@ -122,7 +122,9 @@
   (recentf-mode t))
 
 (when (eq system-type 'darwin)
-  (defvar mac-pass-control-to-system t)) ;; Ctrl to Emacs
+  (defvar mac-pass-control-to-system t) ;; Ctrl to Emacs
+  (setq mac-option-modifier 'alt)
+  (setq mac-command-modifier 'meta))
 
 (set-language-environment "Japanese")
 (prefer-coding-system 'utf-8)
