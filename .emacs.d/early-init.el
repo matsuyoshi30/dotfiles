@@ -13,7 +13,7 @@
           (lambda ()
             "Restore defalut values after startup."
             (setq file-name-handler-alist default-file-name-handler-alist
-                  gc-cons-threshold (* 1024 1024 1024))))
+                  gc-cons-threshold (* 24 1024 1024))))
 
 (setq byte-compile-warnings '(cl-functions))
 ;;; early-init.el ends here
