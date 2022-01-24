@@ -13,7 +13,7 @@
 (eval-and-compile
   (prog1 "initialize leaf.el"
     (customize-set-variable
-     'package-archives '(("org"   . "https://orgmode.org/elpa/")
+     'package-archives '(;("org"   . "https://orgmode.org/elpa/")
                          ("melpa" . "https://melpa.org/packages/")
                          ("gnu"   . "https://elpa.gnu.org/packages/")))
     (package-initialize)
