@@ -888,7 +888,7 @@
   :mode "\\.rs$"
   :custom
   (rustic-format-display-method . 'ignore)
-  (rustic-format-trigger . 'on-save)
+  ;(rustic-format-trigger . 'on-save)
   :after flycheck
   :defvar flycheck-checkers
   :config
