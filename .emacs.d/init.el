@@ -859,6 +859,11 @@
     :bind (:read-expression-map
            ("<tab>" . completion-at-point))))
 
+;; Haskell
+(leaf haskell-mode
+  :config
+  (add-hook 'haskell-mode-hook #'hindent-mode))
+
 ;; python
 (leaf python-mode
   :config
