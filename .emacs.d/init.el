@@ -518,6 +518,10 @@
   :init
   (setq-default magit-auto-revert-mode nil))
 
+(leaf magit-delta
+  :ensure t
+  :after magit
+  :hook (magit-mode-hook))
 
 ;;; libvterm
 
