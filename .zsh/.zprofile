@@ -14,21 +14,21 @@ export RUST_SRC_PATH="$HOME/.rustup/toolchains/stable-x86_64-apple-darwin/lib/ru
 
 # anyenv path
 anyenv=$(which anyenv)
-if [ -x "anyenv" ] ; then
+if [ -x $anyenv ] ; then
   export PATH="$PATH:$HOME/.anyenv/bin"
   eval "$(anyenv init -)"
 fi
 
 # nodenv path
 nodenv=$(which nodenv)
-if [ -x "nodenv" ] ; then
+if [ -x $nodenv ] ; then
   export PATH="$PATH:$HOME/.nodenv/bin"
   eval "$(nodenv init -)"
 fi
 
 # direnv path
 direnv=$(which direnv)
-if [ -x "direnv" ] ; then
+if [ -x $direnv ] ; then
   eval "$(direnv hook zsh)"
 fi
 
