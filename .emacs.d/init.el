@@ -983,6 +983,7 @@
   :bind
   ("C-c l" . org-store-link)
   ("C-c r" . org-capture)
+  ("C-c a" . org-agenda)
   :config
   (setq org-default-notes-file (concat (getenv "ORGSYNCROOT") "/org/journal.org"))
   (setq org-agenda-files (list (concat (getenv "ORGSYNCROOT") "/org/"))))
