@@ -969,6 +969,7 @@
 
 (leaf org
   :ensure t
+  :defvar '(org-default-notes-file org-agenda-files)
   :custom ((org-return-follows-link . t)
            (org-startup-folded . t)
            (org-startup-truncated . nil)
@@ -980,7 +981,28 @@
            (org-todo-keyword-faces . '(("FOCUS"    :foreground "#FF0000" :background "#FFCC66")
                                        ("WAIT"     :foreground "#CCCCCC" :background "#666666"))))
   :bind
-  ("C-c l" . org-store-link))
+  ("C-c l" . org-store-link)
+  ("C-c r" . org-capture)
+  :config
+  (setq org-default-notes-file "~/Dropbox/org/journal.org")
+  (setq org-agenda-files (list "~/Dropbox/org/")))
+
+(leaf org-capture
+  :defvar org-capture-templates
+  :config
+  (setq org-capture-templates
+      `(("t" "TODO" entry
+         (file+headline "~/Dropbox/org/journal.org" "Tasks")
+         "** TODO %?\n\t %U\n\t SCHEDULED: %t\n"
+         :empty-lines 1)
+        ("n" "Nippou" entry
+         (file+headline "~/Dropbox/org/journal.org" "Nippou")
+         "** %? :nippou:\n\t %U\n %i"
+         :empty-lines 1)
+        ("l" "Log" entry
+         (file+headline "~/Dropbox/org/journal.org" "Log")
+         "** %? :log:\n\t %U"
+         :empty-lines 1))))
 
 (leaf org2blog
   :ensure t
