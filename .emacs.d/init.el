@@ -1034,6 +1034,12 @@
     (affe-highlight-function . 'orderless-highlight-matches)
     (affe-regexp-function . 'orderless-pattern-compiler)))
 
+(leaf browse-at-remote
+  :ensure t
+  :bind
+  ("C-C b" . browse-at-remote)
+  ("C-c C-b" . bar-to-clipboard))
+
 (defun other-window-or-split ()
   "Move to other window or split window."
   (interactive)
