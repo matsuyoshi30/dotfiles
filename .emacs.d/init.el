@@ -1089,7 +1089,6 @@
   ("C-c C-j" . rg)
   ("C-c c" . quickrun-with-arg)
   ("C-t" . other-window-or-split)
-  ("C-c C-v" . open-by-vscode)
   ("C-c '" . google-this)
   ("C-c w" . org2blog-user-interface)
   ("C-c t" . toggle-truncate-lines)
