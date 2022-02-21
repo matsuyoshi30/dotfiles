@@ -32,6 +32,9 @@ if [ -x $direnv ] ; then
   eval "$(direnv hook zsh)"
 fi
 
+# Org Sync Root Path
+export ORGSYNCROOT="~/Dropbox"
+
 # Load the shell dotfiles, and then some:
 # * ~/.path can be used to extend `$PATH`.
 # * ~/.extra can be used for other settings you don’t want to commit.

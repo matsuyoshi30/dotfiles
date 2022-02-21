@@ -984,23 +984,27 @@
   ("C-c l" . org-store-link)
   ("C-c r" . org-capture)
   :config
-  (setq org-default-notes-file "~/Dropbox/org/journal.org")
-  (setq org-agenda-files (list "~/Dropbox/org/")))
+  (setq org-default-notes-file (concat (getenv "ORGSYNCROOT") "/org/journal.org"))
+  (setq org-agenda-files (list (concat (getenv "ORGSYNCROOT") "/org/"))))
 
 (leaf org-capture
   :defvar org-capture-templates
   :config
   (setq org-capture-templates
       `(("t" "TODO" entry
-         (file+headline "~/Dropbox/org/journal.org" "Tasks")
-         "** TODO %?\n\t %U\n\t SCHEDULED: %t\n"
+         (file+headline org-default-notes-file "Tasks")
+         "** TODO %^{TODO item}\n\t SCHEDULED: %t\n%?"
          :empty-lines 1)
         ("n" "Nippou" entry
-         (file+headline "~/Dropbox/org/journal.org" "Nippou")
-         "** %? :nippou:\n\t %U\n %i"
+         (file+headline org-default-notes-file "Nippou")
+         "** %t :nippou:\n"
+         :empty-lines 1)
+        ("i" "Idea" entry
+         (file+headline org-default-notes-file "Idea")
+         "** %?\n"
          :empty-lines 1)
         ("l" "Log" entry
-         (file+headline "~/Dropbox/org/journal.org" "Log")
+         (file+headline org-default-notes-file "Log")
          "** %? :log:\n\t %U"
          :empty-lines 1))))
 
