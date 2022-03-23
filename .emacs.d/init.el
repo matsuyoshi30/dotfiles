@@ -1097,15 +1097,15 @@
 
   ("C-]" . consult-ghq-find)
 
-  ("M-n" . "C-u 5 C-n")
-  ("M-p" . "C-u 5 C-p")
-
   ("M-SPC" . expand-abbrev)
   ("<f3>" . highlight-symbol-at-point)
   ("M-<f3>" . highlight-symbol-remove-all)
 
   ("C-x M-g" . germanium-buffer-to-png)
-  ("C-x M-q" . germanium-region-to-png))
+  ("C-x M-q" . germanium-region-to-png)
+
+  ("M-n" . (lambda () (interactive) (scroll-up 1)))
+  ("M-p" . (lambda () (interactive) (scroll-down 1))))
 
 (provide 'init)
 ;;; init.el ends here
