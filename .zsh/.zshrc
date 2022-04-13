@@ -115,3 +115,5 @@ alias glos='git log --oneline --stat'
 alias glon='git log --oneline --name-only'
 alias gco='git branch|peco|xargs git checkout'
 alias gdl='git branch|peco|xargs git branch -D'
+
+alias E='open -a Emacs.app'
