@@ -155,6 +155,10 @@
 
 ;;; Display
 
+(leaf tab-bar-mode
+  :config
+  (tab-bar-mode 1))
+
 (leaf modus-themes
   :ensure t
   :bind ("<f5>" . modus-themes-toggle)
@@ -311,26 +315,26 @@
 ;;   (whitespace-tab . '((t (:foreground "#0C2B33"))))
 ;;   )
 
-(leaf elscreen
-  :init
-  (custom-set-variables
-   '(elscreen-prefix-key (kbd "C-z"))
-   '(elscreen-display-tab nil)
-   '(elscreen-tab-display-kill-screen nil)
-   '(elscreen-tab-display-control nil)
-   '(elscreen-buffer-to-nickname-alist
-     '(("^dired-mode$" .
-        (lambda ()
-          (format "Dired(%s)" dired-directory)))
-       ("^Info-mode$" .
-        (lambda ()
-          (format "Info(%s)" (file-name-nondirectory Info-current-file))))
-       ))
-   '(elscreen-mode-to-nickname-alist
-     '(("[Ss]hell" . "shell")
-       ("compilation" . "compile")))
-   )
-  (elscreen-start))
+;; (leaf elscreen
+;;   :init
+;;   (custom-set-variables
+;;    '(elscreen-prefix-key (kbd "C-z"))
+;;    '(elscreen-display-tab nil)
+;;    '(elscreen-tab-display-kill-screen nil)
+;;    '(elscreen-tab-display-control nil)
+;;    '(elscreen-buffer-to-nickname-alist
+;;      '(("^dired-mode$" .
+;;         (lambda ()
+;;           (format "Dired(%s)" dired-directory)))
+;;        ("^Info-mode$" .
+;;         (lambda ()
+;;           (format "Info(%s)" (file-name-nondirectory Info-current-file))))
+;;        ))
+;;    '(elscreen-mode-to-nickname-alist
+;;      '(("[Ss]hell" . "shell")
+;;        ("compilation" . "compile")))
+;;    )
+;;   (elscreen-start))
 
 ;;; IME
 
