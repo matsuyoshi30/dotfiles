@@ -983,11 +983,14 @@
            (org-src-preserve-indentation . nil)
            (org-todo-keywords . '((sequence "TODO(t)" "FOCUS(f)" "WAIT(w)" "|" "DONE(d)" "SOMEDAY(s)")))
            (org-todo-keyword-faces . '(("FOCUS"    :foreground "#FF0000" :background "#FFCC66")
-                                       ("WAIT"     :foreground "#CCCCCC" :background "#666666"))))
+                                       ("WAIT"     :foreground "#CCCCCC" :background "#666666")))
+           (org-appear-autolinks . t))
   :bind
   ("C-c l" . org-store-link)
   ("C-c r" . org-capture)
   ("C-c a" . org-agenda)
+  :hook
+  (org-mode-hook . org-appear-mode)
   :config
   (setq org-default-notes-file (concat (getenv "ORGSYNCROOT") "/org/journal.org"))
   (setq org-agenda-files (list (concat (getenv "ORGSYNCROOT") "/org/"))))
