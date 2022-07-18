@@ -930,7 +930,6 @@
   :ensure t
   :bind ((pdf-view-mode-map
           ("C-s" . isearch-forward)))
-  :require t
   :custom
   (pdf-annot-activate-created-annotations . t)
   (pdf-view-resize-factor . 1.1)
