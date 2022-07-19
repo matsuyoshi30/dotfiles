@@ -973,6 +973,7 @@
 (leaf org
   :ensure t
   :defvar '(org-default-notes-file org-agenda-files)
+  :defun '(yank-with-indent copy-region-unindented)
   :custom ((org-return-follows-link . t)
            (org-startup-folded . t)
            (org-startup-truncated . nil)
@@ -985,14 +986,60 @@
                                        ("WAIT"     :foreground "#CCCCCC" :background "#666666")))
            (org-appear-autolinks . t))
   :bind
-  ("C-c l" . org-store-link)
-  ("C-c r" . org-capture)
-  ("C-c a" . org-agenda)
+  ((org-mode-map
+    ("C-c l" . org-store-link)
+    ("C-c r" . org-capture)
+    ("C-c a" . org-agenda)
+    ("C-c y" . yank-with-indent)
+    ("C-c M-w" . copy-region-unindented)))
   :hook
   (org-mode-hook . org-appear-mode)
   :config
   (setq org-default-notes-file (concat (getenv "ORGSYNCROOT") "/org/journal.org"))
-  (setq org-agenda-files (list (concat (getenv "ORGSYNCROOT") "/org/"))))
+  (setq org-agenda-files (list (concat (getenv "ORGSYNCROOT") "/org/")))
+  ;; https://emacs.stackexchange.com/questions/31646/how-to-paste-with-indent
+  (defun yank-with-indent ()
+    "Yank with indentation."
+    (interactive)
+    (let ((indent
+           (buffer-substring-no-properties (line-beginning-position) (line-end-position))))
+      (message indent)
+      (yank)
+      (narrow-to-region (mark t) (point))
+      (pop-to-mark-command)
+      (while (search-forward "\n" nil t) (replace-match (concat "\n" indent) nil t))
+      (widen)))
+  ;; https://emacs.stackexchange.com/questions/34966/copy-region-without-leading-indentation
+  (defun copy-region-unindented (pad beginning end)
+    "Copy the region, un-indented by the length of its minimum indent calculated by PAD, BEGINNING and END."
+    (interactive "P\nr")
+    (let ((buf (current-buffer))
+          (itm indent-tabs-mode)
+          (tw tab-width)
+          (st (syntax-table))
+          (indent nil))
+      (with-temp-buffer
+        (setq indent-tabs-mode itm
+              tab-width tw)
+        (set-syntax-table st)
+        (insert-buffer-substring buf beginning end)
+        ;; Establish the minimum level of indentation.
+        (goto-char (point-min))
+        (while (and (re-search-forward "^[[:space:]\n]*" nil :noerror)
+                    (not (eobp)))
+          (let ((length (current-column)))
+            (when (or (not indent) (< length indent))
+              (setq indent length)))
+          (forward-line 1))
+        (if (not indent)
+            (error "Region is entirely whitespace")
+          ;; Un-indent the buffer contents by the length of the minimum
+          ;; indent level, and copy to the kill ring.
+          (when pad
+            (setq indent (- indent (prefix-numeric-value pad))))
+          (indent-rigidly (point-min) (point-max) (- indent))
+          (copy-region-as-kill (point-min) (point-max))))))
+  )
 
 (leaf org-capture
   :defvar org-capture-templates
