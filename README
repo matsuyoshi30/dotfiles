@@ -29,3 +29,9 @@ Tmux
 symbolic link to home directory
 
     ln -s $(pwd)/tmux.conf ~/
+
+
+Docker
+------
+
+    docker run --rm -it -v $PWD:/dev -w /dev --tmpfs=/tmp/tmpfs:rw,size=500m,mode=1777 dev
