@@ -988,7 +988,6 @@
   :bind
   ((org-mode-map
     ("C-c l" . org-store-link)
-    ("C-c r" . org-capture)
     ("C-c a" . org-agenda)
     ("C-c y" . yank-with-indent)
     ("C-c M-w" . copy-region-unindented)))
@@ -1140,10 +1139,11 @@
   ("C-x F" . toggle-frame-maximized)
   ("C-x ?" . help-command)
   ("C-c C-j" . rg)
-  ("C-c c" . quickrun-with-arg)
+  ("C-c C-c" . quickrun-with-arg)
   ("C-t" . other-window-or-split)
   ("C-c '" . google-this)
   ("C-c w" . org2blog-user-interface)
+  ("C-c r" . org-capture)
   ("C-c t" . toggle-truncate-lines)
 
   ("C-c g" . affe-grep)
