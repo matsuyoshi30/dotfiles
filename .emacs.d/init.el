@@ -1088,6 +1088,8 @@
 
 (leaf browse-at-remote
   :ensure t
+  :custom
+  ((browse-at-remote-prefer-symbolic . nil))
   :bind
   ("C-C b" . browse-at-remote)
   ("C-c C-b" . bar-to-clipboard))
