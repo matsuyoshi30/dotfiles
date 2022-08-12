@@ -181,6 +181,21 @@
               '(font . "HackGenNerd-13"))
               default-frame-alist))
 
+(leaf neotree
+  :ensure t
+  :custom
+  (neo-show-hidden-files . t)
+  (neo-theme . 'icons))
+(defun neotree-text-scale ()
+  "Text scale for neotree."
+  (interactive)
+  (text-scale-adjust 0)
+  (text-scale-decrease 1)
+  (message nil))
+(add-hook 'neo-after-create-hook
+      (lambda (_)
+        (call-interactively 'neotree-text-scale)))
+
 ;;; frame
 
 (when (eq window-system 'mac) ;; for EMP
@@ -1160,6 +1175,8 @@
 
   ("M-SPC" . expand-abbrev)
   ("<f3>" . highlight-symbol-at-point)
+
+  ("<f6>" . neotree-toggle)
 
   ("C-x M-g" . germanium-buffer-to-png)
   ("C-x M-q" . germanium-region-to-png)
