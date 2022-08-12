@@ -1148,6 +1148,8 @@
   ("C-c r" . org-capture)
   ("C-c t" . toggle-truncate-lines)
 
+  ("C-x C-m" . counsel-mark-ring)
+
   ("C-c g" . affe-grep)
 
   ("C-]" . consult-ghq-find)
