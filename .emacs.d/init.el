@@ -322,6 +322,10 @@
   (define-key moom-mode-map (kbd "M-2") 'moom-move-frame-to-center)
   (define-key moom-mode-map (kbd "M-3") 'moom-move-frame-right))
 
+(leaf darkroom :ensure t)
+(add-hook 'darkroom-mode-hook #'(lambda ()
+                                  (when (neo-global--window-exists-p) (neotree-hide))))
+
 ;; (leaf whitespace
 ;;   :require t
 ;;   :custom
