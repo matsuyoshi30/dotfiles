@@ -1160,7 +1160,6 @@
 
   ("M-SPC" . expand-abbrev)
   ("<f3>" . highlight-symbol-at-point)
-  ("M-<f3>" . highlight-symbol-remove-all)
 
   ("C-x M-g" . germanium-buffer-to-png)
   ("C-x M-q" . germanium-region-to-png)
