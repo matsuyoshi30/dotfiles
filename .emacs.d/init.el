@@ -290,7 +290,8 @@
 (leaf all-the-icons
   :ensure t
   :custom
-  (all-the-icons-scale-factor . 1.0)
+  ((all-the-icons-scale-factor . 0.9)
+   (all-the-icons-default-adjust . 0.0))
   :config
   (leaf all-the-icons-ivy
     :require t
