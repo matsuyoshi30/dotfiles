@@ -1004,7 +1004,9 @@
            (org-todo-keywords . '((sequence "TODO(t)" "FOCUS(f)" "WAIT(w)" "|" "DONE(d)" "SOMEDAY(s)")))
            (org-todo-keyword-faces . '(("FOCUS"    :foreground "#FF0000" :background "#FFCC66")
                                        ("WAIT"     :foreground "#CCCCCC" :background "#666666")))
-           (org-appear-autolinks . t))
+           (org-appear-autolinks . t)
+           (org-blank-before-new-entry . '((heading . always) (plain-list-item . nil)))
+           (org-cycle-separator-lines . 1))
   :bind
   ((org-mode-map
     ("C-c l" . org-store-link)
