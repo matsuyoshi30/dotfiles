@@ -178,7 +178,7 @@
 
 (setq default-frame-alist
       (append (list
-              '(font . "HackGenNerd-13"))
+              '(font . "HackGen Console"))
               default-frame-alist))
 
 (leaf neotree
@@ -984,7 +984,7 @@
     (switch-to-buffer buffer))
   (setq elfeed-show-mode-hook
    (lambda ()
-	   (set-face-attribute 'variable-pitch (selected-frame) :font (font-spec :family "HackGenNerd" :size 13))
+	   (set-face-attribute 'variable-pitch (selected-frame) :font (font-spec :family "HackGen Console" :size 13))
 	   (setq fill-column 120)
 	   (setq elfeed-show-entry-switch #'my-show-elfeed))))
 
