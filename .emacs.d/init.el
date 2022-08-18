@@ -165,12 +165,12 @@
   :custom
   (modus-themes-italic-constructs . t)
   (modus-themes-bold-constructs . nil)
-  (modus-themes-region . 'bg-only)
+  (modus-themes-region . '(bg-only))
   (modus-themes-diffs . 'deuteranopia)
   (modus-themes-org-blocks . 'gray-background)
-  (modus-themes-syntax . 'faint)
-  (modus-themes-paren-match . 'intense-bold)
-  (modus-themes-hl-line . 'accented)
+  (modus-themes-syntax . '(faint))
+  (modus-themes-paren-match . '(intense-bold))
+  (modus-themes-hl-line . '(accented))
   :config
   (modus-themes-load-themes))
 ; (modus-themes-load-operandi)
