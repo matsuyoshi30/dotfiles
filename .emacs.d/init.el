@@ -1104,7 +1104,7 @@
     :config
     (leaf orderless :ensure t)
     :custom
-    (affe-find-command . "fd --color=never --full-path")
+    (affe-find-command . "fd --color=never --full-path --hidden")
     (affe-highlight-function . 'orderless-highlight-matches)
     (affe-regexp-function . 'orderless-pattern-compiler)))
 
