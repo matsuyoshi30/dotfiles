@@ -34,4 +34,5 @@ symbolic link to home directory
 Docker
 ------
 
-    docker run --rm -it -v $PWD:/dev -w /dev --tmpfs=/tmp/tmpfs:rw,size=500m,mode=1777 dev
+    docker build . -t devel
+    docker run --rm -it -v $PWD:/devel -w /devel --tmpfs=/tmp/tmpfs:rw,size=500m,mode=1777 devel
