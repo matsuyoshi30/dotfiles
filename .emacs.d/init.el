@@ -1063,20 +1063,23 @@
   )
 
 (leaf org-capture
-  :defvar '(tweet-file org-capture-templates)
+  :defvar '(task-file nippou-file idea-file tweet-file org-capture-templates)
   :config
+  (setq task-file (concat (getenv "ORGSYNCROOT") "/org/task.org"))
+  (setq nippou-file (concat (getenv "ORGSYNCROOT") "/org/nippou.org"))
+  (setq idea-file (concat (getenv "ORGSYNCROOT") "/org/idea.org"))
   (setq tweet-file (concat (getenv "ORGSYNCROOT") "/org/tweet.org"))
   (setq org-capture-templates
       `(("a" "TODO" entry
-         (file+headline org-default-notes-file "Tasks")
+         (file+headline task-file "Tasks")
          "** TODO %^{TODO item}\n\t SCHEDULED: %t\n%?"
          :empty-lines 1)
         ("n" "Nippou" entry
-         (file+headline org-default-notes-file "Nippou")
+         (file+headline nippou-file "Nippou")
          "** %t :nippou:\n"
          :empty-lines 1)
         ("i" "Idea" entry
-         (file+headline org-default-notes-file "Idea")
+         (file+headline idea-file "Idea")
          "** %?\n"
          :empty-lines 1)
         ("l" "Log" entry
