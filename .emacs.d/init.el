@@ -1063,10 +1063,11 @@
   )
 
 (leaf org-capture
-  :defvar org-capture-templates
+  :defvar '(tweet-file org-capture-templates)
   :config
+  (setq tweet-file (concat (getenv "ORGSYNCROOT") "/org/tweet.org"))
   (setq org-capture-templates
-      `(("t" "TODO" entry
+      `(("a" "TODO" entry
          (file+headline org-default-notes-file "Tasks")
          "** TODO %^{TODO item}\n\t SCHEDULED: %t\n%?"
          :empty-lines 1)
@@ -1081,6 +1082,10 @@
         ("l" "Log" entry
          (file+headline org-default-notes-file "Log")
          "** %? :log:\n\t %U"
+         :empty-lines 1)
+        ("t" "Tweet" entry
+         (file+headline tweet-file "Tweet")
+         "* %? %U %i"
          :empty-lines 1))))
 
 (leaf org2blog
