@@ -10,6 +10,8 @@
 
 ;;; General
 
+(eval-when-compile (setq byte-compile-warnings '(cl-functions)))
+
 (eval-and-compile
   (prog1 "initialize leaf.el"
     (customize-set-variable
