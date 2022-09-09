@@ -183,6 +183,7 @@
 
 (leaf neotree
   :ensure t
+  :defun neo-global--window-exists-p
   :custom
   (neo-show-hidden-files . t)
   (neo-theme . 'icons))
@@ -227,7 +228,7 @@
       (delete-trailing-whitespace)))
 (add-hook 'before-save-hook 'my-delete-trailing-whitespace)
 (add-hook 'markdown-mode-hook
-          '(lambda ()
+          #'(lambda ()
              (set (make-local-variable 'my-face-spc-at-eol) nil)
              (set (make-local-variable 'delete-trailing-whitespace-before-save) nil)))
 
@@ -754,8 +755,9 @@
 ;; Go
 (leaf go-mode
   :ensure t
+  :defvar c-basic-offset
   :init
-  (add-hook 'go-mode-hook '(lambda ()
+  (add-hook 'go-mode-hook #'(lambda ()
                              (setq c-basic-offset 4)
                              (setq indent-tabs-mode t)
                              (local-set-key (kbd "M-.") 'godef-jump)
@@ -772,7 +774,7 @@
 (leaf web-mode
   :ensure t
   ;; :defvar lsp-enabled-clients
-  :defun sp-local-pair
+  :defun '(sp-local-pair setup-tide-mode)
   :mode
   "\\.erb\\'"
   "\\.html?\\'"
@@ -808,7 +810,7 @@
   :config
   (leaf smartparens :config (sp-local-pair 'web-mode "<" ">" :actions nil))
   (add-hook 'web-mode-hook
-            '(lambda ()
+            #'(lambda ()
                (when (string-equal "js" (file-name-extension buffer-file-name))
                  (setup-tide-mode))
                (when (string-equal "ts" (file-name-extension buffer-file-name))
@@ -819,7 +821,7 @@
 ;; json
 (leaf json-mode
   :ensure t
-  :init (add-hook 'json-mode-hook '(lambda () (make-local-variable 'js-indent-level) (setq js-indent-level 2))))
+  :init (add-hook 'json-mode-hook #'(lambda () (make-local-variable 'js-indent-level) (setq js-indent-level 2))))
 
 ;; Markdown
 (leaf markdown-mode
@@ -886,6 +888,8 @@
 ;; Haskell
 (leaf haskell-mode
   :config
+  (leaf hindent
+    :ensure t)
   (add-hook 'haskell-mode-hook #'hindent-mode))
 
 ;; python
@@ -1032,7 +1036,8 @@
       (widen)))
   ;; https://emacs.stackexchange.com/questions/34966/copy-region-without-leading-indentation
   (defun copy-region-unindented (pad beginning end)
-    "Copy the region, un-indented by the length of its minimum indent calculated by PAD, BEGINNING and END."
+    "Copy the region, un-indented by the length of its minimum indent calculated
+by PAD, BEGINNING and END."
     (interactive "P\nr")
     (let ((buf (current-buffer))
           (itm indent-tabs-mode)
