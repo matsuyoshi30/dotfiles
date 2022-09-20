@@ -160,23 +160,35 @@
 (leaf tab-bar-mode
   :config
   (tab-bar-mode 1))
+(set-face-attribute 'tab-bar-tab nil :family "HackGen Console")
+(set-face-attribute 'tab-bar-tab-inactive nil :family "HackGen Console")
 
-(leaf modus-themes
+;; (leaf modus-themes
+;;   :ensure t
+;;   :bind ("<f5>" . modus-themes-toggle)
+;;   :custom
+;;   (modus-themes-italic-constructs . t)
+;;   (modus-themes-bold-constructs . nil)
+;;   (modus-themes-region . '(bg-only))
+;;   (modus-themes-diffs . 'deuteranopia)
+;;   (modus-themes-org-blocks . 'gray-background)
+;;   (modus-themes-syntax . '(faint))
+;;   (modus-themes-paren-match . '(intense-bold))
+;;   (modus-themes-hl-line . '(accented))
+;;   :config
+;;   (modus-themes-load-themes))
+;; ; (modus-themes-load-operandi)
+;; (modus-themes-load-vivendi)
+
+(leaf ef-themes
   :ensure t
-  :bind ("<f5>" . modus-themes-toggle)
   :custom
-  (modus-themes-italic-constructs . t)
-  (modus-themes-bold-constructs . nil)
-  (modus-themes-region . '(bg-only))
-  (modus-themes-diffs . 'deuteranopia)
-  (modus-themes-org-blocks . 'gray-background)
-  (modus-themes-syntax . '(faint))
-  (modus-themes-paren-match . '(intense-bold))
-  (modus-themes-hl-line . '(accented))
+  ; (ef-themes-mixed-fonts . t)
+  (ef-themes-variable-pitch-ui . t)
+  (ef-themes-to-toggle . '(ef-summer ef-winter))
   :config
-  (modus-themes-load-themes))
-; (modus-themes-load-operandi)
-(modus-themes-load-vivendi)
+  (mapc #'disable-theme custom-enabled-themes))
+(ef-themes-select 'ef-winter)
 
 (setq default-frame-alist
       (append (list
@@ -304,12 +316,24 @@
     :diminish all-the-icons-dired-mode))
 
 ;; smart mode line
-(defvar sml/active-background-color "gray60")
-(defvar sml/modified-char "*")
-(defvar sml/no-confirm-load-theme t)
-(defvar sml/theme 'dark)
-(defvar sml/shorten-directory -1)
-(sml/setup)
+;; (defvar sml/active-background-color "gray60")
+;; (defvar sml/modified-char "*")
+;; (defvar sml/no-confirm-load-theme t)
+;; (defvar sml/theme 'dark)
+;; (defvar sml/shorten-directory -1)
+;; (sml/setup)
+
+(leaf doom-modeline
+  :ensure t
+  :init (doom-modeline-mode 1)
+  :custom
+  (doom-modeline-height . 1) ; optional
+  :config
+  ; https://github.com/seagle0128/doom-modeline#faq
+  (if (facep 'mode-line-active)
+      (set-face-attribute 'mode-line-active nil :family "HackGen Console" :height 110)
+    (set-face-attribute 'mode-line nil :family "HackGen Console" :height 110))
+  (set-face-attribute 'mode-line-inactive nil :family "HackGen Console" :height 110))
 
 (transient-mark-mode t)
 (size-indication-mode t)
