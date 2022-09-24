@@ -160,8 +160,7 @@
 (leaf tab-bar-mode
   :config
   (tab-bar-mode 1))
-(set-face-attribute 'tab-bar-tab nil :family "HackGen Console")
-(set-face-attribute 'tab-bar-tab-inactive nil :family "HackGen Console")
+(set-face-attribute 'tab-bar nil :family "HackGen Console")
 
 ;; (leaf modus-themes
 ;;   :ensure t
