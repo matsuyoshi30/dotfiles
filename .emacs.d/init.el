@@ -159,8 +159,8 @@
 
 (leaf tab-bar-mode
   :config
-  (tab-bar-mode 1))
-(set-face-attribute 'tab-bar nil :family "HackGen Console")
+  (tab-bar-mode 1)
+  (set-face-attribute 'tab-bar nil :family "HackGen Console"))
 
 ;; (leaf modus-themes
 ;;   :ensure t
