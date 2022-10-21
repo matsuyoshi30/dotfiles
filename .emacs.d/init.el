@@ -157,10 +157,19 @@
 
 ;;; Display
 
+(setq default-frame-alist
+      (append (list
+              '(font . "HackGen Console"))
+              default-frame-alist))
+
 (leaf tab-bar-mode
+  :init
+  (set-face-attribute 'tab-bar nil :family "HackGen Console")
+  :custom
+  ((tab-bar-new-tab-choice         . "*scratch*")
+   (tab-bar-tab-name-truncated-max . 12))
   :config
-  (tab-bar-mode 1)
-  (set-face-attribute 'tab-bar nil :family "HackGen Console"))
+  (tab-bar-mode 1))
 
 ;; (leaf modus-themes
 ;;   :ensure t
@@ -188,11 +197,6 @@
   :config
   (mapc #'disable-theme custom-enabled-themes))
 (ef-themes-select 'ef-winter)
-
-(setq default-frame-alist
-      (append (list
-              '(font . "HackGen Console"))
-              default-frame-alist))
 
 (leaf neotree
   :ensure t
