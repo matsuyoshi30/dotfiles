@@ -755,27 +755,32 @@
   :ensure t
   :after t)
 
-(leaf lsp-mode
+;; (leaf lsp-mode
+;;   :ensure t
+;;   :after t
+;;   :defvar lsp-command-map
+;;   :init
+;;   (defun lsp-format-before-save ()
+;;     (add-hook 'before-save-hook 'lsp-format-buffer nil t))
+;;   :bind (:lsp-mode-map
+;;          ("C-S-SPC" . nil))
+;;   :config
+;;   (define-key lsp-mode-map (kbd "M-z") lsp-command-map)
+;;   (leaf lsp-ui
+;;     :ensure t
+;;     :custom
+;;     (lsp-ui-doc-header . t)
+;;     (lsp-ui-doc-position . 'top)
+;;     (lsp-ui-sideline-enable . nil)
+;;     :bind (:lsp-ui-mode-map
+;;            ("C-c C-d" . lsp-ui-doc-show)
+;;            ("C->" . lsp-find-type-definition)
+;;            ("C-c C-p" . lsp-ui-peek-find-implementation))))
+
+(leaf eglot
   :ensure t
-  :after t
-  :defvar lsp-command-map
-  :init
-  (defun lsp-format-before-save ()
-    (add-hook 'before-save-hook 'lsp-format-buffer nil t))
-  :bind (:lsp-mode-map
-         ("C-S-SPC" . nil))
   :config
-  (define-key lsp-mode-map (kbd "M-z") lsp-command-map)
-  (leaf lsp-ui
-    :ensure t
-    :custom
-    (lsp-ui-doc-header . t)
-    (lsp-ui-doc-position . 'top)
-    (lsp-ui-sideline-enable . nil)
-    :bind (:lsp-ui-mode-map
-           ("C-c C-d" . lsp-ui-doc-show)
-           ("C->" . lsp-find-type-definition)
-           ("C-c C-p" . lsp-ui-peek-find-implementation))))
+  (add-hook 'go-mode-hook 'eglot-ensure))
 
 ;;; Variouts mode
 
@@ -796,8 +801,7 @@
   :custom
   (gofmt-command . "goimports")
   :config
-  (add-hook 'before-save-hook 'gofmt-before-save)
-  (add-hook 'go-mode-hook 'lsp-deferred))
+  (add-hook 'before-save-hook 'gofmt-before-save))
 
 ;; web
 (leaf web-mode
