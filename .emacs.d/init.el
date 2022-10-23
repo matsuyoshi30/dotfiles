@@ -644,6 +644,7 @@
   :bind ((company-active-map
           ("M-n" . nil)
           ("M-p" . nil)
+          ("C-h" . nil)
           ("C-s" . company-filter-candidates)
           ("C-n" . company-select-next)
           ("C-p" . company-select-previous)
