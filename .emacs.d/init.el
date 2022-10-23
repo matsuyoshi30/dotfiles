@@ -162,15 +162,6 @@
               '(font . "HackGen Console"))
               default-frame-alist))
 
-(leaf tab-bar-mode
-  :init
-  (set-face-attribute 'tab-bar nil :family "HackGen Console")
-  :custom
-  ((tab-bar-new-tab-choice         . "*scratch*")
-   (tab-bar-tab-name-truncated-max . 12))
-  :config
-  (tab-bar-mode 1))
-
 ;; (leaf modus-themes
 ;;   :ensure t
 ;;   :bind ("<f5>" . modus-themes-toggle)
@@ -230,6 +221,14 @@
 (column-number-mode t)
 (global-hl-line-mode t)
 (line-number-mode t)
+
+(leaf tab-bar-mode
+  :init
+  (tab-bar-mode 1)
+  :custom
+  ((tab-bar-new-tab-choice         . "*scratch*")
+   (tab-bar-tab-name-truncated-max . 12)))
+(set-face-attribute 'tab-bar nil :family "HackGen Console")
 
 (setq display-time-day-and-date t)
 (defvar display-time-string-forms
