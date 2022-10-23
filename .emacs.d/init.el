@@ -329,7 +329,8 @@
   :ensure t
   :init (doom-modeline-mode 1)
   :custom
-  (doom-modeline-height . 1) ; optional
+  ((doom-modeline-height . 1) ; optional
+   (doom-modeline-lsp . t))
   :config
   ; https://github.com/seagle0128/doom-modeline#faq
   (if (facep 'mode-line-active)
@@ -562,6 +563,8 @@
     :leaf-defer nil
     :hook (embark-collect-mode . consult-preview-at-point-mode)))
 
+(setq xref-show-xrefs-function #'consult-xref)
+
 ;;; magit
 
 (leaf magit
@@ -622,14 +625,14 @@
 
 ;;; flycheck
 
-(leaf flycheck
-  :req "dash-2.12.1" "pkg-info-0.4" "let-alist-1.0.4" "seq-1.11" "emacs-24.3"
-  :url "http://www.flycheck.org"
-  :ensure t
-  :diminish flycheck-mode
-  :bind (("M-N" . flycheck-next-error)
-         ("M-P" . flycheck-previous-error))
-  :global-minor-mode global-flycheck-mode)
+;; (leaf flycheck
+;;   :req "dash-2.12.1" "pkg-info-0.4" "let-alist-1.0.4" "seq-1.11" "emacs-24.3"
+;;   :url "http://www.flycheck.org"
+;;   :ensure t
+;;   :diminish flycheck-mode
+;;   :bind (("M-N" . flycheck-next-error)
+;;          ("M-P" . flycheck-previous-error))
+;;   :global-minor-mode global-flycheck-mode)
 
 ;;; company
 
@@ -675,26 +678,72 @@
   (set-face-attribute 'company-tooltip-annotation nil
                       :foreground "red"))
 
-(leaf auto-complete
+(leaf company-quickhelp
   :ensure t
-  :after t
-  :require auto-complete-config
-  :diminish auto-complete-mode
-  :defun ac-config-default ac-set-trigger-key
   :custom
-  (ac-auto-show-menu . 0.4)
-  (ac-auto-start . nil)
-  (ac-menu-height . 22)
-  (ac-quick-help-delay . 0.4)
-  (ac-use-quick-help . t)
-  :bind
-  (:ac-completing-map
-   ("M-n" . ac-next)
-   ("M-t" . ac-previous)
-   ("RET" . nil))
-  :config
-  (ac-config-default)
-  (ac-set-trigger-key "<C-tab>"))
+  (company-quickhelp-max-lines . 5))
+
+;;; flymake
+
+(leaf flymake
+  :bind (("M-N" . flymake-goto-next-error)
+         ("M-P" . flymake-goto-prev-error)))
+
+(require 'flymake-diagnostic-at-point)
+(with-eval-after-load 'flymake
+  (add-hook 'flymake-mode-hook #'flymake-diagnostic-at-point-mode)
+  (add-hook 'emacs-lisp-mode-hook #'package-lint-flymake-setup)
+  (set-face-attribute 'popup-tip-face nil
+		      :background "dark slate gray" :foreground "white" :underline nil))
+(remove-hook 'flymake-diagnostic-functions 'flymake-proc-legacy-flymake)
+
+;; flymake-posframe
+(defvar flymake-posframe-hide-posframe-hooks
+  '(pre-command-hook post-command-hook focus-out-hook)
+  "The hooks which should trigger automatic removal of the posframe.")
+
+(defun flymake-posframe-hide-posframe ()
+  "Hide messages currently being shown if any."
+  (posframe-hide " *flymake-posframe-buffer*")
+  (dolist (hook flymake-posframe-hide-posframe-hooks)
+    (remove-hook hook #'flymake-posframe-hide-posframe t)))
+
+(defun my/flymake-diagnostic-at-point-display-popup (text)
+  "Display the flymake diagnostic TEXT inside a posframe."
+  (posframe-show " *flymake-posframe-buffer*"
+		 :string (concat flymake-diagnostic-at-point-error-prefix
+				 (flymake--diag-text
+				  (get-char-property (point) 'flymake-diagnostic)))
+		 :position (point)
+		 :foreground-color "cyan"
+		 :internal-border-width 2
+		 :internal-border-color "red"
+		 :poshandler 'posframe-poshandler-window-bottom-left-corner)
+  (dolist (hook flymake-posframe-hide-posframe-hooks)
+    (add-hook hook #'flymake-posframe-hide-posframe nil t)))
+
+(advice-add 'flymake-diagnostic-at-point-display-popup :override 'my/flymake-diagnostic-at-point-display-popup)
+
+;; (leaf auto-complete
+;;   :ensure t
+;;   :after t
+;;   :require auto-complete-config
+;;   :diminish auto-complete-mode
+;;   :defun ac-config-default ac-set-trigger-key
+;;   :custom
+;;   (ac-auto-show-menu . 0.4)
+;;   (ac-auto-start . nil)
+;;   (ac-menu-height . 22)
+;;   (ac-quick-help-delay . 0.4)
+;;   (ac-use-quick-help . t)
+;;   :bind
+;;   (:ac-completing-map
+;;    ("M-n" . ac-next)
+;;    ("M-t" . ac-previous)
+;;    ("RET" . nil))
+;;   :config
+;;   (ac-config-default)
+;;   (ac-set-trigger-key "<C-tab>"))
 
 ;;; Snippet
 
@@ -785,7 +834,11 @@
 (leaf eglot
   :ensure t
   :config
-  (add-hook 'go-mode-hook 'eglot-ensure))
+ (add-hook 'go-mode-hook 'eglot-ensure)
+ (add-hook 'web-mode-hook 'eglot-ensure))
+
+(leaf tree-sitter :ensure t)
+(leaf tree-sitter-langs :ensure t)
 
 ;;; Variouts mode
 
@@ -806,13 +859,14 @@
   :custom
   (gofmt-command . "goimports")
   :config
-  (add-hook 'before-save-hook 'gofmt-before-save))
+  (add-hook 'before-save-hook 'gofmt-before-save)
+  (add-hook 'go-mode-hook 'tree-sitter-mode))
 
 ;; web
 (leaf web-mode
   :ensure t
   ;; :defvar lsp-enabled-clients
-  :defun '(sp-local-pair setup-tide-mode)
+  :defun (sp-local-pair)
   :mode
   "\\.erb\\'"
   "\\.html?\\'"
@@ -823,19 +877,6 @@
   "\\.tpl\\'"
   "\\.tmpl\\'"
   "\\.vue\\'"
-  :init
-  ;; (defun web-mode-setup ()
-  ;;   (setq-local lsp-enabled-clients '(ts-ls eslint))
-  ;;   (lsp))
-  (defun setup-tide-mode ()
-	  (interactive)
-	  (tide-setup)
-	  (flycheck-mode +1)
-	  (defvar flycheck-check-syntax-automatically '(save mode-enabled))
-	  (eldoc-mode +1)
-	  (tide-hl-identifier-mode +1)
-	  (company-mode +1))
-  ;; :hook (web-mode-hook . web-mode-setup)
   :custom
   (web-mode-attr-indent-offset . nil)
   (web-mode-code-indent-offset . 2)
@@ -847,13 +888,6 @@
   (web-mode-markup-indent-offset . 2)
   :config
   (leaf smartparens :config (sp-local-pair 'web-mode "<" ">" :actions nil))
-  (add-hook 'web-mode-hook
-            #'(lambda ()
-               (when (string-equal "js" (file-name-extension buffer-file-name))
-                 (setup-tide-mode))
-               (when (string-equal "ts" (file-name-extension buffer-file-name))
-                 (setup-tide-mode))
-               ))
   (local-set-key (kbd "RET") 'newline-and-indent))
 
 ;; json
@@ -896,12 +930,11 @@
 
 ;; elisp
 (leaf elisp-mode
-  :custom
-  (flycheck-emacs-lisp-load-path . 'inherit)
   :bind (:emacs-lisp-mode-map
          ("C-M-q" . nil)
          ("C-c C-e" . macrostep-expand))
   :config
+  (add-hook 'emacs-lisp-mode-hook 'flymake-mode)
   (leaf elisp-slime-nav
     :ensure t
     :diminish elisp-slime-nav-mode
@@ -910,11 +943,6 @@
   (leaf eldoc
     :diminish eldoc-mode
     :hook emacs-lisp-mode-hook ielm-mode-hook)
-  (leaf flycheck-package
-    :ensure t
-    :after flycheck
-    :defun flycheck-package-setup
-    :config (flycheck-package-setup))
   (leaf ielm
     :bind (:ielm-map
            ("C-c C-d" . helpful-at-point)))
@@ -958,12 +986,7 @@
   :ensure t
   :mode "\\.rs$"
   :custom
-  (rustic-format-display-method . 'ignore)
-  ;(rustic-format-trigger . 'on-save)
-  :after flycheck
-  :defvar flycheck-checkers
-  :config
-  (push 'rustic-clippy flycheck-checkers))
+  (rustic-format-display-method . 'ignore))
 
 (leaf css-mode :ensure t)
 (leaf csv-mode :ensure t)
