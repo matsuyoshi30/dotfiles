@@ -738,6 +738,12 @@
   :bind
   ("C-M-c" . mc/edit-lines))
 
+(leaf mwim
+  :ensure t
+  :bind
+  (("C-a" . mwim-beginning)
+   ("C-e" . mwim-end)))
+
 (leaf undo-tree
   :ensure t
   :require t
