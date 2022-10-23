@@ -1189,7 +1189,7 @@ by PAD, BEGINNING and END."
     :config
     (leaf orderless :ensure t)
     :custom
-    (affe-find-command . "fd --color=never --full-path --hidden")
+    (affe-find-command . "fd --color=never --full-path --hidden --exclude .git")
     (affe-highlight-function . 'orderless-highlight-matches)
     (affe-regexp-function . 'orderless-pattern-compiler)))
 
