@@ -1168,13 +1168,6 @@ by PAD, BEGINNING and END."
          "* %? %U %i"
          :empty-lines 1))))
 
-(leaf org2blog
-  :ensure t
-  :custom
-  (org2blog/wp-blog-alist . '(("blog"
-                               :url "https://diary.matsuyoshi30.net/xmlrpc.php"
-                               :username "matsuyoshi30"))))
-
 ;;; Utility
 
 (leaf google-this :ensure t)
