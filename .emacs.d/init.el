@@ -1024,6 +1024,15 @@
             (lambda nil
               (linum-mode -1))))
 
+;; editorconfig
+
+(leaf editorconfig
+  :ensure t
+  :custom
+  (editorconfig-get-properties-function . 'editorconfig-core-get-properties-hash)
+  :config
+  (editorconfig-mode 1))
+
 ;;; elfeed
 
 (leaf elfeed
