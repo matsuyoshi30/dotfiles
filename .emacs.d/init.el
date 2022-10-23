@@ -677,12 +677,13 @@
                       :foreground "white"
                       :underline t)
   (set-face-attribute 'company-tooltip-annotation nil
-                      :foreground "red"))
+                      :foreground "red")
+  (leaf company-quickhelp
+    :ensure t
+    :custom
+    (company-quickhelp-max-lines . 5))
+  (company-quickhelp-mode))
 
-(leaf company-quickhelp
-  :ensure t
-  :custom
-  (company-quickhelp-max-lines . 5))
 
 ;;; flymake
 
