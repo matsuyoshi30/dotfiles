@@ -1248,7 +1248,6 @@ by PAD, BEGINNING and END."
   ("C-c C-c" . quickrun-with-arg)
   ("C-t" . other-window-or-split)
   ("C-c '" . google-this)
-  ("C-c w" . org2blog-user-interface)
   ("C-c r" . org-capture)
   ("C-c t" . toggle-truncate-lines)
 
