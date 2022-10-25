@@ -145,6 +145,13 @@
 
 (leaf dash :ensure t)
 
+(leaf gcmh
+  :ensure t
+  :diminish gcmh
+  :custom (gcmh-verbose . t)
+  :config
+  (gcmh-mode 1))
+
 ;;; Path
 
 (autoload 'exec-path-from-shell "exec-path-from-shell" nil t)
