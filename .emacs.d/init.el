@@ -306,14 +306,6 @@
     :require t
     :diminish all-the-icons-dired-mode))
 
-;; smart mode line
-;; (defvar sml/active-background-color "gray60")
-;; (defvar sml/modified-char "*")
-;; (defvar sml/no-confirm-load-theme t)
-;; (defvar sml/theme 'dark)
-;; (defvar sml/shorten-directory -1)
-;; (sml/setup)
-
 (leaf doom-modeline
   :ensure t
   :init (doom-modeline-mode 1)
