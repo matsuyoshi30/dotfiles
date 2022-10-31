@@ -871,6 +871,16 @@
   (add-hook 'before-save-hook 'gofmt-before-save)
   (add-hook 'go-mode-hook 'tree-sitter-mode))
 
+; https://go.googlesource.com/tools/+/refs/heads/master/gopls/doc/emacs.md
+(defun project-find-go-module (dir)
+  "Find go.mod file and append DIR to project root."
+  (when-let ((root (locate-dominating-file dir "go.mod")))
+    (cons 'go-module root)))
+(cl-defmethod project-root ((project (head go-module)))
+  "Get PROJECT root directory."
+  (cdr project))
+(add-hook 'project-find-functions #'project-find-go-module)
+
 ;; web
 (leaf web-mode
   :ensure t
