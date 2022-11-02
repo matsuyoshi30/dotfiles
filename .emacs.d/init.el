@@ -860,6 +860,7 @@
   :ensure t
   ;; :defvar lsp-enabled-clients
   :defun (sp-local-pair)
+  :defvar web-mode-map
   :mode
   "\\.erb\\'"
   "\\.html?\\'"
@@ -881,7 +882,21 @@
   (web-mode-markup-indent-offset . 2)
   :config
   (leaf smartparens :config (sp-local-pair 'web-mode "<" ">" :actions nil))
-  (local-set-key (kbd "RET") 'newline-and-indent))
+  (local-set-key (kbd "RET") 'newline-and-indent)
+  (unbind-key "C-c C-b b" web-mode-map)
+  (unbind-key "C-c C-b c" web-mode-map)
+  (unbind-key "C-c C-b e" web-mode-map)
+  (unbind-key "C-c C-b k" web-mode-map)
+  (unbind-key "C-c C-b n" web-mode-map)
+  (unbind-key "C-c C-b p" web-mode-map)
+  (unbind-key "C-c C-b s" web-mode-map)
+  (define-key web-mode-map (kbd "C-c i b") 'web-mode-block-beginning)
+  (define-key web-mode-map (kbd "C-c i c") 'web-mode-block-close)
+  (define-key web-mode-map (kbd "C-c i e") 'web-mode-block-end)
+  (define-key web-mode-map (kbd "C-c i k") 'web-mode-block-kill)
+  (define-key web-mode-map (kbd "C-c i n") 'web-mode-block-next)
+  (define-key web-mode-map (kbd "C-c i p") 'web-mode-block-previous)
+  (define-key web-mode-map (kbd "C-c i s") 'web-mode-block-select))
 
 ;; json
 (leaf json-mode
