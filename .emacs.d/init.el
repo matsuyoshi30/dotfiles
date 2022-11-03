@@ -1241,6 +1241,12 @@ by PAD, BEGINNING and END."
 
 ;;; Key bindings
 
+(leaf key-combo
+  :ensure t
+  :config
+  (global-key-combo-mode t)
+  (key-combo-define-global "=" '(" = " " == " " === " "=")))
+
 (leaf *global-set-key
   :leaf-autoload nil
   :bind
