@@ -1245,7 +1245,15 @@ by PAD, BEGINNING and END."
   :ensure t
   :config
   (global-key-combo-mode t)
-  (key-combo-define-global "=" '(" = " " == " " === " "=")))
+  (key-combo-define-global "=" '(" = " " == " " === " "="))
+  (key-combo-define-global "=>" " => ")
+  (key-combo-define-global ">" '(" > " " >= " ">"))
+  (key-combo-define-global ">=" " >= ")
+  (key-combo-define-global "<" '(" < " " <= " "<"))
+  (key-combo-define-global "<=" " <= ")
+  (key-combo-define-global "!" '(" != " "!"))
+  (key-combo-define-global "!=" " != ")
+  (key-combo-define-global "," '(", " ",")))
 
 (leaf *global-set-key
   :leaf-autoload nil
