@@ -333,9 +333,23 @@
   (define-key moom-mode-map (kbd "M-2") 'moom-move-frame-to-center)
   (define-key moom-mode-map (kbd "M-3") 'moom-move-frame-right))
 
-(leaf darkroom :ensure t)
-(add-hook 'darkroom-mode-hook #'(lambda ()
-                                  (when (neo-global--window-exists-p) (neotree-hide))))
+(leaf darkroom
+  :ensure t
+  :bind ("<f12>" . my:darkroom-mode-in)
+  :config
+  (defun darkroom-mode-hooks ()
+    (when (neo-global--window-exists-p)
+      (neotree-hide)))
+  (add-hook 'darkroom-mode-hook #'darkroom-mode-hooks)
+  (defun my:darkroom-mode-in ()
+    (interactive)
+    (toggle-frame-fullscreen)
+    (darkroom-mode 1)
+    (bind-key "<f12>" 'my:darkroom-mode-out darkroom-mode-map))
+  (defun my:darkroom-mode-out ()
+    (interactive)
+    (darkroom-mode 0)
+    (toggle-frame-fullscreen)))
 
 ;; (leaf whitespace
 ;;   :require t
