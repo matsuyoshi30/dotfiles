@@ -1269,6 +1269,7 @@ by PAD, BEGINNING and END."
   (key-combo-define-global ">=" " >= ")
   (key-combo-define-global "<" '(" < " " <= " "<"))
   (key-combo-define-global "<=" " <= ")
+  (key-combo-define-global "<>" " <> ")
   (key-combo-define-global "!" '(" != " "!"))
   (key-combo-define-global "!=" " != ")
   (key-combo-define-global "," '(", " ",")))
