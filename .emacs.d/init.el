@@ -1306,6 +1306,7 @@ by PAD, BEGINNING and END."
 
   ("M-n" . (lambda () (interactive) (scroll-up 1)))
   ("M-p" . (lambda () (interactive) (scroll-down 1))))
+(keyboard-translate ?\C-h ?\C-?)
 
 (provide 'init)
 ;;; init.el ends here
