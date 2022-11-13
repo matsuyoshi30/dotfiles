@@ -1104,7 +1104,7 @@ by PAD, BEGINNING and END."
          "** %? :log:\n\t %U"
          :empty-lines 1)
         ("t" "Tweet" entry
-         (file+headline tweet-file "Tweet")
+         (file tweet-file)
          "* %? %U %i"
          :empty-lines 1))))
 
