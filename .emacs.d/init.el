@@ -355,36 +355,6 @@
     (darkroom-mode 0)
     (toggle-frame-fullscreen)))
 
-;; (leaf whitespace
-;;   :require t
-;;   :custom
-;;   (global-whitespace-mode . 1)
-;;   (whitespace-style . '(face tabs))
-;;   :custom-face
-;;   (whitespace-tab . '((t (:foreground "#0C2B33"))))
-;;   )
-
-;; (leaf elscreen
-;;   :init
-;;   (custom-set-variables
-;;    '(elscreen-prefix-key (kbd "C-z"))
-;;    '(elscreen-display-tab nil)
-;;    '(elscreen-tab-display-kill-screen nil)
-;;    '(elscreen-tab-display-control nil)
-;;    '(elscreen-buffer-to-nickname-alist
-;;      '(("^dired-mode$" .
-;;         (lambda ()
-;;           (format "Dired(%s)" dired-directory)))
-;;        ("^Info-mode$" .
-;;         (lambda ()
-;;           (format "Info(%s)" (file-name-nondirectory Info-current-file))))
-;;        ))
-;;    '(elscreen-mode-to-nickname-alist
-;;      '(("[Ss]hell" . "shell")
-;;        ("compilation" . "compile")))
-;;    )
-;;   (elscreen-start))
-
 ;;; IME
 
 ;; reference
@@ -622,17 +592,6 @@
     :config
     (counsel-projectile-mode t)))
 
-;;; flycheck
-
-;; (leaf flycheck
-;;   :req "dash-2.12.1" "pkg-info-0.4" "let-alist-1.0.4" "seq-1.11" "emacs-24.3"
-;;   :url "http://www.flycheck.org"
-;;   :ensure t
-;;   :diminish flycheck-mode
-;;   :bind (("M-N" . flycheck-next-error)
-;;          ("M-P" . flycheck-previous-error))
-;;   :global-minor-mode global-flycheck-mode)
-
 ;;; company
 
 (leaf company
@@ -809,28 +768,6 @@
 (leaf rg
   :ensure t
   :after t)
-
-;; (leaf lsp-mode
-;;   :ensure t
-;;   :after t
-;;   :defvar lsp-command-map
-;;   :init
-;;   (defun lsp-format-before-save ()
-;;     (add-hook 'before-save-hook 'lsp-format-buffer nil t))
-;;   :bind (:lsp-mode-map
-;;          ("C-S-SPC" . nil))
-;;   :config
-;;   (define-key lsp-mode-map (kbd "M-z") lsp-command-map)
-;;   (leaf lsp-ui
-;;     :ensure t
-;;     :custom
-;;     (lsp-ui-doc-header . t)
-;;     (lsp-ui-doc-position . 'top)
-;;     (lsp-ui-sideline-enable . nil)
-;;     :bind (:lsp-ui-mode-map
-;;            ("C-c C-d" . lsp-ui-doc-show)
-;;            ("C->" . lsp-find-type-definition)
-;;            ("C-c C-p" . lsp-ui-peek-find-implementation))))
 
 (leaf eglot
   :ensure t
