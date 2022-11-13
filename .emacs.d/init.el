@@ -1305,8 +1305,11 @@ by PAD, BEGINNING and END."
   ("C-x M-q" . germanium-region-to-png)
 
   ("M-n" . (lambda () (interactive) (scroll-up 1)))
-  ("M-p" . (lambda () (interactive) (scroll-down 1))))
-(keyboard-translate ?\C-h ?\C-?)
+  ("M-p" . (lambda () (interactive) (scroll-down 1)))
+
+  ("C-\\" . nil)
+  :config
+  (keyboard-translate ?\C-h ?\C-?))
 
 (provide 'init)
 ;;; init.el ends here
