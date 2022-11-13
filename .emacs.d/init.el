@@ -684,27 +684,6 @@
 
 (advice-add 'flymake-diagnostic-at-point-display-popup :override 'my/flymake-diagnostic-at-point-display-popup)
 
-;; (leaf auto-complete
-;;   :ensure t
-;;   :after t
-;;   :require auto-complete-config
-;;   :diminish auto-complete-mode
-;;   :defun ac-config-default ac-set-trigger-key
-;;   :custom
-;;   (ac-auto-show-menu . 0.4)
-;;   (ac-auto-start . nil)
-;;   (ac-menu-height . 22)
-;;   (ac-quick-help-delay . 0.4)
-;;   (ac-use-quick-help . t)
-;;   :bind
-;;   (:ac-completing-map
-;;    ("M-n" . ac-next)
-;;    ("M-t" . ac-previous)
-;;    ("RET" . nil))
-;;   :config
-;;   (ac-config-default)
-;;   (ac-set-trigger-key "<C-tab>"))
-
 ;;; Snippet
 
 (leaf yasnippet
