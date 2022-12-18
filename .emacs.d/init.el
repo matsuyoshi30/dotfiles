@@ -237,8 +237,8 @@
         (append
          '((top . 22)
            (left . 55)
-           (width . 170)
-           (height . 65)
+           (width . 400)
+           (height . 130)
            (vertical-scroll-bar . nil)
            ) initial-frame-alist))
   (setq frame-title-format (format (if (buffer-file-name) "%%f" "%%b"))))
