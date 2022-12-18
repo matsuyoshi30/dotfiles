@@ -1120,13 +1120,21 @@ by PAD, BEGINNING and END."
 (leaf org-capture
   :defvar '(task-file nippou-file idea-file tweet-file org-capture-templates)
   :config
+  (defun org-get-target-headline (&optional targets prompt)
+    (let ((org-refile-targets (or targets org-refile-targets))
+          (prompt (or prompt "Capture Location")))
+      (org-refile t nil nil prompt)))
+  (setq code-file (concat (getenv "ORGSYNCROOT") "/org/code.org"))
   (setq idea-file (concat (getenv "ORGSYNCROOT") "/org/idea.org"))
   (setq memo-file (concat (getenv "ORGSYNCROOT") "/org/memo.org"))
-  (setq note-file (concat (getenv "ORGSYNCROOT") "/org/note.org"))
   (setq tweet-file (concat (getenv "ORGSYNCROOT") "/org/tweet.org"))
   (setq watch-file (concat (getenv "ORGSYNCROOT") "/org/watch.org"))
   (setq org-capture-templates
-      `(("i" "Idea" entry
+      `(("c" "Code" plain
+         (file+function code-file org-get-target-headline)
+         "%?\n%(with-current-buffer (org-capture-get :original-buffer) (browse-at-remote-get-url))\n# %(with-current-buffer (org-capture-get :original-buffer) (file-full-path))\n\n%i\n"
+         :empty-lines 1)
+        ("i" "Idea" entry
          (file+headline idea-file "Project")
          "** %?\n"
          :empty-lines 1)
@@ -1138,13 +1146,9 @@ by PAD, BEGINNING and END."
          (file+headline memo-file "Memo")
          "** %?\n"
          :empty-lines 1)
-        ("n" "Note" plain
-         (file note-file)
-         "%?\n"
-         :empty-lines 1)
         ("t" "Tweet" entry
          (file tweet-file)
-         "* %? %U %i"
+         "* %? %U %^g"
          :empty-lines 1)
         ("a" "Article" entry
          (file+headline watch-file "Article")
@@ -1175,6 +1179,8 @@ by PAD, BEGINNING and END."
 
 (leaf browse-at-remote
   :ensure t
+  :require t
+  :defun (browse-at-remote-get-url)
   :custom
   ((browse-at-remote-prefer-symbolic . nil))
   :bind
