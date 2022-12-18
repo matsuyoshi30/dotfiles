@@ -128,12 +128,6 @@
   (defalias 'yes-or-no-p 'y-or-n-p)
   (keyboard-translate ?\C-h ?\C-?))
 
-(leaf startup
-  :doc "process Emacs shell arguments"
-  :tag "builtin" "internal"
-  :custom
-  `((inhibit-startup-screen . 0)))
-
 (leaf simple
   :doc "basic editing commands for Emacs"
   :tag "builtin" "internal"
