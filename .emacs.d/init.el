@@ -1232,6 +1232,7 @@ by PAD, BEGINNING and END."
   :leaf-autoload nil
   :bind
   ("C-h" . delete-backward-char)
+  ("C-S-j" . eval-print-last-sexp)
   ("C-j" . newline)
   ("C-c a" . align)
   ("C-c M-a" . align-regexp)
