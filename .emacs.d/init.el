@@ -202,10 +202,8 @@
 
 ;;; Display
 
-(setq default-frame-alist
-      (append (list
-              '(font . "HackGen Console"))
-              default-frame-alist))
+(add-to-list 'default-frame-alist '(font . "HackGen Console"))
+(set-face-attribute 'default nil :font "HackGen Console")
 
 (leaf ef-themes
   :ensure t
