@@ -1115,6 +1115,12 @@ by PAD, BEGINNING and END."
           (copy-region-as-kill (point-min) (point-max))))))
   )
 
+(leaf ox
+  :ensure nil
+  :config
+  (setq org-export-with-timestamps nil)  ;; heading timestamp
+  (leaf ox-md :ensure nil :require t))
+
 (leaf org-capture
   :defvar '(task-file nippou-file idea-file tweet-file org-capture-templates)
   :config
