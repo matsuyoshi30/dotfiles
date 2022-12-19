@@ -955,8 +955,8 @@
 ;; c/c++
 (leaf cc-mode
   :hook
-  ((c-mode-hook . lsp)
-   (c++-mode-hook . lsp))
+  ((c-mode-hook . (lambda () (local-unset-key (kbd "C-c C-b"))))
+   (c++-mode-hook . (lambda () (local-unset-key (kbd "C-c C-b")))))
   :config
   (leaf clang-format
     :ensure t
