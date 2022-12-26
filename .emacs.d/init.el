@@ -241,7 +241,8 @@
 
 ;;; frame
 
-(when (eq window-system 'mac) ;; for EMP
+(when (or (eq window-system 'mac) ;; for EMP
+          (eq window-system 'ns))
   (setq initial-frame-alist
         (append
          '((top . 22)
