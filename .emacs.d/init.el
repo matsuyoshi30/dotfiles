@@ -420,7 +420,8 @@
   "Extension to store IME status."
   (mac-win-save-last-ime-status))
 
-(when (eq window-system 'mac) ; for EMP
+(when (or (eq window-system 'mac) ;; for EMP
+          (eq window-system 'ns))
   (when (fboundp 'mac-input-source)
     (defun my-mac-keyboard-input-source ()
 	    (if (string-match "\\.US$" (mac-input-source))
