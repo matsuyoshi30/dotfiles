@@ -420,8 +420,38 @@
   "Extension to store IME status."
   (mac-win-save-last-ime-status))
 
-(when (or (eq window-system 'mac) ;; for EMP
-          (eq window-system 'ns))
+(if (fboundp 'mac-ime-active-p)
+    (defalias 'my-ime-active-p 'mac-ime-active-p)
+  (defun my-ime-active-p () current-input-method))
+
+(defun my-ime-on-cursor ()
+  (interactive)
+  (setq cursor-type (plist-get my-cur-type-ime :on))
+  (set-cursor-color (plist-get my-cur-color-ime :on)))
+
+(defun my-ime-off-cursor ()
+  (interactive)
+  (setq cursor-type (plist-get my-cur-type-ime :off))
+  (set-cursor-color (plist-get my-cur-color-ime :off)))
+
+(defun my-ime-invisible-cursor ()
+  (interactive)
+  (setq cursor-type (plist-get my-cur-type-ime :invisible)))
+
+(defun my-apply-cursor-config ()
+  (interactive)
+  (when (display-graphic-p)
+    (if (my-ime-active-p) (my-ime-on-cursor) (my-ime-off-cursor))))
+
+;; for init setup
+(setq-default cursor-type (plist-get my-cur-type-ime :on))
+(unless noninteractive
+  (add-hook 'buffer-list-update-hook #'my-apply-cursor-config)
+  (my-apply-cursor-config))
+(add-hook 'input-method-activate-hook #'my-ime-on-cursor)
+(add-hook 'input-method-deactivate-hook #'my-ime-off-cursor)
+
+(when (eq window-system 'mac) ;; for EMP
   (when (fboundp 'mac-input-source)
     (defun my-mac-keyboard-input-source ()
 	    (if (string-match "\\.US$" (mac-input-source))
