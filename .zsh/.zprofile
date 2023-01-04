@@ -32,6 +32,9 @@ if [ -x $direnv ] ; then
   eval "$(direnv hook zsh)"
 fi
 
+# texinfo
+export PATH="$PATH:/opt/homebrew/opt/texinfo/bin"
+
 # Org Sync Root Path
 export ORGSYNCROOT="~/Dropbox"
 
