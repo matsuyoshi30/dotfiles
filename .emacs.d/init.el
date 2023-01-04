@@ -660,7 +660,7 @@
   :diminish projectile-mode
   :defvar projectile-mode-map
   :custom
-  (projectile-project-search-path . '("~/projects"))
+  (projectile-project-search-path . '("~/ghq"))
   :config
   (projectile-mode t)
   (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map)
