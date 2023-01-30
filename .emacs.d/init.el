@@ -1102,6 +1102,7 @@
            (org-cycle-separator-lines . 1))
   :bind
   ((org-mode-map
+    ("C-h" . delete-backward-char)
     ("C-c l" . org-store-link)
     ("C-c a" . org-agenda)
     ("C-c y" . yank-with-indent)
