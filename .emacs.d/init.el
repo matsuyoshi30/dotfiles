@@ -211,6 +211,13 @@
 
 ;;; Display
 
+(leaf font
+  :config
+  (let* ((family "HackGen Console")
+         (fontspec (font-spec :family family :weight 'normal)))
+    (set-face-attribute 'default nil :family family)
+    (set-fontset-font nil 'ascii fontspec nil 'append)
+    (set-fontset-font nil 'japanese-jisx0208 fontspec nil 'append)))
 (add-to-list 'default-frame-alist '(font . "HackGen Console"))
 (set-face-attribute 'default nil :font "HackGen Console")
 
@@ -238,24 +245,6 @@
 (add-hook 'neo-after-create-hook
       (lambda (_)
         (call-interactively 'neotree-text-scale)))
-
-;;; frame
-
-(when (or (eq window-system 'mac) ;; for EMP
-          (eq window-system 'ns))
-  (setq initial-frame-alist
-        (append
-         '((top . 22)
-           (left . 55)
-           (width . 400)
-           (height . 130)
-           (vertical-scroll-bar . nil)
-           ) initial-frame-alist))
-  (setq frame-title-format (format (if (buffer-file-name) "%%f" "%%b"))))
-
-(column-number-mode t)
-(global-hl-line-mode t)
-(line-number-mode t)
 
 (leaf tab-bar-mode
   :init
