@@ -1070,6 +1070,12 @@
 	   (setq fill-column 120)
 	   (setq elfeed-show-entry-switch #'my-show-elfeed))))
 
+;;; shortdoc
+
+(leaf shortdoc
+  :config
+  (set-face-attribute 'variable-pitch (selected-frame) :font (font-spec :family "HackGen Console" :size 12)))
+
 ;;; Org
 
 (leaf org
