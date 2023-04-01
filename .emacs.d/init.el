@@ -269,6 +269,12 @@
 (display-time-mode t)
 (display-battery-mode t)
 
+(leaf visual-line-mode
+  :require simple
+  :config
+  (global-visual-line-mode t)
+  (diminish 'visual-line-mode nil))
+
 (defvar delete-trailing-whitespace-before-save t)
 (defun my-delete-trailing-whitespace ()
   "Delete trailing whitespaces before save file."
