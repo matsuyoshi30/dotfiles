@@ -211,24 +211,33 @@
 
 ;;; Display
 
-(leaf font
-  :config
-  (let* ((family "HackGen Console")
-         (fontspec (font-spec :family family :weight 'normal)))
-    (set-face-attribute 'default nil :family family)
-    (set-fontset-font nil 'ascii fontspec nil 'append)
-    (set-fontset-font nil 'japanese-jisx0208 fontspec nil 'append)))
-(add-to-list 'default-frame-alist '(font . "HackGen Console"))
-(set-face-attribute 'default nil :font "HackGen Console")
+(set-face-attribute 'fixed-pitch nil :family "HackGen Console" :height 120)
+(set-face-attribute 'variable-pitch nil :family "Iosevka" :height 120)
 
 (leaf ef-themes
   :ensure t
+  :defun my-ef-themes-default-font-face
   :custom
+  (ef-themes-headings . '((0 . (variable-pitch light 1.9))
+                          (1 . (variable-pitch light 1.8))
+                          (2 . (variable-pitch regular 1.7))
+                          (3 . (variable-pitch regular 1.6))
+                          (4 . (variable-pitch regular 1.5))
+                          (5 . (variable-pitch 1.4))
+                          (6 . (variable-pitch 1.3))
+                          (7 . (variable-pitch 1.2))
+                          (t . (variable-pitch 1.1))))
+  (ef-themes-mixed-font . t)
   (ef-themes-variable-pitch-ui . t)
   (ef-themes-to-toggle . '(ef-summer ef-winter))
+  (ef-themes-region . '(intense no-extend neutral))
   :config
-  (mapc #'disable-theme custom-enabled-themes))
-(ef-themes-select 'ef-winter)
+  (defun my-ef-themes-default-font-face ()
+    (ef-themes-with-colors
+      `(default ((,c :height 130)))))
+  (mapc #'disable-theme custom-enabled-themes)
+  (add-hook 'ef-themes-post-load-hook #'my-ef-themes-default-font-face))
+(ef-themes-select 'ef-summer)
 
 (leaf neotree
   :ensure t
@@ -252,7 +261,6 @@
   :custom
   ((tab-bar-new-tab-choice         . "*scratch*")
    (tab-bar-tab-name-truncated-max . 12)))
-(set-face-attribute 'tab-bar nil :family "HackGen Console")
 
 (setq display-time-day-and-date t)
 (defvar display-time-string-forms
@@ -345,14 +353,7 @@
   :ensure t
   :init (doom-modeline-mode 1)
   :custom
-  ((doom-modeline-height . 1) ; optional
-   (doom-modeline-lsp . t))
-  :config
-  ; https://github.com/seagle0128/doom-modeline#faq
-  (if (facep 'mode-line-active)
-      (set-face-attribute 'mode-line-active nil :family "HackGen Console" :height 110)
-    (set-face-attribute 'mode-line nil :family "HackGen Console" :height 110))
-  (set-face-attribute 'mode-line-inactive nil :family "HackGen Console" :height 110))
+  ((doom-modeline-lsp . t)))
 
 (transient-mark-mode t)
 (size-indication-mode t)
@@ -1066,7 +1067,7 @@
     (switch-to-buffer buffer))
   (setq elfeed-show-mode-hook
    (lambda ()
-	   (set-face-attribute 'variable-pitch (selected-frame) :font (font-spec :family "HackGen Console" :size 13))
+	   (set-face-attribute 'variable-pitch (selected-frame) :font (font-spec :family "Iosevka" :size 13))
 	   (setq fill-column 120)
 	   (setq elfeed-show-entry-switch #'my-show-elfeed))))
 
@@ -1074,7 +1075,7 @@
 
 (leaf shortdoc
   :config
-  (set-face-attribute 'variable-pitch (selected-frame) :font (font-spec :family "HackGen Console" :size 12)))
+  (set-face-attribute 'variable-pitch (selected-frame) :font (font-spec :family "Iosevka" :size 13)))
 
 ;;; Org
 
@@ -1295,6 +1296,7 @@ by PAD, BEGINNING and END."
   ("M-SPC" . expand-abbrev)
   ("<f3>" . highlight-symbol-at-point)
 
+  ("<f5>" . ef-themes-select)
   ("<f6>" . neotree-toggle)
 
   ("C-x M-g" . germanium-buffer-to-png)
