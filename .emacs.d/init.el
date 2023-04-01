@@ -1298,6 +1298,7 @@ by PAD, BEGINNING and END."
 
   ("<f5>" . ef-themes-select)
   ("<f6>" . neotree-toggle)
+  ("<f7>" . global-display-line-numbers-mode)
 
   ("C-x M-g" . germanium-buffer-to-png)
   ("C-x M-q" . germanium-region-to-png)
