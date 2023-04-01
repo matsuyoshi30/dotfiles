@@ -950,6 +950,9 @@
   (leaf markdown-preview-mode
     :ensure t))
 
+;; scheme
+(leaf geiser-gauche :ensure t)
+
 ;; elisp
 (leaf elisp-mode
   :bind (:emacs-lisp-mode-map
