@@ -275,6 +275,13 @@
   (global-visual-line-mode t)
   (diminish 'visual-line-mode nil))
 
+(leaf volatile-highlights
+  :ensure t
+  :require t
+  :diminish volatile-highlights-mode
+  :config
+  (volatile-highlights-mode t))
+
 (defvar delete-trailing-whitespace-before-save t)
 (defun my-delete-trailing-whitespace ()
   "Delete trailing whitespaces before save file."
