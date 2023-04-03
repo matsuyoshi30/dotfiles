@@ -211,6 +211,7 @@
 
 ;;; Display
 
+(set-face-attribute 'default nil :family "HackGen Console" :height 130)
 (set-face-attribute 'fixed-pitch nil :family "HackGen Console" :height 120)
 (set-face-attribute 'variable-pitch nil :family "Iosevka" :height 120)
 
