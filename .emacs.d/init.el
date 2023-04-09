@@ -118,8 +118,8 @@
             ;; (use-file-dialog . nil)
             ;; (menu-bar-mode . t)
             ;; (tool-bar-mode . nil)
-            ;; (scroll-bar-mode . nil)
-            ;; (indent-tabs-mode . nil)
+            (scroll-bar-mode . nil)
+            (indent-tabs-mode . nil)
             )
   :config
   (defalias 'yes-or-no-p 'y-or-n-p)
