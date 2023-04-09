@@ -636,7 +636,7 @@
   :custom
   (vterm-max-scrollback . 10000)
   (vterm-buffer-name-string . "vterm: %s")
-  (vterm-keymap-exceptions . '("<f1>" "<f2>" "C-c" "C-x" "C-g" "C-l" "M-x" "C-v" "M-v" "C-y" "C-t" "C-z")))
+  (vterm-keymap-exceptions . '("<f1>" "<f2>" "<f8>" "C-c" "C-x" "C-g" "C-l" "M-x" "C-v" "M-v" "C-y" "C-t" "C-z")))
 
 (leaf vterm-toggle
   :ensure t
