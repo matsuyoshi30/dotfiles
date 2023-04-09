@@ -98,10 +98,6 @@
   :doc "define customization properties of builtins"
   :tag "builtin" "internal"
   :preface
-  (defun c/redraw-frame nil
-    (interactive)
-    (redraw-frame))
-  :bind (("M-ESC ESC" . c/redraw-frame))
   :custom '((user-full-name . "Masaya Watanabe")
             (user-mail-address . "sfbgwm30@gmail.com")
             (user-login-name . "matsuyoshi30")
@@ -121,9 +117,10 @@
             ;; (use-dialog-box . nil)
             ;; (use-file-dialog . nil)
             ;; (menu-bar-mode . t)
-            (tool-bar-mode . nil)
-            (scroll-bar-mode . nil)
-            (indent-tabs-mode . nil))
+            ;; (tool-bar-mode . nil)
+            ;; (scroll-bar-mode . nil)
+            ;; (indent-tabs-mode . nil)
+            )
   :config
   (defalias 'yes-or-no-p 'y-or-n-p)
   (keyboard-translate ?\C-h ?\C-?))
