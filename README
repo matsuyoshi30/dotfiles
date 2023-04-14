@@ -1,37 +1,21 @@
-dotfiles
-========
-
-    git clone https://github.com/matsuyoshi30/dotfiles
-
-
 Emacs
------
-
-symbolic link to home directory
 
     ln -s $(pwd)/.emacs.d ~/
     cd .emacs.d
 
 
 Zsh
----
-
-symbolic link to home directory
 
     ln -s $(pwd)/.zsh/.zprofile ~/
     ln -s $(pwd)/.zsh/.zshrc ~/
 
 
 Tmux
-----
-
-symbolic link to home directory
 
     ln -s $(pwd)/.tmux.conf ~/
 
 
 Docker
-------
 
     docker build . -t devel
     docker run --rm -it -v $PWD:/devel -w /devel --tmpfs=/tmp/tmpfs:rw,size=500m,mode=1777 devel
