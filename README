@@ -11,7 +11,6 @@ symbolic link to home directory
 
     ln -s $(pwd)/.emacs.d ~/
     cd .emacs.d
-    emacs --batch -f batch-byte-compile init.el
 
 
 Zsh
