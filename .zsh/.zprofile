@@ -33,7 +33,11 @@ if [ -x $direnv ] ; then
 fi
 
 # texinfo
-export PATH="$PATH:/opt/homebrew/opt/texinfo/bin"
+if [[ $(uname -m) == "x86_64" ]]; then
+  export PATH="$PATH:/usr/local/opt/texinfo/bin"
+else
+  export PATH="$PATH:/opt/homebrew/opt/texinfo/bin"
+fi
 
 # Org Sync Root Path
 export ORGSYNCROOT="~/Dropbox"
@@ -47,4 +51,10 @@ done;
 unset file;
 
 eval "$(ssh-agent -s)"
-eval "$(/opt/homebrew/bin/brew shellenv)"
+if [[ $(uname -m) == "x86_64" ]]; then
+  eval "$(/usr/local/bin/brew shellenv)"
+else
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+fi
+
+export AWS_DEFAULT_PROFILE=saml
