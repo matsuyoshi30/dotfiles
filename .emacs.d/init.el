@@ -922,6 +922,8 @@
   :custom
   (markdown-hide-urls . nil)
   :defvar markdown-mode-map
+  :hook
+  (markdown-mode-hook . (lambda () (display-line-numbers-mode 0)))
   :config
   (custom-set-variables
    '(markdown-code-lang-modes
@@ -1119,6 +1121,7 @@
     ("C-c M-w" . copy-region-unindented)))
   :hook
   (org-mode-hook . org-appear-mode)
+  (org-mode-hook . (lambda () (display-line-numbers-mode 0)))
   :config
   (setq org-default-notes-file (concat (getenv "ORGSYNCROOT") "/org/journal.org"))
   (setq org-agenda-files (list (concat (getenv "ORGSYNCROOT") "/org/")))
@@ -1314,7 +1317,6 @@ by PAD, BEGINNING and END."
   ("<f6>" . neotree-toggle)
   ("<f7>" . global-display-line-numbers-mode)
   ("<f8>" . display-line-numbers-mode)
-
 
   ("C-x M-g" . germanium-buffer-to-png)
   ("C-x M-q" . germanium-region-to-png)
