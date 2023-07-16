@@ -1049,6 +1049,19 @@
             (lambda nil
               (linum-mode -1))))
 
+;; copilot
+
+(leaf copilot
+  :el-get (copilot
+           :type github
+           :pkgname "zerolfx/copilot.el"
+           )
+  :bind
+  ((copilot-mode-map
+    ("<tab>" .  copilot-accept-completion)
+    ("TAB" .  copilot-accept-completion)))
+  )
+
 ;; editorconfig
 
 (leaf editorconfig
