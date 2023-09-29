@@ -994,7 +994,11 @@
 (leaf cc-mode
   :hook
   ((c-mode-hook . (lambda () (local-unset-key (kbd "C-c C-b"))))
-   (c++-mode-hook . (lambda () (local-unset-key (kbd "C-c C-b")))))
+   (c-mode-hook . (lambda () (setq comment-start "//"
+                                   comment-end   "")))
+   (c++-mode-hook . (lambda () (local-unset-key (kbd "C-c C-b"))))
+   (c++-mode-hook . (lambda () (setq comment-start "//"
+                                     comment-end   ""))))
   :config
   (leaf clang-format
     :ensure t
