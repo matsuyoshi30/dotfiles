@@ -154,7 +154,8 @@
 (leaf recentf
   :custom
   ((recentf-max-saved-items . 2000)
-   (recentf-exclude . '("\\.elc$" "\\.o$" "~$" "\\.undo-tree/" "PATH")))
+   (recentf-exclude . '("\\.elc$" "\\.o$" "~$" "\\.undo-tree/" "PATH" "^/[^/:]+:"))
+   (recentf-auto-cleanup . 'never))
   :init
   (recentf-mode t))
 
