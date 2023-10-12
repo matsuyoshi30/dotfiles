@@ -1049,10 +1049,7 @@
   (pdf-annot-activate-created-annotations . t)
   (pdf-view-resize-factor . 1.1)
   :config
-  (pdf-tools-install)
-  (add-hook 'pdf-view-mode-hook
-            (lambda nil
-              (linum-mode -1))))
+  (pdf-tools-install))
 
 ;; copilot
 
