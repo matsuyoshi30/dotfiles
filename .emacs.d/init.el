@@ -831,7 +831,8 @@
   :ensure t
   :config
  (add-hook 'go-mode-hook 'eglot-ensure)
- (add-hook 'web-mode-hook 'eglot-ensure))
+ (add-hook 'web-mode-hook 'eglot-ensure)
+ (add-hook 'rust-mode-hook 'eglot-ensure))
 
 (leaf tree-sitter :ensure t)
 (leaf tree-sitter-langs :ensure t)
@@ -1016,7 +1017,14 @@
   :ensure t
   :mode "\\.rs$"
   :custom
-  (rustic-format-display-method . 'ignore))
+  (rustic-format-display-method . 'ignore)
+  :config
+  (defun my/find-rust-project-root (dir)
+    (when-let ((root (locate-dominating-file dir "Cargo.toml")))
+      (list 'vc 'Git root)))
+  (defun my/rust-mode-hook ()
+    (setq-local project-find-functions (list #'my/find-rust-project-root)))
+  (add-hook 'rust-mode-hook #'my/rust-mode-hook))
 
 (leaf css-mode :ensure t)
 (leaf csv-mode :ensure t)
