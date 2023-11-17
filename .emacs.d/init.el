@@ -236,7 +236,7 @@
       `(default ((,c :height 130)))))
   (mapc #'disable-theme custom-enabled-themes)
   (add-hook 'ef-themes-post-load-hook #'my-ef-themes-default-font-face))
-(ef-themes-select 'ef-summer)
+(ef-themes-select 'ef-cyprus)
 
 (leaf neotree
   :ensure t
