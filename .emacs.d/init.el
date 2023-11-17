@@ -1018,6 +1018,7 @@
   :mode "\\.rs$"
   :custom
   (rustic-format-display-method . 'ignore)
+  (rustic-lsp-client . 'eglot)
   :config
   (defun my/find-rust-project-root (dir)
     (when-let ((root (locate-dominating-file dir "Cargo.toml")))
