@@ -506,6 +506,11 @@
     (defvar mac-win-target-commands
       '(find-file save-buffer other-window delete-window split-window))))
 
+(leaf ddskk
+  :ensure t
+  :custom
+  (skk-egg-like-newline . t))
+
 ;;; dired
 
 (leaf dired
@@ -1347,6 +1352,8 @@ by PAD, BEGINNING and END."
 
   ("M-n" . (lambda () (interactive) (scroll-up 1)))
   ("M-p" . (lambda () (interactive) (scroll-down 1)))
+
+  ("C-x C-j" . skk-mode)
 
   ("C-\\" . nil)
   :config
