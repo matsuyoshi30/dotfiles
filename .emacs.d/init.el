@@ -509,7 +509,9 @@
 (leaf ddskk
   :ensure t
   :custom
-  (skk-egg-like-newline . t))
+  (skk-egg-like-newline . t)
+  (skk-use-look . t)
+  (skk-sticky-key . ";"))
 
 ;;; dired
 
