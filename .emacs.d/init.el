@@ -197,6 +197,11 @@
   (setq dashboard-items '((recents . 10)))
   (dashboard-setup-startup-hook))
 
+(leaf midnight
+  :require t
+  :hook
+  (emacs-startup-hook . midnight-mode))
+
 ;;; Path
 
 (autoload 'exec-path-from-shell "exec-path-from-shell" nil t)
