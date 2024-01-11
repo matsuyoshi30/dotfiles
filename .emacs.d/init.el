@@ -202,6 +202,11 @@
   :hook
   (emacs-startup-hook . midnight-mode))
 
+(leaf expand-region
+  :ensure t
+  :bind
+  (("C-@" . er/expand-region)))
+
 ;;; Path
 
 (autoload 'exec-path-from-shell "exec-path-from-shell" nil t)
