@@ -1238,10 +1238,6 @@ by PAD, BEGINNING and END."
          (file+headline idea-file "Project")
          "** %?\n"
          :empty-lines 1)
-        ("b" "Blog" entry
-         (file+headline idea-file "Blog")
-         "** %?\n"
-         :empty-lines 1)
         ("m" "Memo" entry
          (file+headline memo-file "Memo")
          "** %?\n"
@@ -1249,14 +1245,6 @@ by PAD, BEGINNING and END."
         ("t" "Tweet" entry
          (file tweet-file)
          "* %? %U %^g"
-         :empty-lines 1)
-        ("a" "Article" entry
-         (file+headline watch-file "Article")
-         "** %?\n"
-         :empty-lines 1)
-        ("v" "Video" entry
-         (file+headline watch-file "Video")
-         "** %?\n"
          :empty-lines 1))))
 
 ;;; Utility
