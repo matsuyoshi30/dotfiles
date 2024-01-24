@@ -1327,7 +1327,7 @@ by PAD, BEGINNING and END."
   ("C-x F" . toggle-frame-maximized)
   ("C-x ?" . help-command)
   ("C-c C-j" . rg)
-  ("C-c C-c" . quickrun-with-arg)
+  ("C-c C-q" . quickrun-with-arg)
   ("C-t" . other-window-or-split)
   ("C-c '" . google-this)
   ("C-c r" . org-capture)
