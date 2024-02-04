@@ -1314,6 +1314,8 @@ by PAD, BEGINNING and END."
   (interactive)
   (to-clipboard (concat "[[" (file-full-path) "][" (file-name-nondirectory buffer-file-name) "]]")))
 
+(setq comment-empty-lines t)
+
 ;;; Key bindings
 
 (leaf *global-set-key
