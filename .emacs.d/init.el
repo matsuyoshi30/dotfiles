@@ -1338,6 +1338,7 @@ by PAD, BEGINNING and END."
   ("C-x C-m" . counsel-mark-ring)
 
   ("C-c g" . affe-grep)
+  ("C-c f" . affe-find)
 
   ("C-]" . consult-ghq-find)
 
