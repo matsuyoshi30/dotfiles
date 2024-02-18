@@ -312,43 +312,43 @@
 (leaf puni-mode
   :ensure t)
 
-;; (leaf smartparens
-;;   :ensure t
-;;   :require smartparens-config
-;;   :diminish smartparens-mode
-;;   :defun sp-pair
-;;   :custom (sp-escape-quotes-after-insert . nil)
-;;   :bind (:smartparens-mode-map
-;;          ("C-(" . sp-backward-slurp-sexp)
-;;          ("C-)" . sp-slurp-hybrid-sexp)
-;;          ("M-(" . sp-backward-barf-sexp)
-;;          ("M-)" . sp-forward-barf-sexp)
-;;          ("M-k" . sp-splice-sexp)
-;;          ("C-M-k" . sp-raise-sexp)
-;;          ("C-M-u" . sp-split-sexp)
-;;          ([remap backward-kill-sexp] . sp-backward-kill-sexp)
-;;          ([remap backward-list] . sp-backward-symbol)
-;;          ([remap backward-sexp] . sp-backward-sexp)
-;;          ([remap beginning-of-defun] . sp-backward-down-sexp)
-;;          ([remap end-of-defun] . sp-down-sexp)
-;;          ([remap forward-list] . sp-forward-symbol)
-;;          ([remap forward-sexp] . sp-forward-sexp)
-;;          ([remap kill-sexp] . sp-kill-sexp)
-;;          ([remap mark-sexp] . sp-mark-sexp))
-;;   :config
-;;   (smartparens-global-mode 1)
-;;   (show-smartparens-global-mode 1)
-;;   (sp-pair "｢" "｣" :actions '(insert wrap autoskip navigate))
-;;   (sp-pair "「" "」" :actions '(insert wrap autoskip navigate))
-;;   (sp-pair "『" "』" :actions '(insert wrap autoskip navigate))
-;;   ;; based on https://github.com/Fuco1/smartparens/wiki/Permissions
-;;   (defun my-create-newline-and-enter-sexp (&rest _ignored)
-;;     "Open a new brace or bracket expression, with relevant newlines and indent. "
-;;     (newline)
-;;     (indent-according-to-mode)
-;;     (forward-line -1)
-;;     (indent-according-to-mode))
-;;   (sp-pair "{" nil :post-handlers '((my-create-newline-and-enter-sexp "RET"))))
+(leaf smartparens
+  :ensure t
+  :require smartparens-config
+  :diminish smartparens-mode
+  :defun sp-pair
+  :custom (sp-escape-quotes-after-insert . nil)
+  :bind (:smartparens-mode-map
+         ("C-(" . sp-backward-slurp-sexp)
+         ("C-)" . sp-slurp-hybrid-sexp)
+         ("M-(" . sp-backward-barf-sexp)
+         ("M-)" . sp-forward-barf-sexp)
+         ("M-k" . sp-splice-sexp)
+         ("C-M-k" . sp-raise-sexp)
+         ("C-M-u" . sp-split-sexp)
+         ([remap backward-kill-sexp] . sp-backward-kill-sexp)
+         ([remap backward-list] . sp-backward-symbol)
+         ([remap backward-sexp] . sp-backward-sexp)
+         ([remap beginning-of-defun] . sp-backward-down-sexp)
+         ([remap end-of-defun] . sp-down-sexp)
+         ([remap forward-list] . sp-forward-symbol)
+         ([remap forward-sexp] . sp-forward-sexp)
+         ([remap kill-sexp] . sp-kill-sexp)
+         ([remap mark-sexp] . sp-mark-sexp))
+  :config
+  (smartparens-global-mode 1)
+  (show-smartparens-global-mode 1)
+  (sp-pair "｢" "｣" :actions '(insert wrap autoskip navigate))
+  (sp-pair "「" "」" :actions '(insert wrap autoskip navigate))
+  (sp-pair "『" "』" :actions '(insert wrap autoskip navigate))
+  ;; based on https://github.com/Fuco1/smartparens/wiki/Permissions
+  (defun my-create-newline-and-enter-sexp (&rest _ignored)
+    "Open a new brace or bracket expression, with relevant newlines and indent. "
+    (newline)
+    (indent-according-to-mode)
+    (forward-line -1)
+    (indent-according-to-mode))
+  (sp-pair "{" nil :post-handlers '((my-create-newline-and-enter-sexp "RET"))))
 
 (leaf rainbow-mode
   :ensure t
