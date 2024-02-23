@@ -1049,6 +1049,7 @@
 
 (leaf css-mode :ensure t)
 (leaf csv-mode :ensure t)
+(leaf toml-mode :ensure t)
 (leaf dockerfile-mode :ensure t)
 (leaf docker-compose-mode :ensure t)
 (leaf dotenv-mode :ensure t :mode "\\.env\\..*\\'")
@@ -1347,7 +1348,6 @@ by PAD, BEGINNING and END."
   ("C-]" . consult-ghq-find)
 
   ("M-SPC" . expand-abbrev)
-  ("<f3>" . highlight-symbol-at-point)
 
   ("<f5>" . ef-themes-select)
   ("<f6>" . neotree-toggle)
