@@ -822,7 +822,9 @@
   :ensure t
   :require smartrep
   :bind
-  ("C-M-c" . mc/edit-lines))
+  ("C-M-c" . mc/edit-lines)
+  ("C->" . mc/mark-next-like-this)
+  ("C-<" . mc/mark-previous-like-this))
 
 (leaf mwim
   :ensure t
