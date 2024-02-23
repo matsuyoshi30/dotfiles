@@ -1,0 +1,16 @@
+# -*- mode: snippet -*-
+# name: tabletest
+# key: tabletest
+# --
+tests := []struct{
+      desc string
+      $0
+}{
+
+}
+
+for _, tt := range tests {
+    t.Run(tt.desc, func(t *testing.T) {
+
+    })
+}

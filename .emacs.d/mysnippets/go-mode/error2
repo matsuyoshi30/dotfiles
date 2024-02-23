@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: error2
+# key: err2
+# --
+if err := ${func}; err != nil {
+	$0
+}
