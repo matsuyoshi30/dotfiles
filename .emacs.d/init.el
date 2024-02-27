@@ -1235,6 +1235,7 @@ by PAD, BEGINNING and END."
   (setq memo-file (concat (getenv "ORGSYNCROOT") "/org/memo.org"))
   (setq tweet-file (concat (getenv "ORGSYNCROOT") "/org/tweet.org"))
   (setq watch-file (concat (getenv "ORGSYNCROOT") "/org/watch.org"))
+  (setq compp-file (concat (getenv "ORGSYNCROOT") "/org/compp.org"))
   (setq org-capture-templates
       `(("c" "Code" plain
          (file+function code-file org-get-target-headline)
@@ -1251,6 +1252,10 @@ by PAD, BEGINNING and END."
         ("t" "Tweet" entry
          (file tweet-file)
          "* %? %U %^g"
+         :empty-lines 1)
+        ("p" "Compe P" entry
+         (file compp-file)
+         "* %? %U"
          :empty-lines 1))))
 
 ;;; Utility
