@@ -309,9 +309,6 @@
   :config
   (nyan-mode t))
 
-(leaf puni-mode
-  :ensure t)
-
 (leaf smartparens
   :ensure t
   :require smartparens-config
