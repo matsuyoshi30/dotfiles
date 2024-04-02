@@ -188,15 +188,6 @@
   :config
   (gcmh-mode 1))
 
-(leaf dashboard
-  :ensure t
-  :config
-  (setq dashboard-startup-banner 'logo)
-  (setq dashboard-set-file-icons t)
-  (setq dashboard-startup-banner 4)
-  (setq dashboard-items '((recents . 10)))
-  (dashboard-setup-startup-hook))
-
 (leaf midnight
   :require t
   :hook
