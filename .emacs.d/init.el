@@ -1156,6 +1156,7 @@
     ("C-c M-w" . copy-region-unindented)))
   :hook
   (org-mode-hook . org-appear-mode)
+  (org-mode-hook . (lambda () (org-superstar-mode 1)))
   (org-mode-hook . (lambda () (display-line-numbers-mode 0)))
   :config
   (setq org-default-notes-file (concat (getenv "ORGSYNCROOT") "/org/journal.org"))
