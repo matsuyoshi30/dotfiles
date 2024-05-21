@@ -118,3 +118,5 @@ alias gdl='git branch|peco|xargs git branch -D'
 alias gdmb="git branch --merged | grep -vE '(master|main)' | xargs -n1 git branch -D"
 
 alias E='open -a Emacs.app'
+
+alias k='kubectl'
