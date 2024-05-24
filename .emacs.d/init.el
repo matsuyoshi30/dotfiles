@@ -603,7 +603,8 @@
     :bind
     (("C-s" . consult-line)
      ("C-S-s" . consult-imenu)
-     ("C-x C-r" . consult-recentf-file))
+     ("C-x C-r" . consult-recentf-file)
+     ("M-s M-b" . consult-buffer))
     :defvar vertico-map
     :custom
     (consult-find-command . "fd --color=never --full-path ARG OPTS")
