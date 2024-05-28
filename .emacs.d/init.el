@@ -1318,6 +1318,9 @@ by PAD, BEGINNING and END."
   (to-clipboard (concat "[[" (file-full-path) "][" (file-name-nondirectory buffer-file-name) "]]")))
 
 (setq comment-empty-lines t)
+
+(setq display-line-numbers nil)
+(setq display-line-numbers-mode nil)
 (setq global-display-line-numbers-mode nil)
 
 ;;; Key bindings
