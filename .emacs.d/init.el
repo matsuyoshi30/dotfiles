@@ -419,6 +419,12 @@
     (darkroom-mode 0)
     (toggle-frame-fullscreen)))
 
+(leaf perfect-margin
+  :require t
+  :setq ((perfect-margin-ignore-filters))
+  :config
+  (perfect-margin-mode 1))
+
 ;;; IME
 
 ;; reference
