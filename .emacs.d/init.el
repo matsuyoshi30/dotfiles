@@ -202,6 +202,17 @@
   :bind
   (("C-@" . er/expand-region)))
 
+(setq auto-mode-case-fold nil)
+
+(setq-default bidi-display-reordering 'left-to-right)
+(setq bidi-inhibit-bpa t)
+
+(setq ffap-machine-p-known 'reject)
+
+(setq idle-update-delay 1.0)
+
+(setq redisplay-skip-fontification-on-input t)
+
 ;;; Path
 
 (autoload 'exec-path-from-shell "exec-path-from-shell" nil t)
