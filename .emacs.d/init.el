@@ -869,6 +869,12 @@
 (leaf tree-sitter :ensure t)
 (leaf tree-sitter-langs :ensure t)
 
+(leaf jsonrpc
+  :after t
+  :setq ((jsonrpc-default-request-timeout . 3000))
+  :config
+  (fset #'jsonrpc--log-event #'ignore))
+
 ;;; Variouts mode
 
 (setq major-mode 'text-mode) ;; default mode is text mode
