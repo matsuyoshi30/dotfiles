@@ -657,6 +657,27 @@
   :after magit
   :hook (magit-mode-hook))
 
+(leaf diff-hl
+  :commands diff-hl-magit-pre-refresh diff-hl-magit-post-refresh diff-hl-dired-mode
+  :hook ((magit-pre-refresh-hook . diff-hl-magit-pre-refresh)
+         (magit-post-refresh-hook . diff-hl-magit-post-refresh)
+         (dired-mode-hook . diff-hl-dired-mode))
+  :init
+  (global-diff-hl-mode 1)
+  (global-diff-hl-show-hunk-mouse-mode 1))
+
+(leaf difftastic
+  :bind ((magit-blame-read-only-mode-map
+          ("D" . difftastic-magit-show)
+          ("S" . difftastic-magit-show)))
+  :require t
+  :config
+  (with-eval-after-load 'magit-diff
+    (transient-append-suffix 'magit-diff
+      '(-1 -1)
+      [("D" "Difftastic diff (dwim)" difftastic-magit-diff)
+       ("S" "Difftastic show" difftastic-magit-show)])))
+
 ;;; libvterm
 
 (leaf vterm
