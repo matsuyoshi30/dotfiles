@@ -181,12 +181,16 @@
 
 (leaf dash :ensure t)
 
-(leaf gcmh
-  :ensure t
-  :diminish gcmh
-  :custom (gcmh-verbose . t)
-  :config
-  (gcmh-mode 1))
+(setq gc-cons-percentage 0.2
+      gc-cons-threshold (* 128 1024 1024))
+(add-hook 'focus-out-hook #'garbage-collect)
+
+;; (leaf gcmh
+;;   :ensure t
+;;   :diminish gcmh
+;;   :custom (gcmh-verbose . t)
+;;   :config
+;;   (gcmh-mode 1))
 
 (leaf midnight
   :require t
