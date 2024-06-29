@@ -1293,10 +1293,6 @@ by PAD, BEGINNING and END."
   ("C-C b" . browse-at-remote)
   ("C-c C-b" . bar-to-clipboard))
 
-(leaf back-button-mode
-  :config
-  (back-button-mode 1))
-
 (defun other-window-or-split ()
   "Move to other window or split window."
   (interactive)
