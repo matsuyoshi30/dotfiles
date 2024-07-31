@@ -722,56 +722,22 @@
     :config
     (counsel-projectile-mode t)))
 
-;;; company
+;; completion
 
-(leaf company
-  :doc "Modular text completion framework"
+(leaf corfu
   :ensure t
-  :blackout t
-  :leaf-defer nil
-  :bind ((company-active-map
-          ("M-n" . nil)
-          ("M-p" . nil)
-          ("C-h" . nil)
-          ("C-s" . company-filter-candidates)
-          ("C-n" . company-select-next)
-          ("C-p" . company-select-previous)
-          ("<tab>" . company-complete-selection)
-          ("M-d" . company-show-doc-buffer))
-         (company-search-map
-          ("C-n" . company-select-next)
-          ("C-p" . company-select-previous)))
-  :custom ((company-idle-delay . 0)
-           (company-minimum-prefix-length . 1)
-           (company-selection-wrap-arount . t)
-           (company-transformers . '(company-sort-by-occurrence)))
-  :global-minor-mode global-company-mode
-  :config
-  (set-face-attribute 'company-tooltip nil
-                      :foreground "black"
-                      :background "lightgray")
-  (set-face-attribute 'company-preview-common nil
-                      :foreground "dark gray"
-                      :background "black"
-                      :underline t)
-  (set-face-attribute 'company-tooltip-selection nil
-                      :foreground "white"
-                      :background "steelblue")
-  (set-face-attribute 'company-tooltip-common nil
-                      :foreground "black"
-                      :underline t)
-  (set-face-attribute 'company-tooltip-common-selection nil
-                      :background "steelblue"
-                      :foreground "white"
-                      :underline t)
-  (set-face-attribute 'company-tooltip-annotation nil
-                      :foreground "red")
-  (leaf company-quickhelp
-    :ensure t
-    :custom
-    (company-quickhelp-max-lines . 5))
-  (company-quickhelp-mode))
+  :global-minor-mode global-corfu-mode corfu-popupinfo-mode
+  :custom ((corfu-auto . t)
+           (corfu-auto-delay . 0)
+           (corfu-auto-prefix . 1)
+           (corfu-popupinfo-delay . nil))
+  :bind ((corfu-map
+          ("C-s" . corfu-insert-separator))))
 
+(leaf cape
+  :ensure t
+  :config
+  (add-to-list 'completion-at-point-functions #'cape-file))
 
 ;;; flymake
 
