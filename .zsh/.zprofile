@@ -12,6 +12,10 @@ export PATH="$PATH:$GOPATH/bin"
 export PATH="$PATH:$HOME/.cargo/bin"
 export RUST_SRC_PATH="$HOME/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src"
 
+# Java path
+export JAVA_PATH="/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home"
+export PATH="$PATH:$JAVA_PATH/bin"
+
 # anyenv path
 anyenv=$(which anyenv)
 if [ -x $anyenv ] ; then
