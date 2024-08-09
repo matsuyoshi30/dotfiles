@@ -1046,6 +1046,7 @@
   :custom
   (rustic-format-display-method . 'ignore)
   (rustic-lsp-client . 'eglot)
+  (rustic-babel-display-error-popup . nil)
   :config
   (defun my/find-rust-project-root (dir)
     (when-let ((root (locate-dominating-file dir "Cargo.toml")))
