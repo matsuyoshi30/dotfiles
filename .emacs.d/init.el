@@ -1111,6 +1111,22 @@
   :config
   (editorconfig-mode 1))
 
+;;; ellama
+
+(leaf ellama
+  :config
+  (leaf llm)
+  (require 'llm-ollama)
+  (setopt ellama-language "Japanese")
+  (setopt ellama-naming-scheme 'ellama-generate-name-by-llm)
+  ;; デフォルトのプロバイダー
+  (setopt ellama-provider (make-llm-ollama
+                           :chat-model "gemma2"
+                           :embedding-model "gemma2"))
+  (setopt ellama-translation-provider (make-llm-ollama
+                                       :chat-model "aya:8b"
+                                       :embedding-model "aya:8b")))
+
 ;;; elfeed
 
 (leaf elfeed
