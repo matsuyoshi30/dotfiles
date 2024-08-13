@@ -853,6 +853,11 @@
  (add-hook 'web-mode-hook 'eglot-ensure)
  (add-hook 'rust-mode-hook 'eglot-ensure))
 
+(leaf eglot-booster
+  :when (executable-find "emacs-lsp-booster")
+  :vc ( :url "https://github.com/jdtsmith/eglot-booster")
+  :global-minor-mode t)
+
 (leaf tree-sitter :ensure t)
 (leaf tree-sitter-langs :ensure t)
 
