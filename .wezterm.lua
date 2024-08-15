@@ -41,6 +41,21 @@ wezterm.on(
     end
 )
 
+wezterm.on(
+    'update-status',
+    function(window)
+        local color_scheme = window:effective_config().resolved_palette
+        local bg = color_scheme.background
+        local fg = color_scheme.foreground
+
+        window:set_right_status(wezterm.format({
+            { Background = { Color = bg } },
+            { Foreground = { Color = fg } },
+            { Text = ' ' .. wezterm.strftime('%a %b %-d %H:%M') .. ' ' },
+        }))
+    end
+)
+
 config.keys = {
     {
         key = "w",
