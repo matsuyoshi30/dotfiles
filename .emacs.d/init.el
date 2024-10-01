@@ -1069,9 +1069,22 @@
 (leaf envrc :ensure t)
 (leaf kotlin-mode :ensure t)
 (leaf nginx-mode :ensure t)
-(leaf protobuf-mode :ensure t)
 (leaf terraform-mode :ensure t)
 (leaf yaml-mode :ensure t)
+
+(leaf protobuf-mode
+  :ensure t
+  :mode ("\\.proto\\'")
+  :hook
+  (protobuf-mode-hook . editorconfig-mode-apply)
+  :config
+  (defun my-protobuf-indent-line ()
+    (let ((indent-size (string-to-number (gethash 'indent_size editorconfig-properties-hash "2"))))
+      (setq c-basic-offset indent-size)
+      (c-indent-line)))
+  (add-hook 'protobuf-mode-hook
+          (lambda ()
+            (setq indent-line-function 'my-protobuf-indent-line))))
 
 (leaf sh-script
   :custom (sh-basic-offset . 2)
@@ -1111,8 +1124,6 @@
 
 (leaf editorconfig
   :ensure t
-  :custom
-  (editorconfig-get-properties-function . 'editorconfig-core-get-properties-hash)
   :config
   (editorconfig-mode 1))
 
