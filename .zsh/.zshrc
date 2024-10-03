@@ -120,3 +120,6 @@ alias gdmb="git branch --merged | grep -vE '(master|main)' | xargs -n1 git branc
 alias E='open -a Emacs.app'
 
 alias k='kubectl'
+
+eval "$(direnv hook zsh)"
+
