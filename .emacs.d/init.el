@@ -1270,11 +1270,11 @@ by PAD, BEGINNING and END."
           (prompt (or prompt "Capture Location")))
       (org-refile t nil nil prompt)))
   (setq code-file (concat (getenv "ORGSYNCROOT") "/org/code.org"))
-  (setq idea-file (concat (getenv "ORGSYNCROOT") "/org/idea.org"))
   (setq memo-file (concat (getenv "ORGSYNCROOT") "/org/memo.org"))
   (setq tweet-file (concat (getenv "ORGSYNCROOT") "/org/tweet.org"))
   (setq watch-file (concat (getenv "ORGSYNCROOT") "/org/watch.org"))
   (setq compp-file (concat (getenv "ORGSYNCROOT") "/org/compp.org"))
+  (setq scribble-file (concat (getenv "ORGSYNCROOT") "/org/scribble.org"))
   (setq org-capture-templates
       `(("c" "Code" plain
          (file+function code-file org-get-target-headline)
@@ -1295,6 +1295,10 @@ by PAD, BEGINNING and END."
         ("p" "Compe P" entry
          (file compp-file)
          "* %? %U"
+         :empty-lines 1)
+        ("s" "Scribble" entry
+         (file scribble-file)
+         "* %? %U\n"
          :empty-lines 1))))
 
 ;;; Utility
