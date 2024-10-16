@@ -1280,10 +1280,6 @@ by PAD, BEGINNING and END."
          (file+function code-file org-get-target-headline)
          "%?\n%(with-current-buffer (org-capture-get :original-buffer) (browse-at-remote-get-url))\n# %(with-current-buffer (org-capture-get :original-buffer) (file-full-path))\n\n%i\n"
          :empty-lines 1)
-        ("i" "Idea" entry
-         (file+headline idea-file "Project")
-         "** %?\n"
-         :empty-lines 1)
         ("m" "Memo" entry
          (file+headline memo-file "Memo")
          "** %?\n"
@@ -1299,6 +1295,7 @@ by PAD, BEGINNING and END."
         ("s" "Scribble" entry
          (file scribble-file)
          "* %? %U\n"
+         :prepend t
          :empty-lines 1))))
 
 ;;; Utility
