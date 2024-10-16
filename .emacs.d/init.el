@@ -1271,7 +1271,6 @@ by PAD, BEGINNING and END."
       (org-refile t nil nil prompt)))
   (setq code-file (concat (getenv "ORGSYNCROOT") "/org/code.org"))
   (setq memo-file (concat (getenv "ORGSYNCROOT") "/org/memo.org"))
-  (setq tweet-file (concat (getenv "ORGSYNCROOT") "/org/tweet.org"))
   (setq watch-file (concat (getenv "ORGSYNCROOT") "/org/watch.org"))
   (setq compp-file (concat (getenv "ORGSYNCROOT") "/org/compp.org"))
   (setq scribble-file (concat (getenv "ORGSYNCROOT") "/org/scribble.org"))
@@ -1284,17 +1283,13 @@ by PAD, BEGINNING and END."
          (file+headline memo-file "Memo")
          "** %?\n"
          :empty-lines 1)
-        ("t" "Tweet" entry
-         (file tweet-file)
-         "* %? %U %^g"
-         :empty-lines 1)
         ("p" "Compe P" entry
          (file compp-file)
          "* %? %U"
          :empty-lines 1)
         ("s" "Scribble" entry
          (file scribble-file)
-         "* %? %U\n"
+         "* %? %U %^g"
          :prepend t
          :empty-lines 1))))
 
