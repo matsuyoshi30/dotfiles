@@ -1316,7 +1316,7 @@ by PAD, BEGINNING and END."
          :empty-lines 1)
         ("s" "Scribble" entry
          (file scribble-file)
-         "* %? %U %^g"
+         "* %? %U %^g\n"
          :prepend t
          :empty-lines 1))))
 
