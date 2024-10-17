@@ -1104,8 +1104,6 @@
 (leaf protobuf-mode
   :ensure t
   :mode ("\\.proto\\'")
-  :hook
-  (protobuf-mode-hook . editorconfig-mode-apply)
   :config
   (defun my-protobuf-indent-line ()
     (let ((indent-size (string-to-number (gethash 'indent_size editorconfig-properties-hash "2"))))
