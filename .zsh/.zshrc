@@ -122,4 +122,3 @@ alias E='open -a Emacs.app'
 alias k='kubectl'
 
 eval "$(direnv hook zsh)"
-

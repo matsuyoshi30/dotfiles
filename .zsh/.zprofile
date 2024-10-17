@@ -30,12 +30,6 @@ if [ -x $nodenv ] ; then
   eval "$(nodenv init -)"
 fi
 
-# direnv path
-direnv=$(which direnv)
-if [ -x $direnv ] ; then
-  eval "$(direnv hook zsh)"
-fi
-
 # texinfo
 if [[ $(uname -m) == "x86_64" ]]; then
   export PATH="$PATH:/usr/local/opt/texinfo/bin"
