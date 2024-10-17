@@ -849,17 +849,27 @@
 (leaf eglot
   :ensure t
   :config
- (add-hook 'go-mode-hook 'eglot-ensure)
- (add-hook 'web-mode-hook 'eglot-ensure)
- (add-hook 'rust-mode-hook 'eglot-ensure))
+  (add-hook 'go-mode-hook 'eglot-ensure)
+  (add-hook 'web-mode-hook 'eglot-ensure)
+  (add-hook 'rust-mode-hook 'eglot-ensure))
 
 (leaf eglot-booster
   :when (executable-find "emacs-lsp-booster")
   :vc ( :url "https://github.com/jdtsmith/eglot-booster")
   :global-minor-mode t)
 
-(leaf tree-sitter :ensure t)
-(leaf tree-sitter-langs :ensure t)
+(leaf tree-sitter
+  :ensure t
+  :hook ((typescript-ts-mode . tree-sitter-hl-mode)
+         (tsx-ts-mode . tree-sitter-hl-mode))
+  :config
+  (global-tree-sitter-mode))
+(leaf tree-sitter-langs
+  :ensure t
+  :after tree-sitter
+  :config
+  (tree-sitter-require 'tsx)
+  (add-to-list 'tree-sitter-major-mode-language-alist '(tsx-ts-mode . tsx)))
 
 (leaf jsonrpc
   :after t
@@ -908,10 +918,6 @@
   :mode
   "\\.erb\\'"
   "\\.html?\\'"
-  "\\.js\\'"
-  "\\.jsx\\'"
-  "\\.ts\\'"
-  "\\.tsx\\'"
   "\\.tpl\\'"
   "\\.tmpl\\'"
   "\\.vue\\'"
@@ -941,6 +947,29 @@
   (define-key web-mode-map (kbd "C-c i n") 'web-mode-block-next)
   (define-key web-mode-map (kbd "C-c i p") 'web-mode-block-previous)
   (define-key web-mode-map (kbd "C-c i s") 'web-mode-block-select))
+
+;; typescript
+(leaf typescript-ts-mode
+  :ensure t
+  :mode (("\\.ts?\\'" . tsx-ts-mode)
+         ("\\.tsx?\\'" . tsx-ts-mode)))
+
+(leaf tide
+  :ensure t
+  :commands setup-tide-mode
+  :hook ((tsx-ts-mode-hook . setup-tide-mode))
+  :config
+  (with-eval-after-load 'tide
+    (defun setup-tide-mode nil
+      (interactive)
+      (tide-setup)
+      (flycheck-mode 1)
+      (setq flycheck-check-syntax-automatically '(save mode-enabled))
+      (eldoc-mode 1)
+      (tide-hl-identifier-mode 1)
+      (company-mode 1))
+
+    (setq company-tooltip-align-annotations t)))
 
 ;; json
 (leaf json-mode
