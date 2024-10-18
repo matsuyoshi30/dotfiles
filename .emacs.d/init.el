@@ -383,6 +383,10 @@
   :custom
   ((doom-modeline-lsp . t)))
 
+(leaf hide-mode-line
+  :ensure t
+  :hook (neotree-mode-hook))
+
 (transient-mark-mode t)
 (size-indication-mode t)
 (setq-default tab-width 2 indent-tabs-mode nil)
