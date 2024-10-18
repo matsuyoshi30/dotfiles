@@ -23,11 +23,7 @@
 
 (setq frame-title-format (format (if (buffer-file-name) "%%f" "%%b")()))
 
-(column-number-mode t)
 (global-hl-line-mode t)
-(line-number-mode t)
-
-(global-display-line-numbers-mode t)
 
 (custom-set-variables '(custom-file (expand-file-name "custom.el" user-emacs-directory)))
 

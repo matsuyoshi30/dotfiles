@@ -1385,10 +1385,6 @@ by PAD, BEGINNING and END."
 
 (setq comment-empty-lines t)
 
-(setq display-line-numbers nil)
-(setq display-line-numbers-mode nil)
-(setq global-display-line-numbers-mode nil)
-
 ;;; Key bindings
 
 (leaf *global-set-key
