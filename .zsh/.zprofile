@@ -30,6 +30,11 @@ if [ -x $nodenv ] ; then
   eval "$(nodenv init -)"
 fi
 
+rbenv=$(which rbenv)
+if [ -x $rbenv ] ; then
+  eval "$(rbenv init -)"
+fi
+
 # texinfo
 if [[ $(uname -m) == "x86_64" ]]; then
   export PATH="$PATH:/usr/local/opt/texinfo/bin"
