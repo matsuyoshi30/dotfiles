@@ -425,7 +425,10 @@
 
 (leaf perfect-margin
   :require t
-  :setq ((perfect-margin-ignore-filters))
+  :setq ((perfect-margin-ignore-filters)
+         (perfect-margin-ignore-regexps))
+  :custom
+  (perfect-margin-visible-width . 200)
   :config
   (perfect-margin-mode 1))
 
