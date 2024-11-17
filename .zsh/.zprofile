@@ -35,6 +35,11 @@ if [ -x $rbenv ] ; then
   eval "$(rbenv init -)"
 fi
 
+# bun
+[ -s "/Users/matsuyoshi/.bun/_bun" ] && source "/Users/matsuyoshi/.bun/_bun"
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
+
 # texinfo
 if [[ $(uname -m) == "x86_64" ]]; then
   export PATH="$PATH:/usr/local/opt/texinfo/bin"
