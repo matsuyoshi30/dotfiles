@@ -129,3 +129,5 @@ if [ -x $(which nodenv) ] ; then
   export PATH="$PATH:$HOME/.nodenv/bin"
   eval "$(nodenv init -)"
 fi
+
+[[ ! -r '~/.opam/opam-init/init.zsh' ]] || source '~/.opam/opam-init/init.zsh' > /dev/null 2> /dev/null
