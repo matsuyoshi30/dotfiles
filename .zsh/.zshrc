@@ -121,4 +121,11 @@ alias E='open -a Emacs.app'
 
 alias k='kubectl'
 
-eval "$(direnv hook zsh)"
+if [ -x $(which direnv) ] ; then
+  eval "$(direnv hook zsh)"
+fi
+
+if [ -x $(which nodenv) ] ; then
+  export PATH="$PATH:$HOME/.nodenv/bin"
+  eval "$(nodenv init -)"
+fi

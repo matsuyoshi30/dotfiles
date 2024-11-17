@@ -23,13 +23,6 @@ if [ -x $anyenv ] ; then
   eval "$(anyenv init -)"
 fi
 
-# nodenv path
-nodenv=$(which nodenv)
-if [ -x $nodenv ] ; then
-  export PATH="$PATH:$HOME/.nodenv/bin"
-  eval "$(nodenv init -)"
-fi
-
 rbenv=$(which rbenv)
 if [ -x $rbenv ] ; then
   eval "$(rbenv init -)"
