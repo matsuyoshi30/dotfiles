@@ -13,6 +13,8 @@ config.adjust_window_size_when_changing_font_size = true
 config.font = wezterm.font({ family = 'JetBrains Mono', weight = 'Bold' })
 config.font_size = 14.0
 
+config.use_ime = true
+
 config.window_padding = {
     left = 10,
     right = 10,
@@ -23,6 +25,7 @@ config.initial_cols = 160
 config.initial_rows = 60
 config.use_fancy_tab_bar = false
 config.hide_tab_bar_if_only_one_tab = true
+config.show_new_tab_button_in_tab_bar = false
 config.window_frame = {
     font_size = 13.0,
     active_titlebar_bg = '#333333',
