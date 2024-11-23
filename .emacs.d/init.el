@@ -1098,6 +1098,10 @@
     (setq-local project-find-functions (list #'my/find-rust-project-root)))
   (add-hook 'rust-mode-hook #'my/rust-mode-hook))
 
+;; ocaml
+(leaf tuareg
+  :ensure t)
+
 (leaf css-mode :ensure t)
 (leaf csv-mode :ensure t)
 (leaf toml-mode :ensure t)
