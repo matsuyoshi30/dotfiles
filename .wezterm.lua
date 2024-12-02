@@ -45,6 +45,22 @@ wezterm.on(
 )
 
 wezterm.on(
+    'gui-startup',
+    function(cmd)
+        local screen = wezterm.gui.screens().main
+        local ratio = 0.7
+        local width = screen.width * ratio
+        local height = screen.height * ratio
+        local x = (screen.width - width) / 2
+        local y = (screen.height - height) / 2
+        local tab, pane, window = wezterm.mux.spawn_window(cmd or {
+            position = { x = x, y = y }
+        })
+        window:gui_window():set_inner_size(width, height)
+    end
+)
+
+wezterm.on(
     'update-status',
     function(window)
         local color_scheme = window:effective_config().resolved_palette
