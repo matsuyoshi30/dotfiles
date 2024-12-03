@@ -1180,8 +1180,12 @@
                            :chat-model "gemma2"
                            :embedding-model "gemma2"))
   (setopt ellama-translation-provider (make-llm-ollama
-                                       :chat-model "aya:8b"
-                                       :embedding-model "aya:8b")))
+                                       :chat-model "gemma2:9b"
+                                       :embedding-model "gemma2:9b"))
+  (leaf embark
+    :ensure t
+    :config
+    (define-key embark-region-map (kbd "T") #'ellama-translate)))
 
 ;;; elfeed
 
