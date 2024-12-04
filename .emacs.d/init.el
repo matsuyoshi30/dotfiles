@@ -1102,6 +1102,11 @@
 (leaf tuareg
   :ensure t)
 
+;; lua
+(leaf lua-ts-mode
+  :ensure t
+  :mode ("\\.lua$"))
+
 (leaf css-mode :ensure t)
 (leaf csv-mode :ensure t)
 (leaf toml-mode :ensure t)
