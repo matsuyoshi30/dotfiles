@@ -31,6 +31,11 @@ config.window_frame = {
     active_titlebar_bg = '#333333',
 }
 config.window_decorations = 'RESIZE'
+config.inactive_pane_hsb = {
+    hue = 0.85,
+    saturation = 1,
+    brightness = 0.5,
+}
 
 wezterm.on(
     'format-tab-title',
