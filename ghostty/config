@@ -13,6 +13,7 @@ window-theme = ghostty
 window-save-state = always
 macos-titlebar-style = tabs
 background = 1C2021
+title = " "
 keybind = ctrl+super+,=new_split:right
 keybind = ctrl+super+.=new_split:down
 keybind = ctrl+super+h=goto_split:left
