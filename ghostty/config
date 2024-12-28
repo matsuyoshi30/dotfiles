@@ -1,0 +1,21 @@
+font-thicken = true
+# theme = GruvboxDarkHard
+theme = catppuccin-mocha
+cursor-style = block
+background-opacity = 0.9
+background-blur-radius = 20
+window-height = 80
+window-width = 320
+window-padding-x = 10
+window-padding-y = 5
+window-padding-balance = true
+window-theme = ghostty
+window-save-state = always
+macos-titlebar-style = tabs
+background = 1C2021
+keybind = ctrl+super+,=new_split:right
+keybind = ctrl+super+.=new_split:down
+keybind = ctrl+super+h=goto_split:left
+keybind = ctrl+super+j=goto_split:bottom
+keybind = ctrl+super+k=goto_split:top
+keybind = ctrl+super+l=goto_split:right
