@@ -1320,7 +1320,6 @@ by PAD, BEGINNING and END."
       (org-refile t nil nil prompt)))
   (setq code-file (concat (getenv "ORGSYNCROOT") "/org/code.org"))
   (setq memo-file (concat (getenv "ORGSYNCROOT") "/org/memo.org"))
-  (setq watch-file (concat (getenv "ORGSYNCROOT") "/org/watch.org"))
   (setq compp-file (concat (getenv "ORGSYNCROOT") "/org/compp.org"))
   (setq scribble-file (concat (getenv "ORGSYNCROOT") "/org/scribble.org"))
   (setq org-capture-templates
