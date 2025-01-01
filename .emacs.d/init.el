@@ -1180,7 +1180,6 @@
   (require 'llm-ollama)
   (setopt ellama-language "Japanese")
   (setopt ellama-naming-scheme 'ellama-generate-name-by-llm)
-  ;; デフォルトのプロバイダー
   (setopt ellama-provider (make-llm-ollama
                            :chat-model "gemma2"
                            :embedding-model "gemma2"))
@@ -1189,6 +1188,7 @@
                                        :embedding-model "gemma2:9b"))
   (leaf embark
     :ensure t
+    :defvar embark-region-map
     :config
     (define-key embark-region-map (kbd "T") #'ellama-translate)))
 
