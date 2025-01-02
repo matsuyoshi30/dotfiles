@@ -130,4 +130,8 @@ if [ -x $(which nodenv) ] ; then
   eval "$(nodenv init -)"
 fi
 
+# opam
 [[ ! -r '~/.opam/opam-init/init.zsh' ]] || source '~/.opam/opam-init/init.zsh' > /dev/null 2> /dev/null
+
+# gchup
+[ -f "/Users/matsuyoshi/.ghcup/env" ] && . "/Users/matsuyoshi/.ghcup/env"
