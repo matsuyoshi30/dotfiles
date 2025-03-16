@@ -1188,9 +1188,8 @@
                                        :embedding-model "gemma2:9b"))
   (leaf embark
     :ensure t
-    :defvar embark-region-map
-    :config
-    (define-key embark-region-map (kbd "T") #'ellama-translate)))
+    :bind (:embark-region-map
+           ("T" . ellama-translate))))
 
 ;;; elfeed
 
