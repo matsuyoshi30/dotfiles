@@ -16,6 +16,9 @@ export RUST_SRC_PATH="$HOME/.rustup/toolchains/stable-x86_64-apple-darwin/lib/ru
 export JAVA_PATH="/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home"
 export PATH="$PATH:$JAVA_PATH/bin"
 
+# Scala
+export PATH="$PATH:/Users/matsuyoshi/Library/Application Support/Coursier/bin"
+
 # anyenv path
 anyenv=$(which anyenv)
 if [ -x $anyenv ] ; then
