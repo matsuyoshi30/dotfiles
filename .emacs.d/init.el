@@ -860,7 +860,8 @@
   :config
   (add-hook 'go-mode-hook 'eglot-ensure)
   (add-hook 'web-mode-hook 'eglot-ensure)
-  (add-hook 'rust-mode-hook 'eglot-ensure))
+  (add-hook 'rust-mode-hook 'eglot-ensure)
+  (add-hook 'scala-mode-hook 'eglot-ensure))
 
 (leaf eglot-booster
   :when (executable-find "emacs-lsp-booster")
@@ -1106,6 +1107,16 @@
 (leaf lua-ts-mode
   :ensure t
   :mode ("\\.lua$"))
+
+;; scala
+(leaf scala-mode
+  :interpreter ("scala"))
+(leaf sbt-mode
+  :commands sbt-start sbt-command
+  :config
+  (with-eval-after-load 'sbt-mode
+    (substitute-key-definition 'minibuffer-complete-word 'self-insert-command minibuffer-local-completion-map)
+    (setq sbt:program-options '("-Dsbt.supershell=false"))))
 
 (leaf css-mode :ensure t)
 (leaf csv-mode :ensure t)
