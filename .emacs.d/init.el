@@ -1313,19 +1313,40 @@ by PAD, BEGINNING and END."
 (leaf org-capture
   :defvar '(task-file nippou-file idea-file tweet-file org-capture-templates)
   :config
-  (defun org-get-target-headline (&optional targets prompt)
-    (let ((org-refile-targets (or targets org-refile-targets))
-          (prompt (or prompt "Capture Location")))
-      (org-refile t nil nil prompt)))
+  ;; https://ladicle.com/post/20200625_123915/
+  (defvar org-code-capture--store-file "")
+  (defvar org-code-capture--store-header "")
+  (defun org-code-capture--store-here ()
+    "Register current subtree as a capture point."
+    (interactive)
+    (setq org-code-capture--store-file (buffer-file-name))
+    (setq org-code-capture--store-header (nth 4 (org-heading-components))))
+  (defun org-code-capture--find-store-point ()
+    "Find registered capture point and move the cursor to it."
+    (let ((filename org-code-capture--store-file))
+      (set-buffer (org-capture-target-buffer filename)))
+    (goto-char (point-min))
+    (unless (derived-mode-p 'org-mode)
+      (error
+       "Target buffer \"%s\" for org-code-capture--find-store-file should be in Org mode"
+       (current-buffer))
+      (current-buffer))
+    (if (re-search-forward org-code-capture--store-header nil t)
+        (goto-char (point-at-bol))
+      (goto-char (point-max))
+      (or (bolp) (insert "\n"))
+      (insert "* Capture\n")
+      (beginning-of-line 0))
+    (org-end-of-subtree))
   (setq code-file (concat (getenv "ORGSYNCROOT") "/org/code.org"))
   (setq memo-file (concat (getenv "ORGSYNCROOT") "/org/memo.org"))
   (setq compp-file (concat (getenv "ORGSYNCROOT") "/org/compp.org"))
   (setq scribble-file (concat (getenv "ORGSYNCROOT") "/org/scribble.org"))
   (setq org-capture-templates
       `(("c" "Code" plain
-         (file+function code-file org-get-target-headline)
-         "%?\n%(with-current-buffer (org-capture-get :original-buffer) (browse-at-remote-get-url))\n# %(with-current-buffer (org-capture-get :original-buffer) (file-full-path))\n\n%i\n"
-         :empty-lines 1)
+         (function org-code-capture--find-store-point)
+         "%^{Summary}\n%(with-current-buffer (org-capture-get :original-buffer) (browse-at-remote-get-url))\n# %(with-current-buffer (org-capture-get :original-buffer) (file-full-path))\n\n%i\n"
+         :immediate-finish 1)
         ("m" "Memo" entry
          (file+headline memo-file "Memo")
          "** %?\n"
