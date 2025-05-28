@@ -1348,12 +1348,12 @@ by PAD, BEGINNING and END."
          "%^{Summary}\n%(with-current-buffer (org-capture-get :original-buffer) (browse-at-remote-get-url))\n# %(with-current-buffer (org-capture-get :original-buffer) (file-full-path))\n\n%i\n"
          :immediate-finish 1)
         ("m" "Memo" entry
-         (file+headline memo-file "Memo")
-         "** %?\n"
+         (file memo-file)
+         "* %? %U %^g\n"
          :empty-lines 1)
-        ("p" "Compe P" entry
-         (file compp-file)
-         "* %? %U"
+        ("p" "Compe" entry
+         (file memo-file)
+         "* %? %U :competitive:\n"
          :empty-lines 1)
         ("s" "Scribble" entry
          (file scribble-file)
