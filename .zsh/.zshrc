@@ -109,6 +109,7 @@ alias mv="mv -i"
 alias gst='git status'
 alias gd='git diff'
 alias ga='git add -p'
+alias gpu='git push'
 alias glst='git log --stat'
 alias glo='git log --oneline'
 alias glos='git log --oneline --stat'
