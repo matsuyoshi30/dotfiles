@@ -1,7 +1,9 @@
 font-thicken = true
+font-feature = -calt
 font-feature = -dlig
 # theme = GruvboxDarkHard
-theme = catppuccin-mocha
+# theme = catppuccin-mocha
+theme = xcodedark
 cursor-style = block
 background-opacity = 0.9
 background-blur-radius = 20
