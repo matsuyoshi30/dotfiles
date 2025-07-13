@@ -1369,8 +1369,7 @@ by PAD, BEGINNING and END."
         ("s" "Scribble" entry
          (file scribble-file)
          "* %? %U %^g\n\n"
-         :prepend t
-         :empty-lines 1))))
+         :prepend t))))
 
 ;;; Utility
 
