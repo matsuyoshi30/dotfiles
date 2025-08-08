@@ -1182,6 +1182,17 @@
     ("TAB" .  copilot-accept-completion)))
   )
 
+;; claude code
+
+(leaf claude-code-ide
+  :el-get (claude-code-ide :url "https://github.com/manzaltu/claude-code-ide.el.git")
+  :bind ("C-c C-'" . claude-code-ide-menu)
+  :custom
+  (claude-code-ide-cli-path . "~/.claude/local/claude")
+  (claude-code-ide-window-width . 120)
+  :config
+  (claude-code-ide-emacs-tools-setup))
+
 ;; editorconfig
 
 (leaf editorconfig
