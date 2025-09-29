@@ -14,7 +14,7 @@
        '((top . 22)
          (left . 55)
          (width . 400)
-         (height . 130)
+         (height . 120)
          (vertical-scroll-bar . nil)
          ) default-frame-alist))
 (setq initial-frame-alist default-frame-alist)

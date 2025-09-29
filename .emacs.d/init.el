@@ -225,9 +225,9 @@
 
 ;;; Display
 
-(set-face-attribute 'default nil :family "HackGen Console" :height 130)
-(set-face-attribute 'fixed-pitch nil :family "HackGen Console" :height 120)
-(set-face-attribute 'variable-pitch nil :family "Iosevka" :height 120)
+(set-face-attribute 'default nil :family "HackGen Console" :height 140)
+(set-face-attribute 'fixed-pitch nil :family "HackGen Console" :height 130)
+(set-face-attribute 'variable-pitch nil :family "Iosevka" :height 130)
 
 (leaf ef-themes
   :ensure t
@@ -249,7 +249,7 @@
   :config
   (defun my-ef-themes-default-font-face ()
     (ef-themes-with-colors
-      `(default ((,c :height 130)))))
+      `(default ((,c :height 140)))))
   (mapc #'disable-theme custom-enabled-themes)
   (add-hook 'ef-themes-post-load-hook #'my-ef-themes-default-font-face))
 (ef-themes-select 'ef-cyprus)
@@ -1244,7 +1244,7 @@
     (switch-to-buffer buffer))
   (setq elfeed-show-mode-hook
    (lambda ()
-	   (set-face-attribute 'variable-pitch (selected-frame) :font (font-spec :family "Iosevka" :size 13))
+	   (set-face-attribute 'variable-pitch (selected-frame) :font (font-spec :family "Iosevka" :size 14))
 	   (setq fill-column 120)
 	   (setq elfeed-show-entry-switch #'my-show-elfeed))))
 
@@ -1252,7 +1252,7 @@
 
 (leaf shortdoc
   :config
-  (set-face-attribute 'variable-pitch (selected-frame) :font (font-spec :family "Iosevka" :size 13)))
+  (set-face-attribute 'variable-pitch (selected-frame) :font (font-spec :family "Iosevka" :size 14)))
 
 ;;; Org
 
