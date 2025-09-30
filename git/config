@@ -49,4 +49,4 @@
   autoStash = true
   updateRefs = true
 [credential]
-	helper = osxkeychain
+  helper = osxkeychain
