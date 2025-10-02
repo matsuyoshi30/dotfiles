@@ -138,3 +138,6 @@ fi
 
 # gchup
 [ -f "/Users/matsuyoshi/.ghcup/env" ] && . "/Users/matsuyoshi/.ghcup/env"
+
+# bun completions
+[ -s "/Users/matsuyoshi30/.bun/_bun" ] && source "/Users/matsuyoshi30/.bun/_bun"
