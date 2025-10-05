@@ -1,14 +1,13 @@
-[gpg]
-	program = /opt/homebrew/bin/gpg
-[commit]
-	gpgsign = true
 [user]
-	signingkey = AAAAC3NzaC1lZDI1NTE5AAAAIHBpBDP8Ob2BxdKT7asjdh/DRscJ9PreSxE6spEid6oX
+	signingkey = ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHBpBDP8Ob2BxdKT7asjdh/DRscJ9PreSxE6spEid6oX
 	email = sfbgwm30@gmail.com
 	name = Masaya Watanabe
-
-# https://blog.gitbutler.com/how-git-core-devs-configure-git/
-
+[gpg]
+  format = ssh
+[gpg "ssh"]
+  program = "/Applications/1Password.app/Contents/MacOS/op-ssh-sign"
+[commit]
+  gpgsign = true
 [column]
   ui = auto
 [branch]
