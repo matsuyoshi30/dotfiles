@@ -3,7 +3,7 @@
 [commit]
 	gpgsign = true
 [user]
-	signingkey = 6236A19DBE4C3DCA
+	signingkey = AAAAC3NzaC1lZDI1NTE5AAAAIHBpBDP8Ob2BxdKT7asjdh/DRscJ9PreSxE6spEid6oX
 	email = sfbgwm30@gmail.com
 	name = Masaya Watanabe
 
@@ -43,7 +43,7 @@
   enabled = true
   autoupdate = true
 [core]
-  excludesfile = ~/.gitignore
+  excludesfile = ~/.config/git/ignore
 [rebase]
   autoSquash = true
   autoStash = true
