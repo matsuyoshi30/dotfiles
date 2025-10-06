@@ -122,7 +122,11 @@ alias E='open -a Emacs.app'
 
 alias k='kubectl'
 
-alias claude=/Users/matsuyoshi30/.claude/local/claude
+if [[ -x "/Users/matsuyoshi30/.claude/local/claude" ]]; then
+    alias claude='/Users/matsuyoshi30/.claude/local/claude'
+elif [[ -x "/Users/matsuyoshi/.claude/local/claude" ]]; then
+    alias claude='/Users/matsuyoshi/.claude/local/claude'
+fi
 
 if [ -x $(which direnv) ] ; then
   eval "$(direnv hook zsh)"
