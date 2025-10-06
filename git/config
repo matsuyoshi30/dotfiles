@@ -1,7 +1,7 @@
 [user]
-	signingkey = ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHBpBDP8Ob2BxdKT7asjdh/DRscJ9PreSxE6spEid6oX
-	email = sfbgwm30@gmail.com
-	name = Masaya Watanabe
+  signingkey = ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHBpBDP8Ob2BxdKT7asjdh/DRscJ9PreSxE6spEid6oX
+  email = sfbgwm30@gmail.com
+  name = Masaya Watanabe
 [gpg]
   format = ssh
 [gpg "ssh"]
