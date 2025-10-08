@@ -1452,6 +1452,14 @@ by PAD, BEGINNING and END."
   (interactive)
   (to-clipboard (concat "[[" (file-full-path) "][" (file-name-nondirectory buffer-file-name) "]]")))
 
+(defun copy-word-at-point ()
+  "Copy the word at point to kill ring."
+  (interactive)
+  (let ((word (thing-at-point 'word)))
+    (when word
+      (kill-new word)
+      (message "Copied: %s" word))))
+
 (setq comment-empty-lines t)
 
 ;;; Key bindings
@@ -1494,6 +1502,7 @@ by PAD, BEGINNING and END."
   ("M-p" . (lambda () (interactive) (scroll-down 1)))
 
   ("C-x C-j" . skk-mode)
+  ("C-c w" . copy-word-at-point)
 
   ("C-\\" . nil)
   :config
