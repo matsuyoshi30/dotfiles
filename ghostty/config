@@ -26,3 +26,4 @@ keybind = ctrl+super+k=goto_split:top
 keybind = ctrl+super+l=goto_split:right
 keybind = shift+right=adjust_selection:right
 keybind = shift+enter=text:\n
+keybind = ctrl+left_bracket=text:\x1b
