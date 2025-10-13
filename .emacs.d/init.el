@@ -618,7 +618,7 @@
   :ensure t
   :global-minor-mode t
   :custom
-  (vertico-count . 20)
+  (vertico-count . 40)
   (completion-styles . '(orderless))
   :hook
   ((after-init-hook . savehist-mode))
