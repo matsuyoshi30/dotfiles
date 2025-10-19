@@ -184,6 +184,7 @@
 (setq gc-cons-percentage 0.2
       gc-cons-threshold (* 128 1024 1024))
 (add-hook 'focus-out-hook #'garbage-collect)
+(setq read-process-output-max (* 1024 1024)) ; 1mb
 
 ;; (leaf gcmh
 ;;   :ensure t
@@ -768,7 +769,6 @@
 		                      :background "dark slate gray"
                           :foreground "white"
                           :underline nil)))
-  (remove-hook 'flymake-diagnostic-functions 'flymake-proc-legacy-flymake)
 
   ;; flymake-posframe
    (with-eval-after-load 'flymake-diagnostic-at-point
