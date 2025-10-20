@@ -275,7 +275,8 @@
   :init
   (tab-bar-mode 1)
   :custom
-  ((tab-bar-new-tab-choice         . "*scratch*")
+  ((tab-bar-show . 1)
+   (tab-bar-new-tab-choice         . "*scratch*")
    (tab-bar-tab-name-truncated-max . 12)))
 
 (setq display-time-day-and-date t)
