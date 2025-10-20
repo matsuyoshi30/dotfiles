@@ -756,6 +756,7 @@
   :bind (("M-N" . flymake-goto-next-error)
          ("M-P" . flymake-goto-prev-error))
   :config
+  (remove-hook 'flymake-diagnostic-functions 'flymake-proc-legacy-flymake)
   (leaf package-lint-flymake :ensure t)
   (leaf flymake-diagnostic-at-point :ensure t)
   (leaf popup :ensure t)
