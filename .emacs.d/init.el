@@ -226,9 +226,9 @@
 
 ;;; Display
 
-(set-face-attribute 'default nil :family "HackGen Console" :height 140)
-(set-face-attribute 'fixed-pitch nil :family "HackGen Console" :height 130)
-(set-face-attribute 'variable-pitch nil :family "Iosevka" :height 130)
+(set-face-attribute 'default nil :family "HackGen Console" :height 160)
+(set-face-attribute 'fixed-pitch nil :family "HackGen Console" :height 160)
+(set-face-attribute 'variable-pitch nil :family "Iosevka" :height 160)
 
 (leaf ef-themes
   :ensure t
