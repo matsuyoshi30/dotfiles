@@ -66,3 +66,6 @@ export AWS_DEFAULT_PROFILE=saml
 if [ -d ~/.orbstack ]; then
   source ~/.orbstack/shell/init.zsh 2>/dev/null || :
 fi
+
+# Added by swiftly
+. "/Users/matsuyoshi/.swiftly/env.sh"
