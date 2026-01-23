@@ -128,15 +128,6 @@ elif [[ -x "/Users/matsuyoshi/.claude/local/claude" ]]; then
     alias claude='/Users/matsuyoshi/.claude/local/claude'
 fi
 
-if [ -x $(which direnv) ] ; then
-  eval "$(direnv hook zsh)"
-fi
-
-if [ -x $(which nodenv) ] ; then
-  export PATH="$PATH:$HOME/.nodenv/bin"
-  eval "$(nodenv init -)"
-fi
-
 # opam
 [[ ! -r '~/.opam/opam-init/init.zsh' ]] || source '~/.opam/opam-init/init.zsh' > /dev/null 2> /dev/null
 
@@ -145,3 +136,9 @@ fi
 
 # bun completions
 [ -s "/Users/matsuyoshi30/.bun/_bun" ] && source "/Users/matsuyoshi30/.bun/_bun"
+
+# Added by Antigravity
+export PATH="/Users/matsuyoshi/.antigravity/antigravity/bin:$PATH"
+
+# Amp CLI
+export PATH="/Users/matsuyoshi/.amp/bin:$PATH"

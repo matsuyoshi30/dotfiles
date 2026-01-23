@@ -36,6 +36,17 @@ fi
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
 
+# direnv
+if [ -x $(which direnv) ] ; then
+  eval "$(direnv hook zsh)"
+fi
+
+# nodenv
+if [ -x $(which nodenv) ] ; then
+  export PATH="$PATH:$HOME/.nodenv/bin"
+  eval "$(nodenv init -)"
+fi
+
 # texinfo
 if [[ $(uname -m) == "x86_64" ]]; then
   export PATH="$PATH:/usr/local/opt/texinfo/bin"
