@@ -10,14 +10,18 @@ export PATH="$PATH:$GOPATH/bin"
 
 # Rust path
 export PATH="$PATH:$HOME/.cargo/bin"
-export RUST_SRC_PATH="$HOME/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src"
+if [[ $(uname -m) == "x86_64" ]]; then
+  export RUST_SRC_PATH="$HOME/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src"
+else
+  export RUST_SRC_PATH="$HOME/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/src"
+fi
 
 # Java path
 export JAVA_PATH="/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home"
 export PATH="$PATH:$JAVA_PATH/bin"
 
 # Scala
-export PATH="$PATH:/Users/matsuyoshi/Library/Application Support/Coursier/bin"
+export PATH="$PATH:$HOME/Library/Application Support/Coursier/bin"
 
 # anyenv path
 anyenv=$(which anyenv)
@@ -32,7 +36,7 @@ if [ -x $rbenv ] ; then
 fi
 
 # bun
-[ -s "/Users/matsuyoshi/.bun/_bun" ] && source "/Users/matsuyoshi/.bun/_bun"
+[ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
 
@@ -79,4 +83,4 @@ if [ -d ~/.orbstack ]; then
 fi
 
 # Added by swiftly
-. "/Users/matsuyoshi/.swiftly/env.sh"
+[ -s "$HOME/.swiftly/env.sh" ] && . "$HOME/.swiftly/env.sh"

@@ -53,8 +53,13 @@ compinit
 zstyle ':completion:*:sudo:*' command-path /usr/local/sbin /usr/local/bin \
        /usr/sbin /usr/bin /sbin /bin /usr/X11R6/bin
 
-fpath=(/usr/local/share/zsh-completions $fpath)
-fpath=(/usr/local/share/zsh/site-functions $fpath)
+if [[ $(uname -m) == "x86_64" ]]; then
+  fpath=(/usr/local/share/zsh-completions $fpath)
+  fpath=(/usr/local/share/zsh/site-functions $fpath)
+else
+  fpath=(/opt/homebrew/share/zsh-completions $fpath)
+  fpath=(/opt/homebrew/share/zsh/site-functions $fpath)
+fi
 
 
 ########################################
@@ -122,23 +127,21 @@ alias E='open -a Emacs.app'
 
 alias k='kubectl'
 
-if [[ -x "/Users/matsuyoshi30/.claude/local/claude" ]]; then
-    alias claude='/Users/matsuyoshi30/.claude/local/claude'
-elif [[ -x "/Users/matsuyoshi/.claude/local/claude" ]]; then
-    alias claude='/Users/matsuyoshi/.claude/local/claude'
+if [[ -x "$HOME/.claude/local/claude" ]]; then
+    alias claude="$HOME/.claude/local/claude"
 fi
 
 # opam
-[[ ! -r '~/.opam/opam-init/init.zsh' ]] || source '~/.opam/opam-init/init.zsh' > /dev/null 2> /dev/null
+[[ ! -r "$HOME/.opam/opam-init/init.zsh" ]] || source "$HOME/.opam/opam-init/init.zsh" > /dev/null 2> /dev/null
 
-# gchup
-[ -f "/Users/matsuyoshi/.ghcup/env" ] && . "/Users/matsuyoshi/.ghcup/env"
+# ghcup
+[ -f "$HOME/.ghcup/env" ] && . "$HOME/.ghcup/env"
 
 # bun completions
-[ -s "/Users/matsuyoshi30/.bun/_bun" ] && source "/Users/matsuyoshi30/.bun/_bun"
+[ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
 
 # Added by Antigravity
-export PATH="/Users/matsuyoshi/.antigravity/antigravity/bin:$PATH"
+export PATH="$HOME/.antigravity/antigravity/bin:$PATH"
 
 # Amp CLI
-export PATH="/Users/matsuyoshi/.amp/bin:$PATH"
+export PATH="$HOME/.amp/bin:$PATH"
