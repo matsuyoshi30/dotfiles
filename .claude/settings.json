@@ -156,11 +156,7 @@
       "Bash(rm:*)"
     ]
   },
-  "statusLine": {
-    "type": "command",
-    "command": "~/.claude/statusline.sh"
-  },
- "hooks": {
+  "hooks": {
     "Stop": [
       {
         "matcher": "",
@@ -172,5 +168,14 @@
         ]
       }
     ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "~/.claude/statusline.sh"
+  },
+  "enabledPlugins": {
+    "typescript-lsp@claude-plugins-official": true,
+    "playwright-skill@playwright-skill": true,
+    "dig@kuu-marketplace": true
   }
 }
