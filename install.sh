@@ -202,6 +202,7 @@ main() {
   create_symlink "$SCRIPT_DIR/.claude/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
   create_symlink "$SCRIPT_DIR/.claude/agents" "$HOME/.claude/agents"
   create_symlink "$SCRIPT_DIR/.claude/commands" "$HOME/.claude/commands"
+  create_symlink "$SCRIPT_DIR/.claude/skills" "$HOME/.claude/skills"
 
   echo -e "${GREEN}=====================================${NC}"
   if [[ "$DRY_RUN" == true ]]; then
