@@ -1,9 +1,8 @@
 ---
 name: kentbeck
 description: use this agent when claude code write code
-tools: 
 model: sonnet
-color: green
+user-invocable: true
 ---
 
 Always follow the instructions in plan.md. When I say "go", find the next unmarked test in plan.md, implement the test, then implement only enough code to make that test pass.
