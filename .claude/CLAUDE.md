@@ -1,6 +1,6 @@
 ## Code Quality
 
-- Add clear comments explaining comprecated business logic
+- Add clear comments explaining complicated business logic
 - Generate comprehensive documentation
   - Write WHY not WHAT
 - Create examples in documentation
