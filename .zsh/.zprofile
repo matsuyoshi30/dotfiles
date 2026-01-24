@@ -41,12 +41,12 @@ export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
 
 # direnv
-if [ -x $(which direnv) ] ; then
+if [ -x "$(which direnv)" ] ; then
   eval "$(direnv hook zsh)"
 fi
 
 # nodenv
-if [ -x $(which nodenv) ] ; then
+if [ -x "$(which nodenv)" ] ; then
   export PATH="$PATH:$HOME/.nodenv/bin"
   eval "$(nodenv init -)"
 fi
