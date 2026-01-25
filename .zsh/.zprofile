@@ -24,32 +24,15 @@ export PATH="$PATH:$JAVA_PATH/bin"
 export PATH="$PATH:$HOME/Library/Application Support/Coursier/bin"
 
 # anyenv path
-anyenv=$(which anyenv)
-if [ -x $anyenv ] ; then
-  export PATH="$PATH:$HOME/.anyenv/bin"
-  eval "$(anyenv init -)"
-fi
-
-rbenv=$(which rbenv)
-if [ -x $rbenv ] ; then
-  eval "$(rbenv init -)"
-fi
+export PATH="$PATH:$HOME/.anyenv/bin"
 
 # bun
 [ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
 
-# direnv
-if [ -x "$(which direnv)" ] ; then
-  eval "$(direnv hook zsh)"
-fi
-
 # nodenv
-if [ -x "$(which nodenv)" ] ; then
-  export PATH="$PATH:$HOME/.nodenv/bin"
-  eval "$(nodenv init -)"
-fi
+export PATH="$PATH:$HOME/.nodenv/bin"
 
 # texinfo
 if [[ $(uname -m) == "x86_64" ]]; then

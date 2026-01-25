@@ -131,6 +131,24 @@ if [[ -x "$HOME/.claude/local/claude" ]]; then
     alias claude="$HOME/.claude/local/claude"
 fi
 
+# version managers
+if command -v anyenv &> /dev/null; then
+  eval "$(anyenv init -)"
+fi
+
+if command -v rbenv &> /dev/null; then
+  eval "$(rbenv init -)"
+fi
+
+if command -v nodenv &> /dev/null; then
+  eval "$(nodenv init -)"
+fi
+
+# direnv
+if command -v direnv &> /dev/null; then
+  eval "$(direnv hook zsh)"
+fi
+
 # opam
 [[ ! -r "$HOME/.opam/opam-init/init.zsh" ]] || source "$HOME/.opam/opam-init/init.zsh" > /dev/null 2> /dev/null
 
