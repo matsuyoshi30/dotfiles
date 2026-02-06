@@ -98,6 +98,15 @@ peco-src () {
 zle -N peco-src
 bindkey '^]' peco-src
 
+
+########################################
+# git-wt
+eval "$(git wt --init zsh)"
+
+wt() {
+  git wt "$(git wt | tail -n +2 | peco | awk '{print $(NF-1)}')"
+}
+
 ########################################
 # Alias
 alias l='ls -1FG'
@@ -163,6 +172,3 @@ export PATH="$HOME/.antigravity/antigravity/bin:$PATH"
 
 # Amp CLI
 export PATH="$HOME/.amp/bin:$PATH"
-
-# git-wt
-eval "$(git wt --init zsh)"
