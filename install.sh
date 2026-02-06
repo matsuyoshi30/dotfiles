@@ -200,9 +200,10 @@ main() {
   create_symlink "$SCRIPT_DIR/.claude/settings.json" "$HOME/.claude/settings.json"
   create_symlink "$SCRIPT_DIR/.claude/statusline.sh" "$HOME/.claude/statusline.sh"
   create_symlink "$SCRIPT_DIR/.claude/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
-  create_symlink "$SCRIPT_DIR/.claude/agents" "$HOME/.claude/agents"
   create_symlink "$SCRIPT_DIR/.claude/commands" "$HOME/.claude/commands"
-  create_symlink "$SCRIPT_DIR/.claude/skills" "$HOME/.claude/skills"
+  create_symlink "$SCRIPT_DIR/.agents/skills" "$HOME/.claude/skills"
+
+  create_symlink "$SCRIPT_DIR/.agents/skills" "$HOME/.agents/skills"
 
   echo -e "${GREEN}=====================================${NC}"
   if [[ "$DRY_RUN" == true ]]; then
