@@ -8,6 +8,9 @@
   program = "/Applications/1Password.app/Contents/MacOS/op-ssh-sign"
 [commit]
   gpgsign = true
+[ghq]
+  user = matsuyoshi30
+  root = ~/ghq
 [column]
   ui = auto
 [branch]
