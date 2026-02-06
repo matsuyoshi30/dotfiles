@@ -163,3 +163,6 @@ export PATH="$HOME/.antigravity/antigravity/bin:$PATH"
 
 # Amp CLI
 export PATH="$HOME/.amp/bin:$PATH"
+
+# git-wt
+eval "$(git wt --init zsh)"
