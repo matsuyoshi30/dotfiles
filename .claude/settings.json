@@ -173,6 +173,9 @@
     "type": "command",
     "command": "~/.claude/statusline.sh"
   },
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
   "enabledPlugins": {
     "typescript-lsp@claude-plugins-official": true,
     "playwright-skill@playwright-skill": true,
