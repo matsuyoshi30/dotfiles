@@ -103,9 +103,16 @@ bindkey '^]' peco-src
 # git-wt
 eval "$(git wt --init zsh)"
 
-wt() {
-  git wt "$(git wt | tail -n +2 | peco | awk '{print $(NF-1)}')"
+peco-wt () {
+    local wt=$(git wt | tail -n +2 | peco | awk '{print $(NF-1)}')
+    if [ -n "$wt" ]; then
+        BUFFER="git wt ${wt}"
+        zle accept-line
+    fi
+    zle clear-screen
 }
+zle -N peco-wt
+bindkey '^\' peco-wt
 
 ########################################
 # Alias
