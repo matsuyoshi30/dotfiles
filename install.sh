@@ -204,6 +204,18 @@ main() {
   create_symlink "$SCRIPT_DIR/.agents/skills" "$HOME/.claude/skills"
 
   create_symlink "$SCRIPT_DIR/.agents/skills" "$HOME/.agents/skills"
+  echo
+
+  info "Installing VSCode configuration..."
+  VSCODE_SETTING_DIR=~/Library/Application\ Support/Code/User
+  create_symlink "$SCRIPT_DIR/vscode/settings.json" "${VSCODE_SETTING_DIR}/settings.json"
+  create_symlink "$SCRIPT_DIR/vscode/keybindings.json" "${VSCODE_SETTING_DIR}/keybindings.json"
+  create_symlink "$SCRIPT_DIR/vscode/mcp.json" "${VSCODE_SETTING_DIR}/mcp.json"
+  cat $SCRIPT_DIR/vscode/extensions | while read line
+  do
+    code --install-extension $line
+  done
+  echo
 
   echo -e "${GREEN}=====================================${NC}"
   if [[ "$DRY_RUN" == true ]]; then

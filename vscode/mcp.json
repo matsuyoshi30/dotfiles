@@ -1,0 +1,9 @@
+{
+	"servers": {
+		"goproposal": {
+			"command": "mcpserver",
+			"type": "stdio"
+		}
+	},
+	"inputs": []
+}

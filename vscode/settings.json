@@ -1,0 +1,52 @@
+{
+  "files.watcherExclude": {
+    "**/.bloop": true,
+    "**/.metals": true
+  },
+  "github.copilot.enable": {
+    "*": true,
+    "plaintext": false,
+    "markdown": false,
+    "scminput": false,
+    "scala": false
+  },
+  "editor.bracketPairColorization.enabled": true,
+  "editor.cursorSmoothCaretAnimation": "on",
+  "editor.guides.bracketPairs": true,
+  "editor.minimap.maxColumn": 80,
+  "editor.mouseWheelZoom": true,
+  "editor.renderWhitespace": "all",
+  "editor.smoothScrolling": true,
+  "editor.wrappingIndent": "indent",
+  "editor.minimap.enabled": false,
+  "editor.accessibilitySupport": "on",
+  "editor.wordSegmenterLocales": ["ja"],
+  "explorer.compactFolders": false,
+  "explorer.confirmDelete": false,
+  "git.pruneOnFetch": true,
+  "scm.compactFolders": false,
+  "scm.defaultViewMode": "tree",
+  "zenMode.fullScreen": false,
+  "zenMode.showTabs": "single",
+  "github.copilot.nextEditSuggestions.enabled": true,
+  "accessibility.signalOptions.volume": 0,
+  "workbench.colorTheme": "Monokai",
+  "security.workspace.trust.untrustedFiles": "open",
+  "editor.fontSize": 16,
+  "window.newWindowDimensions": "inherit",
+  "terminal.integrated.fontSize": 14,
+  "terminal.integrated.smoothScrolling": true,
+  "java.imports.gradle.wrapper.checksums": [
+    {
+      "sha256": "6497f98e5985afbef4afc68e9e9b871ba14e835050d167c142e5bd569ad1f8a3",
+      "allowed": true
+    }
+  ],
+  "terminal.integrated.stickyScroll.enabled": false,
+  "debug.console.fontSize": 14,
+  "scm.inputFontSize": 14,
+  "chat.editor.fontSize": 16,
+  "chat.fontSize": 16,
+  "markdown.preview.fontSize": 16,
+  "claudeCode.useTerminal": true
+}
