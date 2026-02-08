@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
+      "Read",
       "Bash(cat:*)",
+      "Bash(ffprobe:*)",
+      "Bash(ffmpeg:*)",
       "Bash(docker --help:*)",
       "Bash(docker --version:*)",
       "Bash(docker build:*)",
