@@ -52,7 +52,7 @@ for file in ~/.{exports,extra}; do
 done;
 unset file;
 
-eval "$(ssh-agent -s)"
+# eval "$(ssh-agent -s)"
 if [[ $(uname -m) == "x86_64" ]]; then
   eval "$(/usr/local/bin/brew shellenv)"
 else
