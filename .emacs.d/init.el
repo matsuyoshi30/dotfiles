@@ -252,7 +252,24 @@
      (ef-themes-with-colors
        `(default ((,c :height 140)))))
   (mapc #'disable-theme custom-enabled-themes)
-  (add-hook 'ef-themes-post-load-hook #'my-ef-themes-default-font-face))
+  (add-hook 'ef-themes-post-load-hook #'my-ef-themes-default-font-face)
+  ;; テーマ読み込み前にフレーム位置を保存し、読み込み後に復元する
+  ;; ef-themes-post-load-hook は load-theme の後に実行されるため、
+  ;; hook 内で frame-position を取得しても既に変わった後の値になる
+  (defvar my--frame-position-before-theme nil
+    "テーマ切り替え前のフレーム位置を保存する変数")
+  (advice-add 'ef-themes--load-theme :before
+              (lambda (&rest _)
+                (setq my--frame-position-before-theme
+                      (frame-position (selected-frame)))))
+  (add-hook 'ef-themes-post-load-hook
+            (lambda ()
+              (set-frame-size (selected-frame) (frame-width) (frame-height))
+              (when my--frame-position-before-theme
+                (set-frame-position (selected-frame)
+                                    (car my--frame-position-before-theme)
+                                    (cdr my--frame-position-before-theme))))
+            nil t))
 (ef-themes-select 'ef-cyprus)
 
 (leaf neotree
