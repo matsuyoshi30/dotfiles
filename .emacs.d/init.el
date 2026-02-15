@@ -402,7 +402,9 @@
   ;;(define-key moom-mode-map (kbd "M-0") 'moom-move-frame)
   (define-key moom-mode-map (kbd "M-1") 'moom-move-frame-left)
   (define-key moom-mode-map (kbd "M-2") 'moom-move-frame-to-center)
-  (define-key moom-mode-map (kbd "M-3") 'moom-move-frame-right))
+  (define-key moom-mode-map (kbd "M-3") 'moom-move-frame-right)
+  ;; Center frame on startup
+  (add-hook 'window-setup-hook #'moom-move-frame-to-center))
 
 (leaf darkroom
   :ensure t

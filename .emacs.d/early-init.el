@@ -11,8 +11,8 @@
 
 (setq default-frame-alist
       (append
-       '((width . 400)
-         (height . 100)
+       '((width . 320)
+         (height . 80)
          (vertical-scroll-bar . nil)
          ) default-frame-alist))
 (setq initial-frame-alist default-frame-alist)
