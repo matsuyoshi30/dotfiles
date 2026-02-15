@@ -249,8 +249,8 @@
   (ef-themes-region . '(intense no-extend neutral))
   :config
   (defun my-ef-themes-default-font-face ()
-    (ef-themes-with-colors
-      `(default ((,c :height 140)))))
+     (ef-themes-with-colors
+       `(default ((,c :height 140)))))
   (mapc #'disable-theme custom-enabled-themes)
   (add-hook 'ef-themes-post-load-hook #'my-ef-themes-default-font-face))
 (ef-themes-select 'ef-cyprus)
@@ -397,6 +397,7 @@
   :ensure t
   :defvar moom-mode-map
   :config
+  (setq moom-use-font-module nil)
   (moom-mode t)
   ;;(define-key moom-mode-map (kbd "M-0") 'moom-move-frame)
   (define-key moom-mode-map (kbd "M-1") 'moom-move-frame-left)
@@ -433,6 +434,22 @@
   (perfect-margin-visible-width . 200)
   :config
   (perfect-margin-mode 1))
+
+(leaf spacious-padding
+  :require t
+  :config
+  (setopt spacious-padding-widths
+          '( :internal-border-width 14
+             :header-line-width 4
+             :mode-line-width 6
+             :tab-width 4
+             :right-divider-width 30
+             :scroll-bar-width 0))
+  (spacious-padding-mode))
+
+(leaf breadcrumb
+  :require t
+  :config (breadcrumb-mode))
 
 ;;; IME
 
