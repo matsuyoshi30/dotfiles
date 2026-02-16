@@ -184,5 +184,6 @@
     "playwright-skill@playwright-skill": true,
     "dig@kuu-marketplace": true,
     "rust-analyzer-lsp@claude-plugins-official": true
-  }
+  },
+  "model": "opus"
 }
