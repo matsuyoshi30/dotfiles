@@ -869,9 +869,7 @@
   :bind (("M-N" . flymake-goto-next-error)
          ("M-P" . flymake-goto-prev-error))
   :config
-  (remove-hook 'flymake-diagnostic-functions 'flymake-proc-legacy-flymake)
-  (add-hook 'flymake-mode-hook
-            (lambda () (remove-hook 'flymake-diagnostic-functions 'flymake-proc-legacy-flymake t)))
+  (advice-add 'flymake-proc-legacy-flymake :override #'ignore)
 
   (with-eval-after-load 'flymake
     (with-eval-after-load 'flymake-diagnostic-at-point
@@ -933,15 +931,6 @@
 (use-package quickrun
   :ensure t
   :defer t)
-
-(use-package anzu
-  :ensure t
-  :init
-  (global-unset-key (kbd "C-t"))
-  :custom (globa-anzu-mode t)
-  :bind
-  ([remap query-replace] . anzu-query-replace)
-  ([remap query-replace-regexp] . anzu-query-replace-regexp))
 
 (use-package smartrep :ensure t)
 
