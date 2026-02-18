@@ -10,25 +10,57 @@
 
 ;;; General
 
-(eval-when-compile (setq byte-compile-warnings '(cl-functions)))
+;;; Bootstrap elpaca
+(defvar elpaca-installer-version 0.11)
+(defvar elpaca-directory (expand-file-name "elpaca/" user-emacs-directory))
+(defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
+(defvar elpaca-repos-directory (expand-file-name "repos/" elpaca-directory))
+(defvar elpaca-order '(elpaca :repo "https://github.com/progfolio/elpaca.git"
+                              :ref nil :depth 1 :inherit ignore
+                              :files (:defaults "elpaca-test.el" (:exclude "extensions"))
+                              :build (:not elpaca--activate-package)))
+(let* ((repo (expand-file-name "elpaca/" elpaca-repos-directory))
+       (build (expand-file-name "elpaca/" elpaca-builds-directory))
+       (order (cdr elpaca-order))
+       (default-directory repo))
+  (add-to-list 'load-path (if (file-exists-p build) build repo))
+  (unless (file-exists-p repo)
+    (make-directory repo t)
+    (when (<= emacs-major-version 28) (require 'subr-x))
+    (condition-case-unless-debug err
+        (if-let* ((buffer (pop-to-buffer-same-window "*elpaca-bootstrap*"))
+                   ((zerop (apply #'call-process `("git" nil ,buffer t "clone"
+                                                   ,@(when-let* ((depth (plist-get order :depth)))
+                                                       (list (format "--depth=%d" depth) "--no-single-branch"))
+                                                   ,(plist-get order :repo) ,repo))))
+                   ((zerop (call-process "git" nil buffer t "checkout"
+                                         (or (plist-get order :ref) "--"))))
+                   (emacs (concat invocation-directory invocation-name))
+                   ((zerop (call-process emacs nil buffer nil "-Q" "-L" "." "--batch"
+                                         "--eval" "(byte-recompile-directory \".\" 0 'force)")))
+                   ((require 'elpaca))
+                   ((elpaca-generate-autoloads "elpaca" repo)))
+            (progn (message "%s" (buffer-string)) (kill-buffer buffer))
+          (error "%s" (with-current-buffer buffer (buffer-string))))
+      ((error) (warn "%s" err) (delete-directory repo 'recursive))))
+  (unless (require 'elpaca-autoloads nil t)
+    (require 'elpaca)
+    (elpaca-generate-autoloads "elpaca" repo)
+    (let ((load-source-file-function nil)) (load "./elpaca-autoloads"))))
+(add-hook 'after-init-hook #'elpaca-process-queues)
+(elpaca `(,@elpaca-order))
 
-(eval-and-compile
-  (prog1 "initialize leaf.el"
-    (customize-set-variable
-     'package-archives '(;("org"   . "https://orgmode.org/elpa/")
-                         ("melpa" . "https://melpa.org/packages/")
-                         ("gnu"   . "https://elpa.gnu.org/packages/")))
-    (package-initialize)
-    (unless (package-installed-p 'leaf)
-      (package-refresh-contents)
-      (package-install 'leaf))
-    (leaf leaf-keywords
-      :ensure t
-      :init
-      (leaf el-get :ensure t)
-      :config
-      (leaf diminish :ensure t)
-      (leaf-keywords-init))))
+;; use-package を elpaca 経由で有効化
+(elpaca elpaca-use-package
+  (elpaca-use-package-mode))
+
+;; diminish for :diminish support
+(elpaca diminish (require 'diminish))
+
+;; elpaca-use-package-mode が有効になるまで同期的に待つ
+;; これがないと use-package :ensure t が評価される時点で
+;; elpaca-use-package-mode が未有効のため、ビルトインパッケージがロードされる
+(elpaca-wait)
 
 ;; (require 'profiler)
 ;; (profiler-start 'cpu)
@@ -74,88 +106,93 @@
 
 (add-hook 'after-init-hook #'my/emacs-init-time)
 
-(leaf leaf
-  :config
-  (leaf leaf-convert
-    :ensure t
-    :config
-    (leaf use-package :ensure t))
-  (leaf leaf-tree
-    :ensure t
-    :custom ((imenu-list-size . 30)
-             (imenu-list-position . 'left))))
-
-(leaf macrostep
+(use-package macrostep
   :ensure t
   :bind (("C-c e" . macrostep-expand)))
 
-(leaf cus-edit
-  :doc "tools for customizing Emacs and Lisp packages"
+;; Builtin settings: cus-edit, cus-start, simple merged
+(use-package emacs
+  :ensure nil
   :custom
-  `((custom-file . ,(locate-user-emacs-file "custom.el"))))
-
-(leaf cus-start
-  :doc "define customization properties of builtins"
-  :tag "builtin" "internal"
-  :preface
-  :custom '((user-full-name . "Masaya Watanabe")
-            (user-mail-address . "sfbgwm30@gmail.com")
-            (user-login-name . "matsuyoshi30")
-            (create-lockfiles . nil)
-            (debug-on-error . t)
-            (init-file-debug . t)
-            (frame-resize-pixelwise . t)
-            (enable-recursive-minibuffers . t)
-            (history-length . 1000)
-            (history-delete-duplicates . t)
-            (scroll-preserve-screen-position . t)
-            (scroll-conservatively . 100)
-            (mouse-wheel-scroll-amount . '(1 ((control) . 5)))
-            (ring-bell-function . 'ignore)
-            (text-quoting-style . 'straight)
-            (truncate-lines . t)
-            ;; (use-dialog-box . nil)
-            ;; (use-file-dialog . nil)
-            ;; (menu-bar-mode . t)
-            ;; (tool-bar-mode . nil)
-            (scroll-bar-mode . nil)
-            (indent-tabs-mode . nil)
-            )
+  (custom-file (locate-user-emacs-file "custom.el"))
+  (user-full-name "Masaya Watanabe")
+  (user-mail-address "sfbgwm30@gmail.com")
+  (user-login-name "matsuyoshi30")
+  (create-lockfiles nil)
+  (debug-on-error t)
+  (init-file-debug t)
+  (frame-resize-pixelwise t)
+  (enable-recursive-minibuffers t)
+  (history-length 1000)
+  (history-delete-duplicates t)
+  (scroll-preserve-screen-position t)
+  (scroll-conservatively 100)
+  (mouse-wheel-scroll-amount '(1 ((control) . 5)))
+  (ring-bell-function 'ignore)
+  (text-quoting-style 'straight)
+  (truncate-lines t)
+  (scroll-bar-mode nil)
+  (indent-tabs-mode nil)
+  (kill-ring-max 100)
+  (kill-read-only-ok t)
+  (kill-whole-line t)
+  (eval-expression-print-length nil)
+  (eval-expression-print-level nil)
+  :bind
+  (("C-h" . delete-backward-char)
+   ("C-S-j" . eval-print-last-sexp)
+   ("C-j" . newline)
+   ("C-c a" . align)
+   ("C-c M-a" . align-regexp)
+   ("C-x F" . toggle-frame-maximized)
+   ("C-x ?" . help-command)
+   ("C-c C-j" . rg)
+   ("C-c C-q" . quickrun-with-arg)
+   ("C-t" . other-window-or-split)
+   ("C-c '" . google-this)
+   ("C-c t" . toggle-truncate-lines)
+   ("C-x C-m" . counsel-mark-ring)
+   ("C-c g" . affe-grep)
+   ("C-c f" . affe-find)
+   ("C-]" . consult-ghq-find)
+   ("M-SPC" . expand-abbrev)
+   ("<f5>" . ef-themes-select)
+   ("<f6>" . neotree-toggle)
+   ("<f7>" . global-display-line-numbers-mode)
+   ("<f8>" . display-line-numbers-mode)
+   ("C-x M-g" . germanium-buffer-to-png)
+   ("C-x M-q" . germanium-region-to-png)
+   ("M-n" . (lambda () (interactive) (scroll-up 1)))
+   ("M-p" . (lambda () (interactive) (scroll-down 1)))
+   ("C-x C-j" . skk-mode)
+   ("C-c w" . copy-word-at-point)
+   ("C-\\" . nil))
+  :bind (:map read-expression-map
+         ("<tab>" . completion-at-point))
   :config
   (defalias 'yes-or-no-p 'y-or-n-p)
   (keyboard-translate ?\C-h ?\C-?))
 
-(leaf simple
-  :doc "basic editing commands for Emacs"
-  :tag "builtin" "internal"
-  :custom ((kill-ring-max . 100)
-           (kill-read-only-ok . t)
-           (kill-whole-line . t)
-           (eval-expression-print-length . nil)
-           (eval-expression-print-level . nil)))
+(use-package paren
+  :ensure nil
+  :custom (show-paren-delay 0.1)
+  :init (show-paren-mode 1))
 
-(leaf paren
-  :doc "highlight matching paren"
-  :tag "builtin"
-  :custom ((show-paren-delay . 0.1))
-  :global-minor-mode show-paren-mode)
+(use-package delsel
+  :ensure nil
+  :init (delete-selection-mode 1))
 
-(leaf delsel
-  :doc "delete selection if you insert"
-  :tag "builtin"
-  :global-minor-mode delete-selection-mode)
+(use-package autorevert
+  :ensure nil
+  :custom (auto-revert-interval 5)
+  :init (global-auto-revert-mode 1))
 
-(leaf autorevert
-  :doc "revert buffers when files on disk change"
-  :tag "builtin"
-  :custom ((auto-revert-interval . 5))
-  :global-minor-mode global-auto-revert-mode)
-
-(leaf recentf
+(use-package recentf
+  :ensure nil
   :custom
-  ((recentf-max-saved-items . 2000)
-   (recentf-exclude . '("\\.elc$" "\\.o$" "~$" "\\.undo-tree/" "PATH" "^/[^/:]+:"))
-   (recentf-auto-cleanup . 'never))
+  (recentf-max-saved-items 2000)
+  (recentf-exclude '("\\.elc$" "\\.o$" "~$" "\\.undo-tree/" "PATH" "^/[^/:]+:"))
+  (recentf-auto-cleanup 'never)
   :init
   (recentf-mode t))
 
@@ -179,29 +216,28 @@
 (defvar eshell-directory-name "~/.emacs.d/cache/eshell/")
 (defvar auto-save-list-file-prefix "~/.emacs.d/cache/auto-save-list/.saves-")
 
-(leaf dash :ensure t)
+(use-package dash :ensure t)
 
 (setq gc-cons-percentage 0.2
       gc-cons-threshold (* 128 1024 1024))
 (add-hook 'focus-out-hook #'garbage-collect)
 (setq read-process-output-max (* 1024 1024)) ; 1mb
 
-;; (leaf gcmh
+;; (use-package gcmh
 ;;   :ensure t
 ;;   :diminish gcmh
-;;   :custom (gcmh-verbose . t)
+;;   :custom (gcmh-verbose t)
 ;;   :config
 ;;   (gcmh-mode 1))
 
-(leaf midnight
-  :require t
-  :hook
-  (emacs-startup-hook . midnight-mode))
+(use-package midnight
+  :ensure nil
+  :demand t
+  :hook (emacs-startup . midnight-mode))
 
-(leaf expand-region
+(use-package expand-region
   :ensure t
-  :bind
-  (("C-@" . er/expand-region)))
+  :bind (("C-@" . er/expand-region)))
 
 (setq auto-mode-case-fold nil)
 
@@ -216,9 +252,11 @@
 
 ;;; Path
 
-(autoload 'exec-path-from-shell "exec-path-from-shell" nil t)
-(let ((envs '("PATH" "GOPATH")))
-  (exec-path-from-shell-copy-envs envs))
+(use-package exec-path-from-shell
+  :ensure t
+  :demand t
+  :config
+  (exec-path-from-shell-copy-envs '("PATH" "GOPATH")))
 (setenv "NODE_PATH"
         (concat "~/node_modules/:"
                 (getenv "NODE_PATH")))
@@ -230,23 +268,23 @@
 (set-face-attribute 'fixed-pitch nil :family "HackGen Console" :height 160)
 (set-face-attribute 'variable-pitch nil :family "Iosevka" :height 160)
 
-(leaf ef-themes
-  :ensure t
-  :defun my-ef-themes-default-font-face
+(use-package ef-themes
+  :ensure (:tag "1.10.0") ;; before modus
+  :functions my-ef-themes-default-font-face
   :custom
-  (ef-themes-headings . '((0 . (variable-pitch light 1.9))
-                          (1 . (variable-pitch light 1.8))
-                          (2 . (variable-pitch regular 1.7))
-                          (3 . (variable-pitch regular 1.6))
-                          (4 . (variable-pitch regular 1.5))
-                          (5 . (variable-pitch 1.4))
-                          (6 . (variable-pitch 1.3))
-                          (7 . (variable-pitch 1.2))
-                          (t . (variable-pitch 1.1))))
-  (ef-themes-mixed-font . t)
-  (ef-themes-variable-pitch-ui . t)
-  (ef-themes-to-toggle . '(ef-summer ef-winter))
-  (ef-themes-region . '(intense no-extend neutral))
+  (ef-themes-headings '((0 . (variable-pitch light 1.9))
+                        (1 . (variable-pitch light 1.8))
+                        (2 . (variable-pitch regular 1.7))
+                        (3 . (variable-pitch regular 1.6))
+                        (4 . (variable-pitch regular 1.5))
+                        (5 . (variable-pitch 1.4))
+                        (6 . (variable-pitch 1.3))
+                        (7 . (variable-pitch 1.2))
+                        (t . (variable-pitch 1.1))))
+  (ef-themes-mixed-font t)
+  (ef-themes-variable-pitch-ui t)
+  (ef-themes-to-toggle '(ef-summer ef-winter))
+  (ef-themes-region '(intense no-extend neutral))
   :config
   (defun my-ef-themes-default-font-face ()
      (ef-themes-with-colors
@@ -269,32 +307,33 @@
                 (set-frame-position (selected-frame)
                                     (car my--frame-position-before-theme)
                                     (cdr my--frame-position-before-theme))))
-            nil t))
-(ef-themes-select 'ef-cyprus)
+            nil t)
+  (ef-themes-select 'ef-cyprus))
 
-(leaf neotree
+(use-package neotree
   :ensure t
-  :defun neo-global--window-exists-p
+  :functions neo-global--window-exists-p
   :custom
-  (neo-show-hidden-files . t)
-  (neo-theme . 'icons))
-(defun neotree-text-scale ()
-  "Text scale for neotree."
-  (interactive)
-  (text-scale-adjust 0)
-  (text-scale-decrease 0.2)
-  (message nil))
-(add-hook 'neo-after-create-hook
-      (lambda (_)
-        (call-interactively 'neotree-text-scale)))
+  (neo-show-hidden-files t)
+  (neo-theme 'icons)
+  :config
+  (defun neotree-text-scale ()
+    "Text scale for neotree."
+    (interactive)
+    (text-scale-adjust 0)
+    (text-scale-decrease 0.2)
+    (message nil))
+  (add-hook 'neo-after-create-hook
+            (lambda (_)
+              (call-interactively 'neotree-text-scale))))
 
-(leaf tab-bar-mode
-  :init
-  (tab-bar-mode 1)
+(use-package tab-bar
+  :ensure nil
+  :init (tab-bar-mode 1)
   :custom
-  ((tab-bar-show . 1)
-   (tab-bar-new-tab-choice         . "*scratch*")
-   (tab-bar-tab-name-truncated-max . 12)))
+  (tab-bar-show 1)
+  (tab-bar-new-tab-choice "*scratch*")
+  (tab-bar-tab-name-truncated-max 12))
 
 (setq display-time-day-and-date t)
 (defvar display-time-string-forms
@@ -303,15 +342,17 @@
 (display-time-mode t)
 (display-battery-mode t)
 
-(leaf visual-line-mode
-  :require simple
+(use-package simple
+  :ensure nil
+  :demand t
   :config
   (global-visual-line-mode t)
-  (diminish 'visual-line-mode nil))
+  (with-eval-after-load 'diminish
+    (diminish 'visual-line-mode nil)))
 
-(leaf volatile-highlights
+(use-package volatile-highlights
   :ensure t
-  :require t
+  :demand t
   :diminish volatile-highlights-mode
   :config
   (volatile-highlights-mode t))
@@ -327,20 +368,20 @@
              (set (make-local-variable 'my-face-spc-at-eol) nil)
              (set (make-local-variable 'delete-trailing-whitespace-before-save) nil)))
 
-(leaf nyan-mode
+(use-package nyan-mode
   :ensure t
   :init
   (defvar nyan-bar-length 16)
   :config
   (nyan-mode t))
 
-(leaf smartparens
+(use-package smartparens
   :ensure t
-  :require smartparens-config
+  :demand t
   :diminish smartparens-mode
-  :defun sp-pair
-  :custom (sp-escape-quotes-after-insert . nil)
-  :bind (:smartparens-mode-map
+  :functions sp-pair
+  :custom (sp-escape-quotes-after-insert nil)
+  :bind (:map smartparens-mode-map
          ("C-(" . sp-backward-slurp-sexp)
          ("C-)" . sp-slurp-hybrid-sexp)
          ("M-(" . sp-backward-barf-sexp)
@@ -358,6 +399,7 @@
          ([remap kill-sexp] . sp-kill-sexp)
          ([remap mark-sexp] . sp-mark-sexp))
   :config
+  (require 'smartparens-config)
   (smartparens-global-mode 1)
   (show-smartparens-global-mode 1)
   (sp-pair "｢" "｣" :actions '(insert wrap autoskip navigate))
@@ -372,58 +414,62 @@
     (indent-according-to-mode))
   (sp-pair "{" nil :post-handlers '((my-create-newline-and-enter-sexp "RET"))))
 
-(leaf rainbow-mode
+(use-package rainbow-mode
   :ensure t
   :hook
-  css-mode-hook
-  sass-mode-hook
-  scss-mode-hook
-  web-mode-hook)
+  (css-mode . rainbow-mode)
+  (sass-mode . rainbow-mode)
+  (scss-mode . rainbow-mode)
+  (web-mode . rainbow-mode))
 
 
 ;; all-the-icons
 
-(leaf all-the-icons
+(use-package all-the-icons
   :ensure t
   :custom
-  ((all-the-icons-scale-factor . 0.9)
-   (all-the-icons-default-adjust . 0.0))
-  :config
-  (leaf all-the-icons-ivy
-    :require t
-    :init (add-hook 'after-init-hook 'all-the-icons-ivy-setup))
-  (leaf all-the-icons-dired
-    :require t
-    :diminish all-the-icons-dired-mode))
+  (all-the-icons-scale-factor 0.9)
+  (all-the-icons-default-adjust 0.0))
 
-(leaf doom-modeline
+(use-package all-the-icons-ivy
+  :ensure t
+  :after all-the-icons
+  :demand t
+  :init (add-hook 'after-init-hook 'all-the-icons-ivy-setup))
+
+(use-package all-the-icons-dired
+  :ensure t
+  :after all-the-icons
+  :demand t
+  :diminish all-the-icons-dired-mode)
+
+(use-package doom-modeline
   :ensure t
   :init (doom-modeline-mode 1)
   :custom
-  ((doom-modeline-lsp . t)))
+  (doom-modeline-lsp t))
 
-(leaf hide-mode-line
+(use-package hide-mode-line
   :ensure t
-  :hook (neotree-mode-hook))
+  :hook (neotree-mode . hide-mode-line-mode))
 
 (transient-mark-mode t)
 (size-indication-mode t)
 (setq-default tab-width 2 indent-tabs-mode nil)
 
-(leaf moom
+(use-package moom
   :ensure t
-  :defvar moom-mode-map
+  :defines moom-mode-map
   :config
   (setq moom-use-font-module nil)
   (moom-mode t)
-  ;;(define-key moom-mode-map (kbd "M-0") 'moom-move-frame)
   (define-key moom-mode-map (kbd "M-1") 'moom-move-frame-left)
   (define-key moom-mode-map (kbd "M-2") 'moom-move-frame-to-center)
   (define-key moom-mode-map (kbd "M-3") 'moom-move-frame-right)
   ;; Center frame on startup
   (add-hook 'window-setup-hook #'moom-move-frame-to-center))
 
-(leaf darkroom
+(use-package darkroom
   :ensure t
   :bind (("<f10>" . my:darkroom-mode-in)
          ("<f12>" . my:full-darkroom-mode-in))
@@ -445,17 +491,19 @@
     (darkroom-mode 0)
     (toggle-frame-fullscreen)))
 
-(leaf perfect-margin
-  :require t
-  :setq ((perfect-margin-ignore-filters)
-         (perfect-margin-ignore-regexps))
+(use-package perfect-margin
+  :ensure t
+  :demand t
   :custom
-  (perfect-margin-visible-width . 200)
+  (perfect-margin-visible-width 200)
   :config
+  (setq perfect-margin-ignore-filters nil)
+  (setq perfect-margin-ignore-regexps nil)
   (perfect-margin-mode 1))
 
-(leaf spacious-padding
-  :require t
+(use-package spacious-padding
+  :ensure t
+  :demand t
   :config
   (setopt spacious-padding-widths
           '( :internal-border-width 14
@@ -466,8 +514,9 @@
              :scroll-bar-width 0))
   (spacious-padding-mode))
 
-(leaf breadcrumb
-  :require t
+(use-package breadcrumb
+  :ensure t
+  :demand t
   :config (breadcrumb-mode))
 
 ;;; IME
@@ -571,16 +620,25 @@
     (defvar mac-win-target-commands
       '(find-file save-buffer other-window delete-window split-window))))
 
-(leaf ddskk
+(use-package ccc
+  :ensure (:host github :repo "skk-dev/ddskk"
+           :files ("ccc.el")
+           :pre-build (("perl" "-pi" "-e"
+                        "print \";; Version: 1.43\\n\" if /^;; Keywords:/ && !$done++"
+                        "ccc.el")))
+  :demand t)
+
+(use-package ddskk
   :ensure t
   :custom
-  (skk-egg-like-newline . t)
-  (skk-use-look . t)
-  (skk-sticky-key . ";"))
+  (skk-egg-like-newline t)
+  (skk-use-look t)
+  (skk-sticky-key ";"))
 
 ;;; dired
 
-(leaf dired
+(use-package dired
+  :ensure nil
   :init
   (defun dired-toggle-mark (arg)
     "Toggle the current (or next ARG) files."
@@ -617,28 +675,27 @@
                 (kill-buffer (current-buffer))
                 (dired up))
               (dired-goto-file dir))))))
-  :hook (dired-mode-hook . all-the-icons-dired-mode)
+  :hook (dired-mode . all-the-icons-dired-mode)
   :custom
-  (dired-guess-shell-gnutar . "tar")
-  (dired-guess-shell-alist-user . '(("\\.tar\\.gz\\'" "tar ztvf")
-                                    ("\\.tar\\'" "tar ztvf")
-                                    ("\\.tar\\.bz2\\'" "tar Itvf")
-                                    ("\\.zip\\'" "unzip -l")
-                                    ("\\.\\(g\\|\\ z\\'" "zcat")
-                                    ("\\.\\(jpg\\|JPG\\|git\\|GIF\\)\\'"
-                                     (if (eq system-type 'window-nt)
-                                         "fiber" "xv"))
-                                    ("\\.ps\\'"
-                                     (if (eq system-type 'window-nt)
-                                         "fiber" "ghostview"))
-                                    ))
-  :bind (:dired-mode-map
+  (dired-guess-shell-gnutar "tar")
+  (dired-guess-shell-alist-user '(("\\.tar\\.gz\\'" "tar ztvf")
+                                  ("\\.tar\\'" "tar ztvf")
+                                  ("\\.tar\\.bz2\\'" "tar Itvf")
+                                  ("\\.zip\\'" "unzip -l")
+                                  ("\\.\\(g\\|\\ z\\'" "zcat")
+                                  ("\\.\\(jpg\\|JPG\\|git\\|GIF\\)\\'"
+                                   (if (eq system-type 'window-nt)
+                                       "fiber" "xv"))
+                                  ("\\.ps\\'"
+                                   (if (eq system-type 'window-nt)
+                                       "fiber" "ghostview"))))
+  :bind (:map dired-mode-map
          (" " . dired-toggle-mark)
          ("\C-m" . dired-my-advertised-find-file)
          ("^" . dired-my-up-directory)
-         ("r" . wdired-change-to-wdired-mode)
-         ))
-(leaf wdired :require t)
+         ("r" . wdired-change-to-wdired-mode)))
+
+(use-package wdired :ensure nil :demand t)
 
 ;; output directory first
 (setq insert-directory-program "gls")
@@ -650,70 +707,78 @@
 
 ;;; completion
 
-(leaf vertico
+(use-package orderless :ensure t)
+
+(use-package vertico
   :ensure t
-  :global-minor-mode t
+  :init (vertico-mode 1)
   :custom
-  (vertico-count . 40)
-  (completion-styles . '(orderless))
+  (vertico-count 40)
+  (completion-styles '(orderless))
   :hook
-  ((after-init-hook . savehist-mode))
+  (after-init . savehist-mode))
+
+(use-package marginalia
+  :ensure t
+  :after vertico
+  :init (marginalia-mode 1))
+
+(use-package consult
+  :ensure t
+  :bind
+  (("C-s" . consult-line)
+   ("C-S-s" . consult-imenu)
+   ("C-x C-r" . consult-recentf-file)
+   ("M-s M-b" . consult-buffer))
+  :defines vertico-map
+  :custom
+  (consult-find-command "fd --color=never --full-path ARG OPTS")
   :config
-  (leaf marginalia
-    :ensure t
-    :global-minor-mode t)
-  (leaf consult
-    :ensure t
-    :bind
-    (("C-s" . consult-line)
-     ("C-S-s" . consult-imenu)
-     ("C-x C-r" . consult-recentf-file)
-     ("M-s M-b" . consult-buffer))
-    :defvar vertico-map
-    :custom
-    (consult-find-command . "fd --color=never --full-path ARG OPTS")
-    :config
+  (with-eval-after-load 'vertico
     (define-key vertico-map (kbd "C-r") 'vertico-previous)
     (define-key vertico-map (kbd "C-s") 'vertico-next))
-  (leaf embark
-    :ensure t
-    :bind (("C-." . embark-act)))
-  (leaf embark-consult
-    :ensure t
-    :after (embark consult)
-    :leaf-defer nil
-    :hook (embark-collect-mode . consult-preview-at-point-mode)))
+  (setq xref-show-xrefs-function #'consult-xref))
 
-(setq xref-show-xrefs-function #'consult-xref)
+(use-package embark
+  :ensure t
+  :bind (("C-." . embark-act)))
+
+(use-package embark-consult
+  :ensure t
+  :after (embark consult)
+  :demand t
+  :hook (embark-collect-mode . consult-preview-at-point-mode))
 
 ;;; magit
 
-(leaf magit
+(use-package magit
   :ensure t
   :bind (("C-x m" . magit-status)
          ("C-c l" . magit-blame-addition))
   :init
   (setq-default magit-auto-revert-mode nil))
 
-(leaf magit-delta
+(use-package magit-delta
   :ensure t
   :after magit
-  :hook (magit-mode-hook))
+  :hook (magit-mode . magit-delta-mode))
 
-(leaf diff-hl
+(use-package diff-hl
+  :ensure t
   :commands diff-hl-magit-pre-refresh diff-hl-magit-post-refresh diff-hl-dired-mode
-  :hook ((magit-pre-refresh-hook . diff-hl-magit-pre-refresh)
-         (magit-post-refresh-hook . diff-hl-magit-post-refresh)
-         (dired-mode-hook . diff-hl-dired-mode))
+  :hook ((magit-pre-refresh . diff-hl-magit-pre-refresh)
+         (magit-post-refresh . diff-hl-magit-post-refresh)
+         (dired-mode . diff-hl-dired-mode))
   :init
   (global-diff-hl-mode 1)
   (global-diff-hl-show-hunk-mouse-mode 1))
 
-(leaf difftastic
-  :bind ((magit-blame-read-only-mode-map
-          ("D" . difftastic-magit-show)
-          ("S" . difftastic-magit-show)))
-  :require t
+(use-package difftastic
+  :ensure t
+  :demand t
+  :bind (:map magit-blame-read-only-mode-map
+         ("D" . difftastic-magit-show)
+         ("S" . difftastic-magit-show))
   :config
   (with-eval-after-load 'magit-diff
     (transient-append-suffix 'magit-diff
@@ -723,22 +788,25 @@
 
 ;;; libvterm
 
-(leaf vterm
+(use-package vterm
   ;; requirements: brew install cmake libvterm libtool
   :ensure t
   :bind
   ("<f2>" . vterm-toggle)
   :custom
-  (vterm-max-scrollback . 10000)
-  (vterm-buffer-name-string . "vterm: %s")
-  (vterm-keymap-exceptions . '("<f1>" "<f2>" "<f8>" "C-c" "C-x" "C-g" "C-l" "M-x" "C-v" "M-v" "C-y" "C-t" "C-z"))
+  (vterm-max-scrollback 10000)
+  (vterm-buffer-name-string "vterm: %s")
+  (vterm-keymap-exceptions '("<f1>" "<f2>" "<f8>" "C-c" "C-x" "C-g" "C-l" "M-x" "C-v" "M-v" "C-y" "C-t" "C-z"))
   :config
   (define-key vterm-mode-map (kbd "C-c C-c") 'vterm--self-insert))
 
-(leaf vterm-toggle
-  :ensure t
+(use-package vterm-toggle
+  :ensure (:host github :repo "jixiuf/vterm-toggle"
+           :pre-build (("perl" "-pi" "-e"
+                        "s/:type 'symbolp/:type 'hook/g"
+                        "vterm-toggle.el")))
   :custom
-  (vterm-toggle-scope . 'project)
+  (vterm-toggle-scope 'project)
   :config
   (add-to-list 'display-buffer-alist
                '((lambda (bufname _) (with-current-buffer bufname (eq major-mode ' vterm-mode)))
@@ -753,48 +821,55 @@
 
 ;;; Projectile
 
-(leaf projectile
+(use-package projectile
   :ensure t
   :diminish projectile-mode
-  :defvar projectile-mode-map
+  :defines projectile-mode-map
   :custom
-  (projectile-project-search-path . '("~/ghq"))
+  (projectile-project-search-path '("~/ghq"))
   :config
   (projectile-mode t)
-  (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map)
-  (leaf counsel-projectile
-    :ensure t
-    :config
-    (counsel-projectile-mode t)))
+  (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map))
+
+(use-package counsel-projectile
+  :ensure t
+  :after projectile
+  :config
+  (counsel-projectile-mode t))
 
 ;; completion
 
-(leaf corfu
+(use-package corfu
   :ensure t
-  :global-minor-mode global-corfu-mode corfu-popupinfo-mode
-  :custom ((corfu-auto . t)
-           (corfu-auto-delay . 0.2)
-           (corfu-auto-prefix . 1)
-           (corfu-popupinfo-delay . nil))
-  :bind ((corfu-map
-          ("C-s" . corfu-insert-separator))))
+  :custom
+  (corfu-auto t)
+  (corfu-auto-delay 0.2)
+  (corfu-auto-prefix 1)
+  (corfu-popupinfo-delay nil)
+  :bind (:map corfu-map
+         ("C-s" . corfu-insert-separator))
+  :init
+  (global-corfu-mode)
+  (corfu-popupinfo-mode))
 
-(leaf cape
+(use-package cape
   :ensure t
   :config
   (add-to-list 'completion-at-point-functions #'cape-file))
 
 ;;; flymake
 
-(leaf flymake
+(use-package package-lint-flymake :ensure t)
+(use-package flymake-diagnostic-at-point :ensure t)
+(use-package popup :ensure t)
+(use-package posframe :ensure t)
+
+(use-package flymake
+  :ensure nil
   :bind (("M-N" . flymake-goto-next-error)
          ("M-P" . flymake-goto-prev-error))
   :config
-  (remove-hook 'flymake-diagnostic-functions 'flymake-proc-legacy-flymake)
-  (leaf package-lint-flymake :ensure t)
-  (leaf flymake-diagnostic-at-point :ensure t)
-  (leaf popup :ensure t)
-  (leaf posframe :ensure t)
+  (advice-add 'flymake-proc-legacy-flymake :override #'ignore)
 
   (with-eval-after-load 'flymake
     (with-eval-after-load 'flymake-diagnostic-at-point
@@ -802,7 +877,7 @@
     (add-hook 'emacs-lisp-mode-hook #'package-lint-flymake-setup)
     (with-eval-after-load 'popup
       (set-face-attribute 'popup-tip-face nil
-		                      :background "dark slate gray"
+                          :background "dark slate gray"
                           :foreground "white"
                           :underline nil)))
 
@@ -819,27 +894,27 @@
      (defun my/flymake-diagnostic-at-point-display-popup (text)
        "Display the flymake diagnostic TEXT inside a posframe."
        (posframe-show " *flymake-posframe-buffer*"
-		                  :string (concat flymake-diagnostic-at-point-error-prefix
-				                              (flymake--diag-text
-				                               (get-char-property (point) 'flymake-diagnostic)))
-		                  :position (point)
-		                  :foreground-color "cyan"
-		                  :internal-border-width 2
-		                  :internal-border-color "red"
-		                  :poshandler 'posframe-poshandler-window-bottom-left-corner)
+                      :string (concat flymake-diagnostic-at-point-error-prefix
+                                      (flymake--diag-text
+                                       (get-char-property (point) 'flymake-diagnostic)))
+                      :position (point)
+                      :foreground-color "cyan"
+                      :internal-border-width 2
+                      :internal-border-color "red"
+                      :poshandler 'posframe-poshandler-window-bottom-left-corner)
        (dolist (hook flymake-posframe-hide-posframe-hooks)
          (add-hook hook #'flymake-posframe-hide-posframe nil t)))
      (advice-add 'flymake-diagnostic-at-point-display-popup :override 'my/flymake-diagnostic-at-point-display-popup)))
 
 ;;; Snippet
 
-(leaf yasnippet
+(use-package yasnippet
   :ensure t
-  :require t
+  :demand t
   :diminish yas-minor-mode
   :custom
-  (yas-snippet-dirs . '("~/.emacs.d/mysnippets"))
-  :bind (:yas-minor-mode-map
+  (yas-snippet-dirs '("~/.emacs.d/mysnippets"))
+  :bind (:map yas-minor-mode-map
          ("<tab>" . nil)
          ("TAB" . nil)
          ("C-c C-y" . company-yasnippet)
@@ -847,57 +922,50 @@
          ("C-x C-i n" . yas-new-snippet)
          ("C-x C-i v" . yas-visit-snippet-file))
   :config
-  (yas-global-mode 1)
-  (leaf yasnippet-snippets :ensure t))
+  (yas-global-mode 1))
+
+(use-package yasnippet-snippets :ensure t :after yasnippet)
 
 ;;; Edit
 
-(leaf quickrun
+(use-package quickrun
   :ensure t
-  :after t)
+  :defer t)
 
-(leaf anzu
-  :doc "replace"
-  :ensure t
-  :init
-  (global-unset-key (kbd "C-t"))
-  :custom (globa-anzu-mode . t)
-  :bind
-  ([remap query-replace] . anzu-query-replace)
-  ([remap query-replace-regexp] . anzu-query-replace-regexp))
+(use-package smartrep :ensure t)
 
-(leaf multiple-cursors
+(use-package multiple-cursors
   :ensure t
-  :require smartrep
+  :after smartrep
   :bind
   ("C-M-c" . mc/edit-lines)
   ("C->" . mc/mark-next-like-this)
   ("C-<" . mc/mark-previous-like-this))
 
-(leaf mwim
+(use-package mwim
   :ensure t
   :bind
   (("C-a" . mwim-beginning)
    ("C-e" . mwim-end)))
 
-(leaf undo-tree
+(use-package undo-tree
   :ensure t
-  :require t
+  :demand t
   :diminish "UT"
-  :defvar undo-tree-visualizer-mode-map
+  :defines undo-tree-visualizer-mode-map
   :custom
-  (global-undo-tree-mode . t)
-  (undo-tree-enable-undo-in-region . nil)
-  (undo-tree-history-directory-alist . `(("" . ,(concat user-emacs-directory "undo-tree/"))))
-  (undo-tree-visualizer-timestamps . t)
+  (global-undo-tree-mode t)
+  (undo-tree-enable-undo-in-region nil)
+  (undo-tree-history-directory-alist `(("" . ,(concat user-emacs-directory "undo-tree/"))))
+  (undo-tree-visualizer-timestamps t)
   :config
   (define-key undo-tree-visualizer-mode-map (kbd "C-g") 'undo-tree-visualizer-quit))
 
-(leaf rg
+(use-package rg
   :ensure t
-  :after t)
+  :defer t)
 
-(leaf eglot
+(use-package eglot
   :ensure t
   :config
   (add-hook 'go-mode-hook 'eglot-ensure)
@@ -905,28 +973,30 @@
   (add-hook 'rust-mode-hook 'eglot-ensure)
   (add-hook 'scala-mode-hook 'eglot-ensure))
 
-(leaf eglot-booster
-  :when (executable-find "emacs-lsp-booster")
-  :vc ( :url "https://github.com/jdtsmith/eglot-booster")
-  :global-minor-mode t)
+(use-package eglot-booster
+  :ensure (:host github :repo "jdtsmith/eglot-booster")
+  :if (executable-find "emacs-lsp-booster")
+  :init (eglot-booster-mode 1))
 
-(leaf tree-sitter
+(use-package tree-sitter
   :ensure t
   :hook ((typescript-ts-mode . tree-sitter-hl-mode)
          (tsx-ts-mode . tree-sitter-hl-mode))
   :config
   (global-tree-sitter-mode))
-(leaf tree-sitter-langs
+
+(use-package tree-sitter-langs
   :ensure t
   :after tree-sitter
   :config
   (tree-sitter-require 'tsx)
   (add-to-list 'tree-sitter-major-mode-language-alist '(tsx-ts-mode . tsx)))
 
-(leaf jsonrpc
-  :after t
-  :setq ((jsonrpc-default-request-timeout . 3000))
+(use-package jsonrpc
+  :ensure nil
+  :defer t
   :config
+  (setq jsonrpc-default-request-timeout 3000)
   (fset #'jsonrpc--log-event #'ignore))
 
 ;;; Variouts mode
@@ -934,9 +1004,9 @@
 (setq major-mode 'text-mode) ;; default mode is text mode
 
 ;; Go
-(leaf go-mode
+(use-package go-mode
   :ensure t
-  :defvar c-basic-offset
+  :defines c-basic-offset
   :init
   (add-hook 'go-mode-hook #'(lambda ()
                              (setq c-basic-offset 4)
@@ -946,7 +1016,7 @@
                              (local-set-key (kbd "C-c i") 'go-goto-imports)
                              (local-set-key (kbd "C-c d") 'godoc)))
   :custom
-  (gofmt-command . "goimports")
+  (gofmt-command "goimports")
   :config
   (add-hook 'before-save-hook 'gofmt-before-save)
   (add-hook 'go-mode-hook 'tree-sitter-mode))
@@ -962,28 +1032,28 @@
 (add-hook 'project-find-functions #'project-find-go-module)
 
 ;; web
-(leaf web-mode
+(use-package web-mode
   :ensure t
-  ;; :defvar lsp-enabled-clients
-  :defun (sp-local-pair)
-  :defvar web-mode-map
+  :functions sp-local-pair
+  :defines web-mode-map
   :mode
-  "\\.erb\\'"
-  "\\.html?\\'"
-  "\\.tpl\\'"
-  "\\.tmpl\\'"
-  "\\.vue\\'"
+  ("\\.erb\\'"
+   "\\.html?\\'"
+   "\\.tpl\\'"
+   "\\.tmpl\\'"
+   "\\.vue\\'")
   :custom
-  (web-mode-attr-indent-offset . nil)
-  (web-mode-code-indent-offset . 2)
-  (web-mode-css-indent-offset . 2)
-  (web-mode-enable-auto-indentation . nil)
-  (web-mode-enable-auto-quoting . nil)
-  (web-mode-enable-current-column-highlight . t)
-  (web-mode-enable-current-element-highlight . t)
-  (web-mode-markup-indent-offset . 2)
+  (web-mode-attr-indent-offset nil)
+  (web-mode-code-indent-offset 2)
+  (web-mode-css-indent-offset 2)
+  (web-mode-enable-auto-indentation nil)
+  (web-mode-enable-auto-quoting nil)
+  (web-mode-enable-current-column-highlight t)
+  (web-mode-enable-current-element-highlight t)
+  (web-mode-markup-indent-offset 2)
   :config
-  (leaf smartparens :config (sp-local-pair 'web-mode "<" ">" :actions nil))
+  (with-eval-after-load 'smartparens
+    (sp-local-pair 'web-mode "<" ">" :actions nil))
   (local-set-key (kbd "RET") 'newline-and-indent)
   (define-key web-mode-map (kbd "C-c C-b b") nil)
   (define-key web-mode-map (kbd "C-c C-b c") nil)
@@ -1001,15 +1071,15 @@
   (define-key web-mode-map (kbd "C-c i s") 'web-mode-block-select))
 
 ;; typescript
-(leaf typescript-ts-mode
-  :ensure t
+(use-package typescript-ts-mode
+  :ensure nil
   :mode (("\\.ts?\\'" . tsx-ts-mode)
          ("\\.tsx?\\'" . tsx-ts-mode)))
 
-(leaf tide
+(use-package tide
   :ensure t
   :commands setup-tide-mode
-  :hook ((tsx-ts-mode-hook . setup-tide-mode))
+  :hook (tsx-ts-mode . setup-tide-mode)
   :config
   (with-eval-after-load 'tide
     (defun setup-tide-mode nil
@@ -1024,19 +1094,19 @@
     (setq company-tooltip-align-annotations t)))
 
 ;; json
-(leaf json-mode
+(use-package json-mode
   :ensure t
   :init (add-hook 'json-mode-hook #'(lambda () (make-local-variable 'js-indent-level) (setq js-indent-level 2))))
 
 ;; Markdown
-(leaf markdown-mode
+(use-package markdown-mode
   :ensure t
-  :after t
+  :defer t
   :custom
-  (markdown-hide-urls . nil)
-  :defvar markdown-mode-map
+  (markdown-hide-urls nil)
+  :defines markdown-mode-map
   :hook
-  (markdown-mode-hook . (lambda () (display-line-numbers-mode 0)))
+  (markdown-mode . (lambda () (display-line-numbers-mode 0)))
   :config
   (custom-set-variables
    '(markdown-code-lang-modes
@@ -1059,80 +1129,93 @@
         ("tsx" . rjsx-mode)
         ("yaml". yaml-mode)
         ("zsh" . sh-mode))
-      markdown-code-lang-modes)))
-  (leaf markdown-preview-mode
-    :ensure t))
+      markdown-code-lang-modes))))
+
+(use-package markdown-preview-mode
+  :ensure t
+  :after markdown-mode)
 
 ;; scheme
-(leaf geiser-gauche :ensure t)
+(use-package geiser-gauche :ensure t)
 
 ;; elisp
-(leaf elisp-mode
-  :bind (:emacs-lisp-mode-map
+(use-package elisp-mode
+  :ensure nil
+  :bind (:map emacs-lisp-mode-map
          ("C-M-q" . nil)
          ("C-c C-e" . macrostep-expand))
   :config
-  (add-hook 'emacs-lisp-mode-hook 'flymake-mode)
-  (leaf elisp-slime-nav
-    :ensure t
-    :diminish elisp-slime-nav-mode
-    :bind (:elisp-slime-nav-mode-map ("C-c C-d" . helpful-at-point))
-    :hook emacs-lisp-mode-hook help-mode-hook)
-  (leaf eldoc
-    :diminish eldoc-mode
-    :hook emacs-lisp-mode-hook ielm-mode-hook)
-  (leaf ielm
-    :bind (:ielm-map
-           ("C-c C-d" . helpful-at-point)))
-  (leaf macrostep :ensure t)
-  (leaf simple
-    :bind (:read-expression-map
-           ("<tab>" . completion-at-point))))
+  (add-hook 'emacs-lisp-mode-hook 'flymake-mode))
+
+(use-package elisp-slime-nav
+  :ensure t
+  :after elisp-mode
+  :diminish elisp-slime-nav-mode
+  :bind (:map elisp-slime-nav-mode-map ("C-c C-d" . helpful-at-point))
+  :hook ((emacs-lisp-mode . elisp-slime-nav-mode)
+         (help-mode . elisp-slime-nav-mode)))
+
+(use-package eldoc
+  :ensure nil
+  :diminish eldoc-mode
+  :hook ((emacs-lisp-mode . eldoc-mode)
+         (ielm-mode . eldoc-mode)))
+
+(use-package ielm
+  :ensure nil
+  :bind (:map ielm-map
+         ("C-c C-d" . helpful-at-point)))
 
 ;; Haskell
-(leaf haskell-mode
+(use-package haskell-mode
+  :ensure t
   :config
-  (leaf hindent
-    :ensure t)
   (add-hook 'haskell-mode-hook #'hindent-mode))
 
+(use-package hindent
+  :ensure t
+  :after haskell-mode)
+
 ;; python
-(leaf python-mode
+(use-package python
+  :ensure nil
   :config
   (add-hook 'python-mode-hook
             (function (lambda ()
                         (setq indent-tabs-mode nil)))))
 
 ;; c/c++
-(leaf cc-mode
+(use-package cc-mode
+  :ensure nil
   :hook
-  ((c-mode-hook . (lambda () (local-unset-key (kbd "C-c C-b"))))
-   (c-mode-hook . (lambda () (setq comment-start "//"
-                                   comment-end   "")))
-   (c-mode-hook . (lambda () (setq-default c-basic-offset 2)))
-   (c++-mode-hook . (lambda () (local-unset-key (kbd "C-c C-b"))))
-   (c++-mode-hook . (lambda () (setq comment-start "//"
-                                     comment-end   "")))
-   (c++-mode-hook . (lambda () (setq-default c-basic-offset 2))))
-  :config
-  (leaf clang-format
-    :ensure t
-    :init
-    (defun set-hook-after-save-clang-format ()
-      (add-hook 'after-save-hook 'clang-format-buffer t t))
-    :hook ((c-mode-hook . set-hook-after-save-clang-format)
-           (c++-mode-hook . set-hook-after-save-clang-format))
-    :bind ((:c-mode-map ([remap indent-whole-buffer] . clang-format-buffer))
-           (:c++-mode-map ([remap indent-whole-buffer] . clang-format-buffer)))))
+  ((c-mode . (lambda () (local-unset-key (kbd "C-c C-b"))))
+   (c-mode . (lambda () (setq comment-start "//"
+                               comment-end   "")))
+   (c-mode . (lambda () (setq-default c-basic-offset 2)))
+   (c++-mode . (lambda () (local-unset-key (kbd "C-c C-b"))))
+   (c++-mode . (lambda () (setq comment-start "//"
+                                 comment-end   "")))
+   (c++-mode . (lambda () (setq-default c-basic-offset 2)))))
+
+(use-package clang-format
+  :ensure t
+  :after cc-mode
+  :init
+  (defun set-hook-after-save-clang-format ()
+    (add-hook 'after-save-hook 'clang-format-buffer t t))
+  :hook ((c-mode . set-hook-after-save-clang-format)
+         (c++-mode . set-hook-after-save-clang-format))
+  :bind (:map c-mode-map ([remap indent-whole-buffer] . clang-format-buffer))
+  :bind (:map c++-mode-map ([remap indent-whole-buffer] . clang-format-buffer)))
 
 ;; rust
-(leaf rustic
+(use-package rustic
   :ensure t
   :mode "\\.rs$"
   :custom
-  (rustic-format-display-method . 'ignore)
-  (rustic-lsp-client . 'eglot)
-  (rustic-babel-display-error-popup . nil)
+  (rustic-format-display-method 'ignore)
+  (rustic-lsp-client 'eglot)
+  (rustic-babel-display-error-popup nil)
   :config
   (defun my/find-rust-project-root (dir)
     (when-let ((root (locate-dominating-file dir "Cargo.toml")))
@@ -1142,37 +1225,40 @@
   (add-hook 'rust-mode-hook #'my/rust-mode-hook))
 
 ;; ocaml
-(leaf tuareg
+(use-package tuareg
   :ensure t)
 
 ;; lua
-(leaf lua-ts-mode
-  :ensure t
+(use-package lua-ts-mode
+  :ensure nil
   :mode ("\\.lua$"))
 
 ;; scala
-(leaf scala-mode
+(use-package scala-mode
+  :ensure t
   :interpreter ("scala"))
-(leaf sbt-mode
+
+(use-package sbt-mode
+  :ensure t
   :commands sbt-start sbt-command
   :config
   (with-eval-after-load 'sbt-mode
     (substitute-key-definition 'minibuffer-complete-word 'self-insert-command minibuffer-local-completion-map)
     (setq sbt:program-options '("-Dsbt.supershell=false"))))
 
-(leaf css-mode :ensure t)
-(leaf csv-mode :ensure t)
-(leaf toml-mode :ensure t)
-(leaf dockerfile-mode :ensure t)
-(leaf docker-compose-mode :ensure t)
-(leaf dotenv-mode :ensure t :mode "\\.env\\..*\\'")
-(leaf envrc :ensure t)
-(leaf kotlin-mode :ensure t)
-(leaf nginx-mode :ensure t)
-(leaf terraform-mode :ensure t)
-(leaf yaml-mode :ensure t)
+(use-package css-mode :ensure nil)
+(use-package csv-mode :ensure t)
+(use-package toml-mode :ensure t)
+(use-package dockerfile-mode :ensure t)
+(use-package docker-compose-mode :ensure t)
+(use-package dotenv-mode :ensure t :mode "\\.env\\..*\\'")
+(use-package envrc :ensure t)
+(use-package kotlin-mode :ensure t)
+(use-package nginx-mode :ensure t)
+(use-package terraform-mode :ensure t)
+(use-package yaml-mode :ensure t)
 
-(leaf protobuf-mode
+(use-package protobuf-mode
   :ensure t
   :mode ("\\.proto\\'")
   :config
@@ -1184,63 +1270,62 @@
           (lambda ()
             (setq indent-line-function 'my-protobuf-indent-line))))
 
-(leaf sh-script
-  :custom (sh-basic-offset . 2)
-  :defvar sh-shell
-  :config
-  (leaf sh :mode "\\.zsh$"))
+(use-package sh-script
+  :ensure nil
+  :custom (sh-basic-offset 2)
+  :defines sh-shell
+  :mode ("\\.zsh\\'" . sh-mode))
 
-(leaf rfc-mode
-  :require t
-  :custom
-  (rfc-mode-directory . "~/Documents/rfc"))
-
-(leaf pdf-tools
+(use-package rfc-mode
   :ensure t
-  :bind ((pdf-view-mode-map
-          ("C-s" . isearch-forward)))
+  :demand t
   :custom
-  (pdf-annot-activate-created-annotations . t)
-  (pdf-view-resize-factor . 1.1)
+  (rfc-mode-directory "~/Documents/rfc"))
+
+(use-package pdf-tools
+  :ensure t
+  :bind (:map pdf-view-mode-map
+         ("C-s" . isearch-forward))
+  :custom
+  (pdf-annot-activate-created-annotations t)
+  (pdf-view-resize-factor 1.1)
   :config
   (pdf-tools-install))
 
 ;; copilot
 
-(leaf copilot
-  :el-get (copilot
-           :type github
-           :pkgname "zerolfx/copilot.el"
-           )
-  :bind
-  ((copilot-mode-map
-    ("<tab>" .  copilot-accept-completion)
-    ("TAB" .  copilot-accept-completion)))
-  )
+(use-package copilot
+  :ensure (:host github :repo "zerolfx/copilot.el")
+  :bind (:map copilot-mode-map
+         ("<tab>" . copilot-accept-completion)
+         ("TAB" . copilot-accept-completion)))
 
 ;; claude code
 
-(leaf claude-code-ide
-  :el-get (claude-code-ide :url "https://github.com/manzaltu/claude-code-ide.el.git")
+(use-package claude-code-ide
+  :ensure (:host github :repo "manzaltu/claude-code-ide.el")
   :bind ("C-c C-'" . claude-code-ide-menu)
   :custom
-  (claude-code-ide-cli-path . "~/.claude/local/claude")
-  (claude-code-ide-window-width . 120)
+  (claude-code-ide-cli-path "~/.claude/local/claude")
+  (claude-code-ide-window-width 120)
   :config
   (claude-code-ide-emacs-tools-setup))
 
 ;; editorconfig
 
-(leaf editorconfig
+(use-package editorconfig
   :ensure t
   :config
   (editorconfig-mode 1))
 
 ;;; ellama
 
-(leaf ellama
+(use-package llm :ensure t)
+
+(use-package ellama
+  :ensure t
+  :after llm
   :config
-  (leaf llm)
   (require 'llm-ollama)
   (setopt ellama-language "Japanese")
   (setopt ellama-naming-scheme 'ellama-generate-name-by-llm)
@@ -1250,26 +1335,23 @@
   (setopt ellama-translation-provider (make-llm-ollama
                                        :chat-model "gemma2:9b"
                                        :embedding-model "gemma2:9b"))
-  (leaf embark
-    :ensure t
-    :bind (:embark-region-map
-           ("T" . ellama-translate))))
+  (with-eval-after-load 'embark
+    (define-key embark-region-map (kbd "T") 'ellama-translate)))
 
 ;;; elfeed
 
-(leaf elfeed
+(use-package elfeed
   :ensure t
   :bind
   ("C-x w" . elfeed)
-  :defvar '(elfeed-feeds elfeed-search-filter elfeed-show-mode-hook elfeed-show-entry-switch)
-  :defun my-show-elfeed
-  :setq
-  (elfeed-feeds . '(("https://planet.emacslife.com/atom.xml" emacs)
-                    ("https://sachachua.com/blog/feed/" emacs)
-                    ("https://protesilaos.com/codelog.xml" emacs)
-                    ("https://www.youtube.com/feeds/videos.xml?channel_id=UC3ts8coMP645hZw9JSD3pqQ" youtube awesomekling)))
-  (elfeed-search-filter . "@3-days-ago +unread")
+  :defines (elfeed-feeds elfeed-search-filter elfeed-show-mode-hook elfeed-show-entry-switch)
+  :functions my-show-elfeed
   :config
+  (setq elfeed-feeds '(("https://planet.emacslife.com/atom.xml" emacs)
+                        ("https://sachachua.com/blog/feed/" emacs)
+                        ("https://protesilaos.com/codelog.xml" emacs)
+                        ("https://www.youtube.com/feeds/videos.xml?channel_id=UC3ts8coMP645hZw9JSD3pqQ" youtube awesomekling)))
+  (setq elfeed-search-filter "@3-days-ago +unread")
   (defun my-show-elfeed (buffer)
     (with-current-buffer buffer
       (setq buffer-read-only nil)
@@ -1286,43 +1368,50 @@
 
 ;;; shortdoc
 
-(leaf shortdoc
+(use-package shortdoc
+  :ensure nil
   :config
   (set-face-attribute 'variable-pitch (selected-frame) :font (font-spec :family "Iosevka" :size 14)))
 
 ;;; Org
 
-(leaf org
+(use-package org-superstar :ensure t :defer t)
+(use-package org-appear :ensure t :defer t)
+
+(use-package org
   :ensure t
-  :defvar '(org-default-notes-file org-agenda-files)
-  :defun '(yank-with-indent copy-region-unindented)
-  :custom ((org-return-follows-link . t)
-           (org-startup-folded . t)
-           (org-startup-truncated . nil)
-           (org-log-done . 'time)
-           (org-hide-leading-stars . t)
-           (org-edit-src-content-indentation . 0)
-           (org-src-preserve-indentation . nil)
-           (org-todo-keywords . '((sequence "TODO(t)" "FOCUS(f)" "WAIT(w)" "|" "DONE(d)" "SOMEDAY(s)")))
-           (org-todo-keyword-faces . '(("FOCUS"    :foreground "#FF0000" :background "#FFCC66")
-                                       ("WAIT"     :foreground "#CCCCCC" :background "#666666")))
-           (org-appear-autolinks . t)
-           (org-blank-before-new-entry . '((heading . always) (plain-list-item . nil)))
-           (org-cycle-separator-lines . 1))
+  :defines (org-default-notes-file org-agenda-files)
+  :functions (yank-with-indent copy-region-unindented)
   :bind
-  ((org-mode-map
-    ("C-h" . delete-backward-char)
-    ("C-c l" . org-store-link)
-    ("C-c a" . org-agenda)
-    ("C-c y" . yank-with-indent)
-    ("C-c M-w" . copy-region-unindented)))
+  (:map org-mode-map
+   ("C-h" . delete-backward-char)
+   ("C-c l" . org-store-link)
+   ("C-c a" . org-agenda)
+   ("C-c y" . yank-with-indent)
+   ("C-c M-w" . copy-region-unindented))
   :hook
-  (org-mode-hook . org-appear-mode)
-  (org-mode-hook . (lambda () (org-superstar-mode 1)))
-  (org-mode-hook . (lambda () (display-line-numbers-mode 0)))
+  (org-mode . org-appear-mode)
+  (org-mode . (lambda () (org-superstar-mode 1)))
+  (org-mode . (lambda () (display-line-numbers-mode 0)))
   :config
+  (setq org-return-follows-link t)
+  (setq org-startup-folded t)
+  (setq org-startup-truncated nil)
+  (setq org-log-done 'time)
+  (setq org-hide-leading-stars t)
+  (setq org-edit-src-content-indentation 0)
+  (setq org-src-preserve-indentation nil)
+  (setq org-todo-keywords '((sequence "TODO(t)" "FOCUS(f)" "WAIT(w)" "|" "DONE(d)" "SOMEDAY(s)")))
+  (setq org-todo-keyword-faces '(("FOCUS" :foreground "#FF0000" :background "#FFCC66")
+                                  ("WAIT" :foreground "#CCCCCC" :background "#666666")))
+  (setq org-appear-autolinks t)
+  (setq org-blank-before-new-entry '((heading . always) (plain-list-item . nil)))
+  (setq org-cycle-separator-lines 1)
   (setq org-default-notes-file (concat (getenv "ORGSYNCROOT") "/org/journal.org"))
   (setq org-agenda-files (list (concat (getenv "ORGSYNCROOT") "/org/")))
+  ;; ox (org-export) の設定 — org ロード後に評価する必要がある
+  (setq org-export-with-timestamps nil)
+  (require 'ox-md)
   ;; https://emacs.stackexchange.com/questions/31646/how-to-paste-with-indent
   (defun yank-with-indent ()
     "Yank with indentation."
@@ -1368,14 +1457,10 @@ by PAD, BEGINNING and END."
           (copy-region-as-kill (point-min) (point-max))))))
   )
 
-(leaf ox
+(use-package org-capture
   :ensure nil
-  :config
-  (setq org-export-with-timestamps nil)  ;; heading timestamp
-  (leaf ox-md :ensure nil :require t))
-
-(leaf org-capture
-  :defvar '(task-file nippou-file idea-file tweet-file org-capture-templates)
+  :defines (task-file nippou-file idea-file tweet-file org-capture-templates)
+  :bind ("C-c r" . org-capture)
   :config
   ;; https://ladicle.com/post/20200625_123915/
   (defvar org-code-capture--store-file "")
@@ -1427,28 +1512,26 @@ by PAD, BEGINNING and END."
 
 ;;; Utility
 
-(leaf google-this :ensure t)
-(leaf which-key :ensure t :custom (which-key-mode . 1))
-(leaf germanium :ensure t :custom (germanium-check-options-each-execute-command . nil))
-(leaf consult-ghq
-  :ensure t
-  :config
-  (leaf consult :ensure t)
-  (leaf affe
-    :ensure t
-    :config
-    (leaf orderless :ensure t)
-    :custom
-    (affe-find-command . "fd --color=never --full-path --hidden --exclude .git")
-    (affe-highlight-function . 'orderless-highlight-matches)
-    (affe-regexp-function . 'orderless-pattern-compiler)))
+(use-package google-this :ensure t)
+(use-package which-key :ensure t :custom (which-key-mode 1))
+(use-package germanium :ensure t :custom (germanium-check-options-each-execute-command nil))
 
-(leaf browse-at-remote
+(use-package affe
   :ensure t
-  :require t
-  :defun (browse-at-remote-get-url)
   :custom
-  ((browse-at-remote-prefer-symbolic . nil))
+  (affe-find-command "fd --color=never --full-path --hidden --exclude .git")
+  (affe-highlight-function 'orderless-highlight-matches)
+  (affe-regexp-function 'orderless-pattern-compiler))
+
+(use-package consult-ghq
+  :ensure t)
+
+(use-package browse-at-remote
+  :ensure t
+  :demand t
+  :functions browse-at-remote-get-url
+  :custom
+  (browse-at-remote-prefer-symbolic nil)
   :bind
   ("C-C b" . browse-at-remote)
   ("C-c C-b" . bar-to-clipboard))
@@ -1499,50 +1582,6 @@ by PAD, BEGINNING and END."
 (setq comment-empty-lines t)
 
 ;;; Key bindings
-
-(leaf *global-set-key
-  :leaf-autoload nil
-  :bind
-  ("C-h" . delete-backward-char)
-  ("C-S-j" . eval-print-last-sexp)
-  ("C-j" . newline)
-  ("C-c a" . align)
-  ("C-c M-a" . align-regexp)
-  ("C-x F" . toggle-frame-maximized)
-  ("C-x ?" . help-command)
-  ("C-c C-j" . rg)
-  ("C-c C-q" . quickrun-with-arg)
-  ("C-t" . other-window-or-split)
-  ("C-c '" . google-this)
-  ("C-c r" . org-capture)
-  ("C-c t" . toggle-truncate-lines)
-
-  ("C-x C-m" . counsel-mark-ring)
-
-  ("C-c g" . affe-grep)
-  ("C-c f" . affe-find)
-
-  ("C-]" . consult-ghq-find)
-
-  ("M-SPC" . expand-abbrev)
-
-  ("<f5>" . ef-themes-select)
-  ("<f6>" . neotree-toggle)
-  ("<f7>" . global-display-line-numbers-mode)
-  ("<f8>" . display-line-numbers-mode)
-
-  ("C-x M-g" . germanium-buffer-to-png)
-  ("C-x M-q" . germanium-region-to-png)
-
-  ("M-n" . (lambda () (interactive) (scroll-up 1)))
-  ("M-p" . (lambda () (interactive) (scroll-down 1)))
-
-  ("C-x C-j" . skk-mode)
-  ("C-c w" . copy-word-at-point)
-
-  ("C-\\" . nil)
-  :config
-  (keyboard-translate ?\C-h ?\C-?))
 
 (setq file-name-handler-alist my/saved-file-name-handler-alist)
 
