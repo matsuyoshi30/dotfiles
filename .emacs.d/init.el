@@ -148,7 +148,7 @@
 (leaf autorevert
   :doc "revert buffers when files on disk change"
   :tag "builtin"
-  :custom ((auto-revert-interval . 1))
+  :custom ((auto-revert-interval . 5))
   :global-minor-mode global-auto-revert-mode)
 
 (leaf recentf
@@ -507,9 +507,10 @@
   (interactive)
   (setq cursor-type (plist-get my-cur-type-ime :invisible)))
 
+(defvar my--graphic-display-p (display-graphic-p))
 (defun my-apply-cursor-config ()
   (interactive)
-  (when (display-graphic-p)
+  (when my--graphic-display-p
     (if (my-ime-active-p) (my-ime-on-cursor) (my-ime-off-cursor))))
 
 ;; for init setup
@@ -555,13 +556,10 @@
 
     (defun mac-win-restore-ime-target-commands ()
       (when (and mac-auto-ascii-mode
-                 (eq mac-win-last-ime-status 'on))
-        (mapc (lambda (command)
-                (when (string-match
-                       (format "^%s" command) (format "%s" this-command))
-                  (mac-select-input-source
-                   "com.google.inputmethod.Japanese.base")))
-              mac-win-target-commands)))
+                 (eq mac-win-last-ime-status 'on)
+                 (memq this-command mac-win-target-commands))
+        (mac-select-input-source
+         "com.google.inputmethod.Japanese.base")))
     (add-hook 'pre-command-hook 'mac-win-restore-ime-target-commands)
 
     ;; M-x でのコマンド選択でもIMEを戻せる．
@@ -775,7 +773,7 @@
   :ensure t
   :global-minor-mode global-corfu-mode corfu-popupinfo-mode
   :custom ((corfu-auto . t)
-           (corfu-auto-delay . 0)
+           (corfu-auto-delay . 0.2)
            (corfu-auto-prefix . 1)
            (corfu-popupinfo-delay . nil))
   :bind ((corfu-map
