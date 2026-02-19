@@ -860,7 +860,12 @@
 ;;; flymake
 
 (use-package package-lint-flymake :ensure t)
-(use-package flymake-diagnostic-at-point :ensure t)
+(use-package flymake-diagnostic-at-point
+  :ensure t
+  :config
+  ;; Emacs 30+ renamed flymake--diag-text to flymake-diagnostic-text
+  (unless (fboundp 'flymake--diag-text)
+    (defalias 'flymake--diag-text #'flymake-diagnostic-text)))
 (use-package popup :ensure t)
 (use-package posframe :ensure t)
 
@@ -1209,7 +1214,6 @@
 ;; rust
 (use-package rustic
   :ensure t
-  :mode "\\.rs$"
   :custom
   (rustic-format-display-method 'ignore)
   (rustic-lsp-client 'eglot)
