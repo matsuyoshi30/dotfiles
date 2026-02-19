@@ -894,9 +894,7 @@
      (defun my/flymake-diagnostic-at-point-display-popup (text)
        "Display the flymake diagnostic TEXT inside a posframe."
        (posframe-show " *flymake-posframe-buffer*"
-                      :string (concat flymake-diagnostic-at-point-error-prefix
-                                      (flymake--diag-text
-                                       (get-char-property (point) 'flymake-diagnostic)))
+                      :string (concat flymake-diagnostic-at-point-error-prefix text)
                       :position (point)
                       :foreground-color "cyan"
                       :internal-border-width 2

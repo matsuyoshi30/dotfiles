@@ -20,7 +20,8 @@
 (push '(menu-bar-lines . 0) default-frame-alist)
 (push '(tool-bar-lines . 0) default-frame-alist)
 
-(setq frame-title-format (format (if (buffer-file-name) "%%f" "%%b")()))
+;; (setq frame-title-format (format (if (buffer-file-name) "%%f" "%%b")()))
+(add-to-list 'default-frame-alist '(undecorated . t))
 
 (global-hl-line-mode t)
 
