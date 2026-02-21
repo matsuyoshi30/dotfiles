@@ -771,7 +771,16 @@
          (dired-mode . diff-hl-dired-mode))
   :init
   (global-diff-hl-mode 1)
-  (global-diff-hl-show-hunk-mouse-mode 1))
+  (global-diff-hl-show-hunk-mouse-mode 1)
+  :config
+  ;; diff-hl-dired の非同期 vc プロセスがバッファ kill 時に確認を求めないようにする
+  (advice-add 'diff-hl-dired-update :after
+              (lambda ()
+                (dolist (buf (buffer-list))
+                  (when (string-match-p "\\*diff-hl-dired tmp status\\*" (buffer-name buf))
+                    (let ((proc (get-buffer-process buf)))
+                      (when proc
+                        (set-process-query-on-exit-flag proc nil))))))))
 
 (use-package difftastic
   :ensure t
