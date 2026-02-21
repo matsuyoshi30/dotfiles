@@ -308,7 +308,7 @@
                                     (car my--frame-position-before-theme)
                                     (cdr my--frame-position-before-theme))))
             nil t)
-  (ef-themes-select 'ef-cyprus))
+  (ef-themes-select 'ef-elea-dark))
 
 (use-package neotree
   :ensure t
