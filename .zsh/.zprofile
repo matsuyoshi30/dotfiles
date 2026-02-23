@@ -20,6 +20,10 @@ fi
 export JAVA_PATH="/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home"
 export PATH="$PATH:$JAVA_PATH/bin"
 
+# Android SDK
+export ANDROID_HOME="$HOME/Library/Android/sdk"
+export PATH="$PATH:$ANDROID_HOME/platform-tools"
+
 # Scala
 export PATH="$PATH:$HOME/Library/Application Support/Coursier/bin"
 
