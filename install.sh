@@ -196,14 +196,21 @@ main() {
   create_symlink "$SCRIPT_DIR/helix/config.toml" "$HOME/.config/helix/config.toml"
   echo
 
+  info "Installing shared agent configuration..."
+  create_symlink "$SCRIPT_DIR/.agents/skills" "$HOME/.agents/skills"
+  echo
+
   info "Installing Claude configuration..."
   create_symlink "$SCRIPT_DIR/.claude/settings.json" "$HOME/.claude/settings.json"
   create_symlink "$SCRIPT_DIR/.claude/statusline.sh" "$HOME/.claude/statusline.sh"
-  create_symlink "$SCRIPT_DIR/.claude/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
   create_symlink "$SCRIPT_DIR/.claude/commands" "$HOME/.claude/commands"
+  create_symlink "$SCRIPT_DIR/.agents/AGENTS.md" "$HOME/.claude/CLAUDE.md"
   create_symlink "$SCRIPT_DIR/.agents/skills" "$HOME/.claude/skills"
+  echo
 
-  create_symlink "$SCRIPT_DIR/.agents/skills" "$HOME/.agents/skills"
+  info "Installing Codex configuration..."
+  create_symlink "$SCRIPT_DIR/.agents/AGENTS.md" "$HOME/.codex/AGENTS.md"
+  create_symlink "$SCRIPT_DIR/.agents/skills" "$HOME/.codex/skills"
   echo
 
   info "Installing VSCode configuration..."
@@ -211,10 +218,14 @@ main() {
   create_symlink "$SCRIPT_DIR/vscode/settings.json" "${VSCODE_SETTING_DIR}/settings.json"
   create_symlink "$SCRIPT_DIR/vscode/keybindings.json" "${VSCODE_SETTING_DIR}/keybindings.json"
   create_symlink "$SCRIPT_DIR/vscode/mcp.json" "${VSCODE_SETTING_DIR}/mcp.json"
-  cat $SCRIPT_DIR/vscode/extensions | while read line
-  do
-    code --install-extension $line
-  done
+  INSTALLED_EXTENSIONS=$(code --list-extensions 2>/dev/null)
+  while read -r line; do
+    if echo "$INSTALLED_EXTENSIONS" | grep -qi "^${line}$"; then
+      info "VSCode extension already installed: $line"
+    else
+      code --install-extension "$line"
+    fi
+  done < "$SCRIPT_DIR/vscode/extensions"
   echo
 
   echo -e "${GREEN}=====================================${NC}"

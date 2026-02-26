@@ -14,3 +14,9 @@
 - Explain the hypothesis and change details beforehand
 - Validate the hypothesis through testing
 - Revert the change if testing shows no effect
+
+## Agent Guidelines
+
+- Always prefer simplicity over pathological correctness
+- YAGNI, KISS, DRY
+- No backward compatibility shims or fallback paths unless they come free without adding cyclomatic complexity
