@@ -20,3 +20,9 @@
 - Always prefer simplicity over pathological correctness
 - YAGNI, KISS, DRY
 - No backward compatibility shims or fallback paths unless they come free without adding cyclomatic complexity
+
+## .matsuyoshi directory
+
+- `.matsuyoshi` is globally gitignore
+- It is used for documents such as plans and progress tracking created by AI agent
+
