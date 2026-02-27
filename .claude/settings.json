@@ -162,7 +162,6 @@
       "Bash(rm:*)"
     ]
   },
-  "model": "opus[1m]",
   "hooks": {
     "Stop": [
       {
