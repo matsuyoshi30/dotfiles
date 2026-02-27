@@ -182,3 +182,11 @@ export PATH="$HOME/.antigravity/antigravity/bin:$PATH"
 
 # Amp CLI
 export PATH="$HOME/.amp/bin:$PATH"
+
+# pnpm
+export PNPM_HOME="/Users/matsuyoshi30/Library/pnpm"
+case ":$PATH:" in
+  *":$PNPM_HOME:"*) ;;
+  *) export PATH="$PNPM_HOME:$PATH" ;;
+esac
+# pnpm end
