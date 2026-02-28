@@ -48,5 +48,6 @@
   "chat.editor.fontSize": 16,
   "chat.fontSize": 16,
   "markdown.preview.fontSize": 16,
-  "claudeCode.useTerminal": true
+  "claudeCode.useTerminal": true,
+  "chat.viewSessions.orientation": "stacked"
 }
