@@ -186,7 +186,7 @@ export PATH="$HOME/.antigravity/antigravity/bin:$PATH"
 export PATH="$HOME/.amp/bin:$PATH"
 
 # pnpm
-export PNPM_HOME="/Users/matsuyoshi30/Library/pnpm"
+export PNPM_HOME="$HOME/Library/pnpm"
 case ":$PATH:" in
   *":$PNPM_HOME:"*) ;;
   *) export PATH="$PNPM_HOME:$PATH" ;;
