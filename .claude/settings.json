@@ -160,7 +160,8 @@
     ],
     "deny": [
       "Bash(rm:*)"
-    ]
+    ],
+    "defaultMode": "bypassPermissions"
   },
   "hooks": {
     "Stop": [
@@ -186,5 +187,6 @@
     "rust-analyzer-lsp@claude-plugins-official": true,
     "swift-lsp@claude-plugins-official": true,
     "kotlin-lsp@claude-plugins-official": true
-  }
+  },
+  "skipDangerousModePermissionPrompt": true
 }

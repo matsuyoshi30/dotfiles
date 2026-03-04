@@ -71,3 +71,5 @@ fi
 
 # Added by swiftly
 [ -s "$HOME/.swiftly/env.sh" ] && . "$HOME/.swiftly/env.sh"
+
+export CLAUDE_CONFIG_DIR="$HOME/.claude"

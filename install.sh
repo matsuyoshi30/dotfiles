@@ -213,6 +213,11 @@ main() {
   create_symlink "$SCRIPT_DIR/.agents/skills" "$HOME/.codex/skills"
   echo
 
+  info "Installing cage configuration..."
+  CAGE_CONFIG_DIR="$HOME/Library/Application Support/cage"
+  create_symlink "$SCRIPT_DIR/cage/presets.yml" "${CAGE_CONFIG_DIR}/presets.yml"
+  echo
+
   info "Installing VSCode configuration..."
   VSCODE_SETTING_DIR=~/Library/Application\ Support/Code/User
   create_symlink "$SCRIPT_DIR/vscode/settings.json" "${VSCODE_SETTING_DIR}/settings.json"
