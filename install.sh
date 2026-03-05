@@ -204,6 +204,10 @@ main() {
   create_symlink "$SCRIPT_DIR/ripgrep/.rgignore" "$HOME/.rgignore"
   echo
 
+  info "Installing fd configuration..."
+  create_symlink "$SCRIPT_DIR/fd/fdignore" "$HOME/.fdignore"
+  echo
+
   info "Installing Claude configuration..."
   create_symlink "$SCRIPT_DIR/.claude/settings.json" "$HOME/.claude/settings.json"
   create_symlink "$SCRIPT_DIR/.claude/statusline.sh" "$HOME/.claude/statusline.sh"
