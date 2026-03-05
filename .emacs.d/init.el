@@ -166,6 +166,7 @@
    ("M-p" . (lambda () (interactive) (scroll-down 1)))
    ("C-x C-j" . skk-mode)
    ("C-c w" . copy-word-at-point)
+   ("C-c C-r p" . file-relative-path)
    ("C-\\" . nil))
   :bind (:map read-expression-map
          ("<tab>" . completion-at-point))
@@ -1581,6 +1582,21 @@ by PAD, BEGINNING and END."
   "Copy org link about current file to clipboard."
   (interactive)
   (to-clipboard (concat "[[" (file-full-path) "][" (file-name-nondirectory buffer-file-name) "]]")))
+
+(defun file-relative-path ()
+  "Return file path relative to repo root with line number or range.
+e.g. src/foo.el#L42 or src/foo.el#L10-L20 when region is active."
+  (interactive)
+  (let* ((root (vc-root-dir))
+         (rel (if root
+                  (file-relative-name (buffer-file-name) root)
+                (buffer-file-name)))
+         (pos (if (use-region-p)
+                  (format "L%d-L%d"
+                          (line-number-at-pos (region-beginning))
+                          (line-number-at-pos (region-end)))
+                (format "L%d" (line-number-at-pos)))))
+    (to-clipboard (concat rel "#" pos))))
 
 (defun copy-word-at-point ()
   "Copy the word at point to kill ring."
