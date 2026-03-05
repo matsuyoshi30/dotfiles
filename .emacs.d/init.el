@@ -1151,6 +1151,51 @@
   :bind (:map markdown-mode-map
          ("C-c m" . mo-preview)))
 
+;; xwidget-webkit smart scroll (for modern SPA / mo preview)
+(with-eval-after-load 'xwidget
+  (defconst my-xw-scroll-js
+    "(()=>{\
+       const dy=DY;\
+       const canScroll=(el)=>el && (el.scrollHeight - el.clientHeight) > 2;\
+       const tryScroll=(el)=>{\
+         if(!canScroll(el)) return false;\
+         const before=el.scrollTop;\
+         el.scrollBy(0,dy);\
+         return (el.scrollTop!==before);\
+       };\
+       const se=document.scrollingElement;\
+       if(tryScroll(se)) return;\
+       const x=window.innerWidth/2, y=window.innerHeight/2;\
+       let el=document.elementFromPoint(x,y);\
+       for(let i=0;i<60 && el;i++){\
+         const oy=getComputedStyle(el).overflowY;\
+         if((oy==='auto'||oy==='scroll') && tryScroll(el)) return;\
+         el=el.parentElement;\
+       }\
+       window.scrollBy(0,dy);\
+     })()")
+
+  (defun my-xwidget-webkit--scroll-smart (dy)
+    (let ((sess (xwidget-webkit-current-session)))
+      (when sess
+        (xwidget-webkit-execute-script
+         sess
+         (replace-regexp-in-string "DY" (number-to-string dy) my-xw-scroll-js t t)
+         (lambda (_r) nil)))))
+
+  (defun my-xwidget-webkit-scroll-up (&optional n)
+    (interactive "P")
+    (my-xwidget-webkit--scroll-smart
+     (if n (prefix-numeric-value n) (window-inside-pixel-height))))
+
+  (defun my-xwidget-webkit-scroll-down (&optional n)
+    (interactive "P")
+    (my-xwidget-webkit--scroll-smart
+     (- (if n (prefix-numeric-value n) (window-inside-pixel-height)))))
+
+  (define-key xwidget-webkit-mode-map (kbd "SPC")   #'my-xwidget-webkit-scroll-up)
+  (define-key xwidget-webkit-mode-map (kbd "S-SPC") #'my-xwidget-webkit-scroll-down))
+
 ;; scheme
 (use-package geiser-gauche :ensure t)
 
