@@ -1144,10 +1144,6 @@
         ("zsh" . sh-mode))
       markdown-code-lang-modes))))
 
-(use-package markdown-preview-mode
-  :ensure t
-  :after markdown-mode)
-
 (use-package mo
   :ensure (:host github :repo "matsuyoshi30/mo.el")
   :after markdown-mode
