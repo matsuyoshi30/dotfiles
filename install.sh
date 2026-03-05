@@ -202,6 +202,7 @@ main() {
 
   info "Installing ripgrep configuration..."
   create_symlink "$SCRIPT_DIR/ripgrep/.rgignore" "$HOME/.rgignore"
+  create_symlink "$SCRIPT_DIR/ripgrep/ripgreprc" "$HOME/.ripgreprc"
   echo
 
   info "Installing fd configuration..."

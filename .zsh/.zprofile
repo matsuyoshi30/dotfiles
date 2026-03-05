@@ -73,3 +73,5 @@ fi
 [ -s "$HOME/.swiftly/env.sh" ] && . "$HOME/.swiftly/env.sh"
 
 export CLAUDE_CONFIG_DIR="$HOME/.claude"
+
+export RIPGREP_CONFIG_PATH="$HOME/.ripgreprc"
