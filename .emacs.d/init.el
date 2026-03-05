@@ -1148,6 +1148,13 @@
   :ensure t
   :after markdown-mode)
 
+(use-package mo
+  :ensure (:host github :repo "matsuyoshi30/mo.el")
+  :after markdown-mode
+  :commands (mo-preview mo-shutdown)
+  :bind (:map markdown-mode-map
+         ("C-c m" . mo-preview)))
+
 ;; scheme
 (use-package geiser-gauche :ensure t)
 
