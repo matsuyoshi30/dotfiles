@@ -14,9 +14,13 @@ presets:
   claude-code:
     allow:
       - "$HOME/.claude"
+  gradle:
+    allow:
+      - "$HOME/.gradle"
 auto-presets:
   - command: claude
     presets:
       - base
       - git-enabled
       - claude-code
+      - gradle
