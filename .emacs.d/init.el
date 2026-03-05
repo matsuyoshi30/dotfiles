@@ -50,16 +50,16 @@
 (add-hook 'after-init-hook #'elpaca-process-queues)
 (elpaca `(,@elpaca-order))
 
-;; use-package を elpaca 経由で有効化
+;; Enable use-package via elpaca
 (elpaca elpaca-use-package
   (elpaca-use-package-mode))
 
 ;; diminish for :diminish support
 (elpaca diminish (require 'diminish))
 
-;; elpaca-use-package-mode が有効になるまで同期的に待つ
-;; これがないと use-package :ensure t が評価される時点で
-;; elpaca-use-package-mode が未有効のため、ビルトインパッケージがロードされる
+;; Wait synchronously until elpaca-use-package-mode is active
+;; Without this, when use-package :ensure t is evaluated,
+;; elpaca-use-package-mode is not yet active, so built-in packages get loaded
 (elpaca-wait)
 
 ;; (require 'profiler)
@@ -292,11 +292,11 @@
        `(default ((,c :height 140)))))
   (mapc #'disable-theme custom-enabled-themes)
   (add-hook 'ef-themes-post-load-hook #'my-ef-themes-default-font-face)
-  ;; テーマ読み込み前にフレーム位置を保存し、読み込み後に復元する
-  ;; ef-themes-post-load-hook は load-theme の後に実行されるため、
-  ;; hook 内で frame-position を取得しても既に変わった後の値になる
+  ;; Save frame position before loading theme and restore it afterwards
+  ;; ef-themes-post-load-hook runs after load-theme, so retrieving
+  ;; frame-position inside the hook returns the already-changed value
   (defvar my--frame-position-before-theme nil
-    "テーマ切り替え前のフレーム位置を保存する変数")
+    "Variable to store frame position before theme switch.")
   (advice-add 'ef-themes--load-theme :before
               (lambda (&rest _)
                 (setq my--frame-position-before-theme
@@ -587,10 +587,10 @@
 	        (set-cursor-color (plist-get my-cur-color-ime :on)))))
 
 	  (mac-auto-ascii-mode 1)
-	  ;; IME ON/OFF でカーソルの種別や色を替える
+	  ;; Change cursor type and color on IME ON/OFF
 	  (add-hook 'mac-selected-keyboard-input-source-change-hook
 		          #'my-mac-keyboard-input-source)
-	  ;; IME ON の英語入力＋決定後でもカーソルの種別や色を替える
+	  ;; Change cursor type and color even after English input + commit while IME is ON
 	  (add-hook 'mac-enabled-keyboard-input-sources-change-hook
 	            #'my-mac-keyboard-input-source)
 	  (declare-function my-mac-keyboard-input-source "init" nil)
@@ -612,12 +612,12 @@
          "com.google.inputmethod.Japanese.base")))
     (add-hook 'pre-command-hook 'mac-win-restore-ime-target-commands)
 
-    ;; M-x でのコマンド選択でもIMEを戻せる．
-    ;; ただし，移動先で q が効かないことがある（要改善）
+    ;; Restore IME state even when selecting commands via M-x
+    ;; Note: q may not work at the destination in some cases (needs improvement)
     (add-hook 'minibuffer-setup-hook 'mac-win-save-last-ime-status)
     (add-hook 'minibuffer-exit-hook 'mac-win-restore-ime)
 
-    ;; 自動で ASCII入力から日本語入力に引き戻したい関数（デフォルト設定）
+    ;; Commands that should automatically switch back from ASCII to Japanese input (default)
     (defvar mac-win-target-commands
       '(find-file save-buffer other-window delete-window split-window))))
 
@@ -774,7 +774,7 @@
   (global-diff-hl-mode 1)
   (global-diff-hl-show-hunk-mouse-mode 1)
   :config
-  ;; diff-hl-dired の非同期 vc プロセスがバッファ kill 時に確認を求めないようにする
+  ;; Prevent async vc processes from diff-hl-dired from prompting on buffer kill
   (advice-add 'diff-hl-dired-update :after
               (lambda ()
                 (dolist (buf (buffer-list))
@@ -1469,7 +1469,7 @@
   (setq org-cycle-separator-lines 1)
   (setq org-default-notes-file (concat (getenv "ORGSYNCROOT") "/org/journal.org"))
   (setq org-agenda-files (list (concat (getenv "ORGSYNCROOT") "/org/")))
-  ;; ox (org-export) の設定 — org ロード後に評価する必要がある
+  ;; ox (org-export) settings — must be evaluated after org is loaded
   (setq org-export-with-timestamps nil)
   (require 'ox-md)
   ;; https://emacs.stackexchange.com/questions/31646/how-to-paste-with-indent
