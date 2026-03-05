@@ -978,13 +978,30 @@
   :ensure t
   :defer t)
 
+;; Required LSP servers:
+;;   go-mode:            gopls                          (go install golang.org/x/tools/gopls@latest)
+;;   rust-mode:          rust-analyzer                  (rustup component add rust-analyzer)
+;;   scala-mode:         metals                         (cs install metals)
+;;   html-mode:          vscode-html-language-server    (npm i -g vscode-langservers-extracted)
+;;   css-mode:           vscode-css-language-server     (npm i -g vscode-langservers-extracted)
+;;   js/ts/tsx:          typescript-language-server      (npm i -g typescript-language-server typescript)
 (use-package eglot
   :ensure t
+  :hook ((go-mode . eglot-ensure)
+         (rust-mode . eglot-ensure)
+         (scala-mode . eglot-ensure)
+         (html-mode . eglot-ensure)
+         (css-mode . eglot-ensure)
+         (js-ts-mode . eglot-ensure)
+         (tsx-ts-mode . eglot-ensure)
+         (typescript-ts-mode . eglot-ensure))
   :config
-  (add-hook 'go-mode-hook 'eglot-ensure)
-  (add-hook 'web-mode-hook 'eglot-ensure)
-  (add-hook 'rust-mode-hook 'eglot-ensure)
-  (add-hook 'scala-mode-hook 'eglot-ensure))
+  (add-to-list 'eglot-server-programs
+               '(html-mode "vscode-html-language-server" "--stdio"))
+  (add-to-list 'eglot-server-programs
+               '(css-mode "vscode-css-language-server" "--stdio"))
+  (add-to-list 'eglot-server-programs
+               '((js-ts-mode tsx-ts-mode typescript-ts-mode) "typescript-language-server" "--stdio")))
 
 (use-package eglot-booster
   :ensure (:host github :repo "jdtsmith/eglot-booster")
@@ -1044,17 +1061,14 @@
   (cdr project))
 (add-hook 'project-find-functions #'project-find-go-module)
 
-;; web
+;; web (Vue and Go templates only)
 (use-package web-mode
   :ensure t
   :functions sp-local-pair
   :defines web-mode-map
   :mode
-  ("\\.erb\\'"
-   "\\.html?\\'"
-   "\\.tpl\\'"
-   "\\.tmpl\\'"
-   "\\.vue\\'")
+  ("\\.vue\\'"
+   "\\.tmpl\\'")
   :custom
   (web-mode-attr-indent-offset nil)
   (web-mode-code-indent-offset 2)
@@ -1083,28 +1097,14 @@
   (define-key web-mode-map (kbd "C-c i p") 'web-mode-block-previous)
   (define-key web-mode-map (kbd "C-c i s") 'web-mode-block-select))
 
-;; typescript
+;; javascript / typescript
 (use-package typescript-ts-mode
   :ensure nil
-  :mode (("\\.ts?\\'" . tsx-ts-mode)
-         ("\\.tsx?\\'" . tsx-ts-mode)))
+  :mode (("\\.js\\'" . js-ts-mode)
+         ("\\.jsx\\'" . tsx-ts-mode)
+         ("\\.ts\\'" . typescript-ts-mode)
+         ("\\.tsx\\'" . tsx-ts-mode)))
 
-(use-package tide
-  :ensure t
-  :commands setup-tide-mode
-  :hook (tsx-ts-mode . setup-tide-mode)
-  :config
-  (with-eval-after-load 'tide
-    (defun setup-tide-mode nil
-      (interactive)
-      (tide-setup)
-      (flycheck-mode 1)
-      (setq flycheck-check-syntax-automatically '(save mode-enabled))
-      (eldoc-mode 1)
-      (tide-hl-identifier-mode 1)
-      (company-mode 1))
-
-    (setq company-tooltip-align-annotations t)))
 
 ;; json
 (use-package json-mode
@@ -1128,18 +1128,18 @@
         ("diff" . diff-mode)
         ("go" . go-mode)
         ("hs" . haskell-mode)
-        ("html" . web-mode)
+        ("html" . html-mode)
         ("ini" . conf-mode)
-        ("js" . web-mode)
+        ("js" . js-ts-mode)
         ("json" . json-mode)
-        ("jsx" . rjsx-mode)
+        ("jsx" . tsx-ts-mode)
         ("md" . markdown-mode)
         ("py" . python-mode)
         ("rb" . ruby-mode)
         ("rs" . rustic-mode)
         ("sql" . sql-mode)
-        ("ts" . web-mode)
-        ("tsx" . rjsx-mode)
+        ("ts" . typescript-ts-mode)
+        ("tsx" . tsx-ts-mode)
         ("yaml". yaml-mode)
         ("zsh" . sh-mode))
       markdown-code-lang-modes))))
