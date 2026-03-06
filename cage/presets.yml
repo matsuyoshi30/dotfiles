@@ -17,6 +17,9 @@ presets:
   gradle:
     allow:
       - "$HOME/.gradle"
+  npm:
+    allow:
+      - "$HOME/.npm"
 auto-presets:
   - command: claude
     presets:
@@ -24,3 +27,4 @@ auto-presets:
       - git-enabled
       - claude-code
       - gradle
+      - npm
