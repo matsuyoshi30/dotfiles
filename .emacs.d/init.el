@@ -1153,45 +1153,54 @@
 
 ;; xwidget-webkit smart scroll (for modern SPA / mo preview)
 (with-eval-after-load 'xwidget
-  (defconst my-xw-scroll-js
-    "(()=>{\
-       const dy=DY;\
-       const canScroll=(el)=>el && (el.scrollHeight - el.clientHeight) > 2;\
-       const tryScroll=(el)=>{\
-         if(!canScroll(el)) return false;\
-         const before=el.scrollTop;\
-         el.scrollBy(0,dy);\
-         return (el.scrollTop!==before);\
-       };\
-       const se=document.scrollingElement;\
-       if(tryScroll(se)) return;\
-       const x=window.innerWidth/2, y=window.innerHeight/2;\
-       let el=document.elementFromPoint(x,y);\
-       for(let i=0;i<60 && el;i++){\
-         const oy=getComputedStyle(el).overflowY;\
-         if((oy==='auto'||oy==='scroll') && tryScroll(el)) return;\
-         el=el.parentElement;\
-       }\
-       window.scrollBy(0,dy);\
-     })()")
+  ;; Return scroll step in pixels with compatibility fallbacks.
+  (defun my-xwidget--inside-pixel-height ()
+    (cond
+     ((fboundp 'xwidget-window-inside-pixel-height)
+      (condition-case _
+          (xwidget-window-inside-pixel-height (selected-window))
+        (wrong-number-of-arguments
+         (xwidget-window-inside-pixel-height))))
+     ((fboundp 'window-inside-pixel-height)
+      (window-inside-pixel-height))
+     ((and (fboundp 'frame-char-height) (fboundp 'window-body-height))
+      (* (window-body-height) (frame-char-height)))
+     (t 600)))
 
   (defun my-xwidget-webkit--scroll-smart (dy)
     (let ((sess (xwidget-webkit-current-session)))
       (when sess
         (xwidget-webkit-execute-script
          sess
-         (replace-regexp-in-string "DY" (number-to-string dy) my-xw-scroll-js t t)
+         (format
+          "(()=>{\
+ const dy=%d;\
+ const can=e=>e&&(e.scrollHeight-e.clientHeight)>2;\
+ const tr=e=>{if(!can(e))return false;const b=e.scrollTop;e.scrollBy(0,dy);return e.scrollTop!==b};\
+ const se=document.scrollingElement;\
+ if(tr(se))return;\
+ let el=document.elementFromPoint(innerWidth/2,innerHeight/2);\
+ for(let i=0;i<60 && el;i++){\
+   const oy=getComputedStyle(el).overflowY;\
+   if((oy==='auto'||oy==='scroll') && tr(el))return;\
+   el=el.parentElement;\
+ }\
+ window.scrollBy(0,dy);\
+})()"
+          dy)
          (lambda (_r) nil)))))
 
   (defun my-xwidget-webkit-scroll-up (&optional n)
     (interactive "P")
-    (my-xwidget-webkit--scroll-smart
-     (if n (prefix-numeric-value n) (window-inside-pixel-height))))
+    (let ((dy (if n (prefix-numeric-value n)
+                (my-xwidget--inside-pixel-height))))
+      (my-xwidget-webkit--scroll-smart dy)))
 
   (defun my-xwidget-webkit-scroll-down (&optional n)
     (interactive "P")
-    (my-xwidget-webkit--scroll-smart
-     (- (if n (prefix-numeric-value n) (window-inside-pixel-height)))))
+    (let ((dy (- (if n (prefix-numeric-value n)
+                   (my-xwidget--inside-pixel-height)))))
+      (my-xwidget-webkit--scroll-smart dy)))
 
   (define-key xwidget-webkit-mode-map (kbd "SPC")   #'my-xwidget-webkit-scroll-up)
   (define-key xwidget-webkit-mode-map (kbd "S-SPC") #'my-xwidget-webkit-scroll-down))
