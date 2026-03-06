@@ -1010,17 +1010,12 @@
 
 (use-package tree-sitter
   :ensure t
-  :hook ((typescript-ts-mode . tree-sitter-hl-mode)
-         (tsx-ts-mode . tree-sitter-hl-mode))
   :config
   (global-tree-sitter-mode))
 
 (use-package tree-sitter-langs
   :ensure t
-  :after tree-sitter
-  :config
-  (tree-sitter-require 'tsx)
-  (add-to-list 'tree-sitter-major-mode-language-alist '(tsx-ts-mode . tsx)))
+  :after tree-sitter)
 
 (use-package jsonrpc
   :ensure nil
