@@ -21,8 +21,7 @@
 - YAGNI, KISS, DRY
 - No backward compatibility shims or fallback paths unless they come free without adding cyclomatic complexity
 
-## .matsuyoshi directory
+## .matsuyoshi/.matsuyoshi30 directory
 
-- `.matsuyoshi` is globally gitignore
+- `.matsuyoshi` and `.matsuyoshi30` are globally gitignore
 - It is used for documents such as plans and progress tracking created by AI agent
-
