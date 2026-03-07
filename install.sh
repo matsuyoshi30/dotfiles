@@ -212,7 +212,6 @@ main() {
   info "Installing Claude configuration..."
   create_symlink "$SCRIPT_DIR/.claude/settings.json" "$HOME/.claude/settings.json"
   create_symlink "$SCRIPT_DIR/.claude/statusline.sh" "$HOME/.claude/statusline.sh"
-  create_symlink "$SCRIPT_DIR/.claude/commands" "$HOME/.claude/commands"
   create_symlink "$SCRIPT_DIR/.agents/AGENTS.md" "$HOME/.claude/CLAUDE.md"
   create_symlink "$SCRIPT_DIR/.agents/skills" "$HOME/.claude/skills"
   echo
