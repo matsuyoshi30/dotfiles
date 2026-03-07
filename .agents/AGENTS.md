@@ -21,7 +21,13 @@
 - YAGNI, KISS, DRY
 - No backward compatibility shims or fallback paths unless they come free without adding cyclomatic complexity
 
-## .matsuyoshi/.matsuyoshi30 directory
+## Notes Directory
 
-- `.matsuyoshi` and `.matsuyoshi30` are globally gitignore
-- It is used for documents such as plans and progress tracking created by AI agent
+- Automatically save research, investigation, summary results, plans and progress tracking as markdown files
+- Save location (fallback chain)
+  1. `.matsuyoshi/` or `.matsuyoshi30/` at project root (if exists)
+  2. `$HOME/.matsuyoshi/` or `$HOME/.matsuyoshi30/` for cross-project notes (if exists)
+  3. Tool's built-in memory directory
+- `.matsuyoshi` / `.matsuyoshi30` are globally gitignored
+
+@RTK.md
