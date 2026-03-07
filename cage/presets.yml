@@ -17,6 +17,9 @@ presets:
   gradle:
     allow:
       - "$HOME/.gradle"
+  sbt:
+    allow:
+      - "$HOME/.sbt"
   npm:
     allow:
       - "$HOME/.npm"
@@ -28,3 +31,4 @@ auto-presets:
       - claude-code
       - gradle
       - npm
+      - sbt
