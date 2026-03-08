@@ -146,7 +146,7 @@ alias E='open -a Emacs.app'
 
 alias k='kubectl'
 
-alias cc='cage claude'
+alias cl='cage claude'
 
 if [[ -x "$HOME/.claude/local/claude" ]]; then
     alias claude="$HOME/.claude/local/claude"
