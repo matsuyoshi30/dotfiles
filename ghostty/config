@@ -15,6 +15,9 @@ macos-titlebar-style = tabs
 background = 1C2021
 title = " "
 macos-option-as-alt = true
+window-inherit-working-directory = false
+tab-inherit-working-directory = true
+split-inherit-working-directory = true
 keybind = ctrl+super+,=new_split:right
 keybind = ctrl+super+.=new_split:down
 keybind = ctrl+super+h=goto_split:left
