@@ -1,0 +1,1 @@
+bind status G !bash -c 'echo "Generating commit message with Claude..." && MSG=$(git diff --cached | claude -p "Generate ONLY a one-line Git commit message following Conventional Commits format. No explanation, no quotes, just the message in comprehensive English." 2>/dev/null) && git commit -e -m "$MSG"'

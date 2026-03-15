@@ -221,6 +221,10 @@ main() {
   create_symlink "$SCRIPT_DIR/.agents/skills" "$HOME/.codex/skills"
   echo
 
+  info "Installing tig configuration..."
+  create_symlink "$SCRIPT_DIR/tig/.tigrc" "$HOME/.tigrc"
+  echo
+
   info "Installing lazygit configuration..."
   create_symlink "$SCRIPT_DIR/lazygit/config.yml" "$HOME/Library/Application Support/lazygit/config.yml"
   echo
