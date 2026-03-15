@@ -142,6 +142,8 @@ alias gdmb="git branch --merged | grep -vE '(master|main|develop)' | xargs -n1 g
 
 alias ghb='gh browse'
 
+alias lg='lazygit'
+
 alias E='open -a Emacs.app'
 
 alias k='kubectl'
