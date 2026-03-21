@@ -178,7 +178,7 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "~/.claude/statusline.sh"
+    "command": "~/.claude/statusline.py"
   },
   "enabledPlugins": {
     "typescript-lsp@claude-plugins-official": true,
@@ -186,7 +186,9 @@
     "dig@kuu-marketplace": true,
     "rust-analyzer-lsp@claude-plugins-official": true,
     "swift-lsp@claude-plugins-official": true,
-    "kotlin-lsp@claude-plugins-official": true
+    "kotlin-lsp@claude-plugins-official": true,
+    "frontend-design@claude-plugins-official": true,
+    "superpowers@claude-plugins-official": true
   },
   "skipDangerousModePermissionPrompt": true
 }
