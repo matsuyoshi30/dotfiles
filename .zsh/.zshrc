@@ -193,4 +193,6 @@ case ":$PATH:" in
   *":$PNPM_HOME:"*) ;;
   *) export PATH="$PNPM_HOME:$PATH" ;;
 esac
-# pnpm end
+
+# Browser-Use
+export PATH="/Users/matsuyoshi30/.browser-use-env/bin:/Users/matsuyoshi30/.local/bin:$PATH"
