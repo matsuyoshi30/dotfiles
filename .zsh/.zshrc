@@ -104,16 +104,21 @@ bindkey '^]' peco-src
 # git-wt
 eval "$(git wt --init zsh)"
 
-peco-wt () {
-    local wt=$(git wt | tail -n +2 | peco | awk '{print $(NF-1)}')
-    if [ -n "$wt" ]; then
-        BUFFER="git wt ${wt}"
-        zle accept-line
-    fi
-    zle clear-screen
+gwt() {
+  local root=$(git rev-parse --show-toplevel)
+  local wt=$(git wt | tail -n +2 | sed "s|${root}/|./|g; s|${root}|.|g" | peco | awk '{print $(NF-1)}')
+  if [ -n "$wt" ]; then
+    git wt ${wt}
+  fi
 }
-zle -N peco-wt
-bindkey '^\' peco-wt
+
+gwtdl() {
+  local root=$(git rev-parse --show-toplevel)
+  local wt=$(git wt | tail -n +2 | sed "s|${root}/|./|g; s|${root}|.|g" | peco | awk '{print $1}')
+  if [ -n "$wt" ]; then
+    git worktree remove "${root}/${wt#./}"
+  fi
+}
 
 ########################################
 # Alias
@@ -139,6 +144,7 @@ alias glon='git log --oneline --name-only'
 alias gco='git branch|peco|xargs git checkout'
 alias gdl='git branch|peco|xargs git branch -D'
 alias gdmb="git branch --merged | grep -vE '(master|main|develop)' | xargs -n1 git branch -D"
+alias gdmwt='git worktree list | while read -r path commit branch; do b=${branch#[}; b=${b%]}; if echo "$b" | grep -qvE "^(master|main|develop)$" && git branch --merged | grep -qw "$b"; then git worktree remove "$path"; fi; done'
 
 alias ghb='gh browse'
 
