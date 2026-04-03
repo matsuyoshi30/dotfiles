@@ -4,6 +4,8 @@ presets:
       - "."
       - "$HOME/.cache"
       - "$HOME/.local/share"
+      - "$HOME/.matsuyoshi"
+      - "$HOME/.matsuyoshi30"
       - "/private/tmp"
       - "/var/folders"
       - "/Library/Caches"
