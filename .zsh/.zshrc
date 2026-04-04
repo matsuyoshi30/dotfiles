@@ -154,7 +154,6 @@ alias E='open -a Emacs.app'
 
 alias k='kubectl'
 
-export CLAUDE_CODE_NO_FLICKER=1
 alias cl='cage claude'
 
 if [[ -x "$HOME/.claude/local/claude" ]]; then
