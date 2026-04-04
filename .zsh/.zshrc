@@ -1,22 +1,15 @@
-########################################
-# 環境変数
 export LANG=ja_JP.UTF-8
 export EDITOR=hx
 
-# 色を使用出来るようにする
 autoload -Uz colors
 colors
 
-# use emacs keybindings
 bindkey -e
 
-# history setting
 HISTFILE=~/.zsh_history
 HISTSIZE=1000000
 SAVEHIST=1000000
 
-########################################
-# prompt
 autoload -Uz add-zsh-hook
 
 ########################################
