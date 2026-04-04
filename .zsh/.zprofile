@@ -1,52 +1,16 @@
-# Add `~/bin`, `~/.local/bin`, and `/usr/local/sbin` to the `$PATH`
-export PATH="$PATH:$HOME/bin:$HOME/.local/bin:/usr/local/sbin";
-
-# nodebrew path
-export PATH="$PATH:$HOME/.nodebrew/current/bin"
-
-# Go path
-export GOPATH="$HOME/go"
-export PATH="$PATH:$GOPATH/bin"
-
-# Rust path
-export PATH="$PATH:$HOME/.cargo/bin"
+# Rust path (PATH is set by .cargo/env in .zshenv)
 if [[ $(uname -m) == "x86_64" ]]; then
   export RUST_SRC_PATH="$HOME/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src"
 else
   export RUST_SRC_PATH="$HOME/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/src"
 fi
 
-# Java path
-export JAVA_PATH="/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home"
-export PATH="$PATH:$JAVA_PATH/bin"
-
-# Android SDK
-export ANDROID_HOME="$HOME/Library/Android/sdk"
-export PATH="$PATH:$ANDROID_HOME/platform-tools"
-
-# Scala
-export PATH="$PATH:$HOME/Library/Application Support/Coursier/bin"
-
-# anyenv path
-export PATH="$PATH:$HOME/.anyenv/bin"
-
-# bun
-[ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
-export BUN_INSTALL="$HOME/.bun"
-export PATH="$BUN_INSTALL/bin:$PATH"
-
-# nodenv
-export PATH="$PATH:$HOME/.nodenv/bin"
-
-# texinfo
+# Homebrew location depends on architecture, so discover it once per login shell.
 if [[ $(uname -m) == "x86_64" ]]; then
-  export PATH="$PATH:/usr/local/opt/texinfo/bin"
+  export PATH="$PATH:/usr/local/opt/texinfo/bin:/usr/local/sbin"
 else
-  export PATH="$PATH:/opt/homebrew/opt/texinfo/bin"
+  export PATH="$PATH:/opt/homebrew/opt/texinfo/bin:/usr/local/sbin"
 fi
-
-# Org Sync Root Path
-export ORGSYNCROOT="~/Dropbox"
 
 # Load the shell dotfiles, and then some:
 # * ~/.path can be used to extend `$PATH`.
@@ -63,15 +27,9 @@ else
   eval "$(/opt/homebrew/bin/brew shellenv)"
 fi
 
-export AWS_DEFAULT_PROFILE=saml
-
 if [ -d ~/.orbstack ]; then
   source ~/.orbstack/shell/init.zsh 2>/dev/null || :
 fi
 
 # Added by swiftly
 [ -s "$HOME/.swiftly/env.sh" ] && . "$HOME/.swiftly/env.sh"
-
-export CLAUDE_CONFIG_DIR="$HOME/.claude"
-
-export RIPGREP_CONFIG_PATH="$HOME/.ripgreprc"

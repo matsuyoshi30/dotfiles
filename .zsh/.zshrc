@@ -1,6 +1,3 @@
-export LANG=ja_JP.UTF-8
-export EDITOR=hx
-
 autoload -Uz colors
 colors
 
@@ -41,42 +38,38 @@ add-zsh-hook precmd _update_vcs_info_msg
 
 ########################################
 # auto completion
-autoload -Uz compinit
-compinit
-
-zstyle ':completion:*:sudo:*' command-path /usr/local/sbin /usr/local/bin \
-       /usr/sbin /usr/bin /sbin /bin /usr/X11R6/bin
-
-if [[ $(uname -m) == "x86_64" ]]; then
-  fpath=(/usr/local/share/zsh-completions $fpath)
-  fpath=(/usr/local/share/zsh/site-functions $fpath)
-else
+# Completion directories depend on where Homebrew is installed, not on shell mode.
+if [[ -d /opt/homebrew/share/zsh-completions ]]; then
   fpath=(/opt/homebrew/share/zsh-completions $fpath)
+fi
+
+if [[ -d /opt/homebrew/share/zsh/site-functions ]]; then
   fpath=(/opt/homebrew/share/zsh/site-functions $fpath)
 fi
 
+if [[ -d /usr/local/share/zsh-completions ]]; then
+  fpath=(/usr/local/share/zsh-completions $fpath)
+fi
+
+if [[ -d /usr/local/share/zsh/site-functions ]]; then
+  fpath=(/usr/local/share/zsh/site-functions $fpath)
+fi
+
+autoload -Uz compinit
+compinit -u
+
+zstyle ':completion:*:sudo:*' command-path /opt/homebrew/sbin /opt/homebrew/bin \
+       /usr/local/sbin /usr/local/bin /usr/sbin /usr/bin /sbin /bin /usr/X11R6/bin
 
 ########################################
 # Options
 
-setopt print_eight_bit  # 日本語ファイル名を表示可能にする
-setopt interactive_comments  # '#' 以降をコメントとして扱う
-setopt share_history  # 同時に起動したzshの間でヒストリを共有する
-setopt hist_ignore_all_dups  # 同じコマンドをヒストリに残さない
-setopt hist_ignore_space  # スペースから始まるコマンド行はヒストリに残さない
-setopt hist_reduce_blanks  # ヒストリに保存するときに余分なスペースを削除する
-
-########################################
-# less
-alias less='less -M'
-export PAGER=less
-export LESS_TERMCAP_mb=$'\E[01;31m'      # Begins blinking.
-export LESS_TERMCAP_md=$'\E[01;31m'      # Begins bold.
-export LESS_TERMCAP_me=$'\E[0m'          # Ends mode.
-export LESS_TERMCAP_se=$'\E[0m'          # Ends standout-mode.
-export LESS_TERMCAP_so=$'\E[00;47;30m'   # Begins standout-mode.
-export LESS_TERMCAP_ue=$'\E[0m'          # Ends underline.
-export LESS_TERMCAP_us=$'\E[01;32m'      # Begins underline.
+setopt print_eight_bit  # Allow displaying Japanese filenames
+setopt interactive_comments  # Treat '#' as comment in interactive shells
+setopt share_history  # Share history across concurrent zsh sessions
+setopt hist_ignore_all_dups  # Remove older duplicate entries from history
+setopt hist_ignore_space  # Skip commands starting with a space from history
+setopt hist_reduce_blanks  # Strip extra whitespace when saving history
 
 ########################################
 # ghq
@@ -92,10 +85,11 @@ peco-src () {
 zle -N peco-src
 bindkey '^]' peco-src
 
-
 ########################################
 # git-wt
-eval "$(git wt --init zsh)"
+if command -v git-wt >/dev/null 2>&1; then
+  eval "$(git-wt --init zsh)"
+fi
 
 gwt() {
   local root=$(git rev-parse --show-toplevel)
@@ -115,6 +109,8 @@ gwtdl() {
 
 ########################################
 # Alias
+alias less='less -M'
+
 alias l='ls -1FG'
 alias ls='ls -1FG'
 alias ll='ls -lFG'
@@ -153,7 +149,6 @@ if [[ -x "$HOME/.claude/local/claude" ]]; then
     alias claude="$HOME/.claude/local/claude"
 fi
 
-# version managers
 if command -v anyenv &> /dev/null; then
   eval "$(anyenv init -)"
 fi
@@ -166,32 +161,12 @@ if command -v nodenv &> /dev/null; then
   eval "$(nodenv init -)"
 fi
 
-# direnv
 if command -v direnv &> /dev/null; then
   eval "$(direnv hook zsh)"
 fi
 
-# opam
 [[ ! -r "$HOME/.opam/opam-init/init.zsh" ]] || source "$HOME/.opam/opam-init/init.zsh" > /dev/null 2> /dev/null
 
-# ghcup
 [ -f "$HOME/.ghcup/env" ] && . "$HOME/.ghcup/env"
 
-# bun completions
 [ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
-
-# Added by Antigravity
-export PATH="$HOME/.antigravity/antigravity/bin:$PATH"
-
-# Amp CLI
-export PATH="$HOME/.amp/bin:$PATH"
-
-# pnpm
-export PNPM_HOME="$HOME/Library/pnpm"
-case ":$PATH:" in
-  *":$PNPM_HOME:"*) ;;
-  *) export PATH="$PNPM_HOME:$PATH" ;;
-esac
-
-# Browser-Use
-export PATH="/Users/matsuyoshi30/.browser-use-env/bin:/Users/matsuyoshi30/.local/bin:$PATH"

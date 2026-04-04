@@ -167,6 +167,7 @@ main() {
   echo
 
   info "Installing Zsh configuration..."
+  create_symlink "$SCRIPT_DIR/.zsh/.zshenv" "$HOME/.zshenv"
   create_symlink "$SCRIPT_DIR/.zsh/.zshrc" "$HOME/.zshrc"
   create_symlink "$SCRIPT_DIR/.zsh/.zprofile" "$HOME/.zprofile"
   echo
