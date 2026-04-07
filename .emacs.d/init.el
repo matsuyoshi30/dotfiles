@@ -829,6 +829,11 @@
     (let ((display-buffer-alist nil))
       (vterm))))
 
+;;; ghostel
+
+(use-package ghostel
+  :ensure (:host github :repo "dakra/ghostel"))
+
 ;;; Projectile
 
 (use-package projectile
