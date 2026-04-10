@@ -12,7 +12,7 @@ Orchestrate an automated improvement loop: a **review subagent** analyzes code, 
 ## Parameters
 
 - **Target** (optional argument): file paths or directories to review. If omitted, falls back to git diff (staged + unstaged changes). When a directory is given, collect source files only — exclude common non-source paths (`node_modules`, `dist`, `build`, `.git`, `vendor`, `__pycache__`, binary files).
-- **Max iterations**: 2 (hardcoded).
+- **Max iterations**: 3 (hardcoded).
 
 ## Step 1 — Determine Review Target
 
@@ -22,23 +22,29 @@ Resolve the target files using the following priority:
 
 If the user provided file paths or directories as arguments, use those.
 
-### 1b. Open PR diff
+### 1b. PR diff + local unpushed changes (highest auto-detect priority)
 
 If no target was specified, check whether the current branch has an open pull request:
 
 ```bash
-gh pr view --json baseRefName,headRefName 2>/dev/null
+gh pr view --json baseRefName 2>/dev/null
 ```
 
-If a PR exists, get the changed files relative to the base branch:
+If a PR exists, collect files from **both** sources and deduplicate:
 
-```bash
-gh pr diff --name-only
-```
+1. PR diff (changes against base branch):
+   ```bash
+   gh pr diff --name-only
+   ```
+2. Local unpushed changes (staged + unstaged):
+   ```bash
+   git diff --name-only
+   git diff --name-only --cached
+   ```
 
 ### 1c. Local git diff (fallback)
 
-If no PR exists, fall back to local changes:
+If no PR exists, fall back to local changes only:
 
 ```bash
 git diff --name-only
@@ -53,7 +59,7 @@ If no files are found from any of the above, inform the user and stop.
 
 ## Step 2 — Run the Loop
 
-For each iteration (max 2):
+For each iteration (max 3):
 
 ### 2a. Spawn Review Subagent
 
@@ -76,7 +82,7 @@ MEDIUM: {count}
 LOW: {count}
 ---END---
 
-For each Critical and High issue, include the file path, line number, description, and a specific recommended fix.
+For each Critical, High, and Medium issue, include the file path, line number, description, and a specific recommended fix.
 ```
 
 Wait for the review result.
@@ -85,8 +91,9 @@ Wait for the review result.
 
 Parse the `---SUMMARY---` block from the review output.
 
-- If **Critical = 0 AND High = 0**: the loop is done. Skip to Step 3.
-- If counts cannot be parsed: check whether the review text contains "## Critical Issues" or "## High Priority Issues" section headers with actual findings listed beneath them. If neither section has content, treat as resolved and skip to Step 3. Otherwise, treat as "issues remain" and continue.
+- If **all counts are 0** (Critical, High, Medium, and Low): no issues remain. Skip to Step 3.
+- If **Critical = 0 AND High = 0** but Medium or Low remain: continue the loop (fix Medium issues) until the max iteration limit is reached.
+- If counts cannot be parsed: check whether the review text contains any severity section headers ("## Critical Issues", "## High Priority Issues", "## Medium Priority Issues") with actual findings listed beneath them. If none have content, treat as resolved and skip to Step 3. Otherwise, treat as "issues remain" and continue.
 
 ### 2c. Spawn Fix Subagent
 
@@ -103,18 +110,17 @@ Working directory: {cwd}
 
 ## Instructions
 
-1. Fix all Critical issues first, then High issues.
+1. Fix issues in priority order: Critical → High → Medium. Leave Low issues unfixed (they are reported only).
 2. For each fix:
    - Read the relevant file to understand context before editing.
    - Make the minimal change that addresses the finding.
    - Do NOT refactor unrelated code or add unrelated improvements.
-3. After all fixes are applied, run the project's test suite if one exists:
-   - Check CLAUDE.md or README.md for documented test commands first.
-   - Check for package.json "test" script, Makefile test target, or language-standard runners (go test ./..., pytest, cargo test).
-   - Prefer unit tests over integration/e2e tests if distinguishable.
-   - If tests fail due to your changes, fix them.
-   - If no test runner is found, skip this step.
-4. Summarize what you changed and any tests you ran.
+3. After all fixes are applied, run verification until everything passes:
+   a. **Lint**: Check CLAUDE.md, package.json scripts, Makefile, or config files (e.g., .eslintrc, pyproject.toml) for lint commands. Run if found.
+   b. **Tests**: Check CLAUDE.md or README.md for documented test commands. Otherwise check for package.json "test" script, Makefile test target, or language-standard runners (go test ./..., pytest, cargo test). Prefer unit tests over integration/e2e tests if distinguishable.
+   c. **Fix failures**: If lint or tests fail due to your changes, fix the issues and re-run until both pass. Do not proceed with failures outstanding.
+   d. If no lint or test runner is found, skip this step.
+4. Summarize what you changed, what lint/test commands you ran, and their final results.
 ```
 
 Wait for the fix result.
@@ -130,7 +136,7 @@ After the loop ends, present a consolidated report to the user:
 ```markdown
 ## Review-Fix Loop Complete
 
-**Iterations**: {iterations_run} / 2
+**Iterations**: {iterations_run} / 3
 **Exit reason**: {Critical/High resolved | Max iterations reached}
 
 ### Iteration 1
@@ -138,6 +144,10 @@ After the loop ends, present a consolidated report to the user:
 **Fixed**: {summary of what was fixed}
 
 ### Iteration 2 (if applicable)
+**Review**: {critical} Critical, {high} High, {medium} Medium, {low} Low
+**Fixed**: {summary of what was fixed}
+
+### Iteration 3 (if applicable)
 **Review**: {critical} Critical, {high} High, {medium} Medium, {low} Low
 **Fixed**: {summary of what was fixed}
 
