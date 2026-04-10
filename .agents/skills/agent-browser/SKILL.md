@@ -1,6 +1,6 @@
 ---
 name: agent-browser
-description: Automates browser interactions for web testing, form filling, screenshots, and data extraction. Use when the user needs to navigate websites, interact with web pages, fill forms, take screenshots, test web applications, or extract information from web pages.
+description: Lightweight browser automation using `@ref`-based element selection from accessibility-tree snapshots, with semantic locators (role/text/label) and parallel named sessions. Prefer this over `browser-use` for quick one-off flows, simple form filling, and when multiple independent browser sessions must run in parallel. Use `browser-use` instead when you need a persistent daemon, a real Chrome profile with existing logins, CDP connect to a running Chrome, cloud browsers, or a persistent Python scripting session.
 ---
 
 # Browser Automation with agent-browser

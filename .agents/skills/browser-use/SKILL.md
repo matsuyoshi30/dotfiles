@@ -1,6 +1,6 @@
 ---
 name: browser-use
-description: Automates browser interactions for web testing, form filling, screenshots, and data extraction. Use when the user needs to navigate websites, interact with web pages, fill forms, take screenshots, or extract information from web pages.
+description: Daemon-backed browser automation (~50ms latency) with numeric-index element selection, real Chrome profile support (existing logins/cookies), CDP connect to running Chrome, cloud browsers, Cloudflare tunnels, and a persistent Python scripting session. Prefer this over `agent-browser` when authenticated browsing via a real Chrome profile, connection to an existing Chrome instance, cloud browsers, tunneling local dev servers, or persistent Python scripting is required. Use `agent-browser` instead for simple one-off flows or parallel independent sessions.
 allowed-tools: Bash(browser-use:*)
 ---
 
