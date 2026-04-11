@@ -215,6 +215,7 @@ main() {
   create_symlink "$SCRIPT_DIR/.claude/statusline.py" "$HOME/.claude/statusline.py"
   create_symlink "$SCRIPT_DIR/.agents/AGENTS.md" "$HOME/.claude/CLAUDE.md"
   create_symlink "$SCRIPT_DIR/.agents/skills" "$HOME/.claude/skills"
+  create_symlink "$SCRIPT_DIR/.agents/agents" "$HOME/.claude/agents"
   echo
 
   info "Installing Codex configuration..."
