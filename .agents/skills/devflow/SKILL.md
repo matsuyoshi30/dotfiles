@@ -147,16 +147,11 @@ Fix in priority order: Critical → High. Medium/Low are not fixed in this loop.
 
 Go back to 3a. If max iterations reached with Critical/High remaining: report to user and stop.
 
-## Step 4 — Completion Verification (inline)
+## Step 4 — Completion Verification
 
-Run verification directly in the orchestrator context (NOT as subagent — evidence must be visible).
+Invoke the verify-completion skill by calling the Skill tool with skill: "verify-completion".
 
-1. **Discover** lint/test/build commands (CLAUDE.md, package.json, Makefile, language defaults)
-2. **Run** each discovered command
-3. **Check** exit codes and output
-4. **Report** results with evidence
-
-If any check fails: report failures, do NOT claim completion.
+If the skill reports failures: do NOT claim completion.
 
 ## Step 5 — Final Report
 
