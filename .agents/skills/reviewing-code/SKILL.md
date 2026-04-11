@@ -1,5 +1,5 @@
 ---
-name: code-reviewer
+name: reviewing-code
 description: Performs comprehensive code review covering quality, security, design, performance, technical debt, and intent alignment. Loads language-specific guardrails for Kotlin (.kt/.kts) and TypeScript/React (.ts/.tsx) when those files are touched. Use after implementing features or bug fixes, before commits, or when reviewing diffs.
 allowed-tools: Glob, Grep, Read, WebFetch, TodoWrite, WebSearch, BashOutput, KillShell
 user-invocable: true

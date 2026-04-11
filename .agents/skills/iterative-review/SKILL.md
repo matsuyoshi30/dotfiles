@@ -1,17 +1,17 @@
 ---
 name: iterative-review
 description: Spawns subagents to review code, fix issues, and re-review until Critical/High findings reach zero or the iteration limit is hit. Triggers when iterative code quality improvement is needed, such as after implementing features, before merging branches, or when the user requests an automated review-fix cycle.
-allowed-tools: Agent, Bash, Read, Glob, Grep
+allowed-tools: Agent(review-agent, fix-agent), Bash, Read, Glob, Grep
 user-invocable: true
 ---
 
-# Review-Fix Loop
+# Iterative Review
 
 Orchestrate an automated improvement loop: a **review subagent** analyzes code, then a **fix subagent** addresses the findings, repeating until quality gates are met.
 
 ## Parameters
 
-- **Target** (optional argument): file paths or directories to review. If omitted, falls back to git diff (staged + unstaged changes). When a directory is given, collect source files only — exclude common non-source paths (`node_modules`, `dist`, `build`, `.git`, `vendor`, `__pycache__`, binary files).
+- **Target** (optional argument): file paths or directories to review. If omitted, auto-detect from PR diff and local changes. When a directory is given, collect source files only — exclude common non-source paths (`node_modules`, `dist`, `build`, `.git`, `vendor`, `__pycache__`, binary files).
 - **Max iterations**: 3 (hardcoded).
 
 ## Step 1 — Determine Review Target
@@ -22,7 +22,7 @@ Resolve the target files using the following priority:
 
 If the user provided file paths or directories as arguments, use those.
 
-### 1b. PR diff + local unpushed changes (highest auto-detect priority)
+### 1b. PR diff + local unpushed changes
 
 If no target was specified, check whether the current branch has an open pull request:
 
@@ -63,27 +63,11 @@ For each iteration (max 3):
 
 ### 2a. Spawn Review Subagent
 
-Launch a general-purpose Agent with the following prompt structure:
+Read [review-prompt.md](review-prompt.md) and fill in the placeholders:
+- `{cwd}` — current working directory
+- `{target_files}` — list of files to review
 
-```
-You are a code review agent.
-
-Working directory: {cwd}
-
-First, invoke the code-reviewer skill by calling the Skill tool with skill: "code-reviewer".
-Then, apply the loaded review methodology to the following files: {target_files}
-
-IMPORTANT: After the standard review output, append a machine-readable summary block in exactly this format:
-
----SUMMARY---
-CRITICAL: {count}
-HIGH: {count}
-MEDIUM: {count}
-LOW: {count}
----END---
-
-For each Critical, High, and Medium issue, include the file path, line number, description, and a specific recommended fix.
-```
+Launch an Agent with `subagent_type: "review-agent"` using the filled prompt. Do NOT use `superpowers:code-reviewer` or any other subagent type.
 
 Wait for the review result.
 
@@ -97,31 +81,11 @@ Parse the `---SUMMARY---` block from the review output.
 
 ### 2c. Spawn Fix Subagent
 
-Launch an Agent with `mode: "auto"` and the following prompt structure:
+Read [fix-prompt.md](fix-prompt.md) and fill in the placeholders:
+- `{cwd}` — current working directory
+- `{review_output}` — full review output from 2a
 
-```
-You are a code fix agent. Apply the following review findings to the codebase.
-
-Working directory: {cwd}
-
-## Review Findings
-
-{paste the full review output from 2a}
-
-## Instructions
-
-1. Fix issues in priority order: Critical → High → Medium. Leave Low issues unfixed (they are reported only).
-2. For each fix:
-   - Read the relevant file to understand context before editing.
-   - Make the minimal change that addresses the finding.
-   - Do NOT refactor unrelated code or add unrelated improvements.
-3. After all fixes are applied, run verification until everything passes:
-   a. **Lint**: Check CLAUDE.md, package.json scripts, Makefile, or config files (e.g., .eslintrc, pyproject.toml) for lint commands. Run if found.
-   b. **Tests**: Check CLAUDE.md or README.md for documented test commands. Otherwise check for package.json "test" script, Makefile test target, or language-standard runners (go test ./..., pytest, cargo test). Prefer unit tests over integration/e2e tests if distinguishable.
-   c. **Fix failures**: If lint or tests fail due to your changes, fix the issues and re-run until both pass. Do not proceed with failures outstanding.
-   d. If no lint or test runner is found, skip this step.
-4. Summarize what you changed, what lint/test commands you ran, and their final results.
-```
+Launch an Agent with `subagent_type: "fix-agent"` using the filled prompt.
 
 Wait for the fix result.
 
@@ -134,10 +98,10 @@ If the max iteration count has not been reached, go back to 2a to re-review the 
 After the loop ends, present a consolidated report to the user:
 
 ```markdown
-## Review-Fix Loop Complete
+## Iterative Review Complete
 
 **Iterations**: {iterations_run} / 3
-**Exit reason**: {Critical/High resolved | Max iterations reached}
+**Exit reason**: {All issues resolved | Max iterations reached}
 
 ### Iteration 1
 **Review**: {critical} Critical, {high} High, {medium} Medium, {low} Low
@@ -152,11 +116,12 @@ After the loop ends, present a consolidated report to the user:
 **Fixed**: {summary of what was fixed}
 
 ### Remaining Issues
-{List any Medium/Low findings from the final review, or "None — all issues resolved."}
+{List any Low findings from the final review, or "None — all issues resolved."}
 ```
 
 ## Important Rules
 
+- **Use ONLY `review-agent` and `fix-agent` subagent types.**. Do not use any other subagent type. The `review-agent` already has the code-reviewer skill preloaded via its `skills` field.
 - **Do not modify code yourself.** All code changes happen through the fix subagent.
 - **Do not skip the review subagent.** Even if you think you know the issues, always run the reviewer.
 - **Preserve the structured summary format.** The `---SUMMARY---` block is required for the exit condition check.
