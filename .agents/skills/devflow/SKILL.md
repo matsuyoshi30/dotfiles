@@ -57,13 +57,7 @@ Store the resolved spec text — it will be passed to both implementer and revie
 
 ### Model Selection
 
-Assess task complexity and select model:
-
-| Signal | Model | Examples |
-|--------|-------|---------|
-| 1-2 files, clear spec, mechanical | `haiku` | Add a field, rename, write a test |
-| Multi-file, integration, pattern matching | `sonnet` | Wire up a new endpoint, add a feature |
-| Architecture, design judgment, ambiguous | `opus` | Restructure a module, complex business logic |
+Assess task complexity and select model. See **Model Selection Summary** at the end of this document for the full table.
 
 ### Dispatch Implementer Subagent
 
