@@ -1,218 +1,169 @@
 ---
 name: devflow
-description: End-to-end development workflow that orchestrates investigation, implementation, spec compliance review, code quality review, and completion verification using typed subagents with model selection by task complexity. Use when you have a clear task or spec and want autonomous implementation with quality gates.
-allowed-tools: Agent(implementer-agent, spec-review-agent, review-agent, fix-agent, Explore), Bash, Read, Glob, Grep
+description: End-to-end development workflow that orchestrates plan refinement (user dialogue), spike prototyping, implementation with WORKLOG/DR loop, and multi-stage review. Use when the user has a clear task or spec and wants autonomous implementation with quality gates.
+allowed-tools: Agent(implementer-agent, spec-review-agent, review-agent, fix-agent, spike-review-agent, Explore), Bash, Read, Write, Edit, Glob, Grep
 user-invocable: true
 ---
 
 # Development Flow
 
-Autonomous development workflow: investigate → implement → spec compliance review → code quality review → completion verification. Uses typed subagents with dedicated prompt templates to preserve orchestrator context, with model selection by task complexity.
+Plan-Refine → Plan-Spike → Plan-Execute → Review → Verify.
 
-## Parameters
-
-- **Task** (required argument): What to implement. Accepts:
-  - GitHub issue URL
-  - File path to spec/design document
-  - Inline description of the task
-- **Target** (optional): Working directory or specific files. Defaults to cwd.
+- **PLAN.md** — single source of truth. All agents read it; only the orchestrator updates it.
+- **WORKLOG.md** — append-only execution log. Agents report; orchestrator appends.
+- **DR (Decision Record)** — blocker-only A/B choices that bridge agent autonomy and human judgment.
 
 ## Overview
 
 ```
-[Resolve task/spec]
+[Step 0: Resolve Task]
     ↓
-[Assess investigation need]
-    ├─ INVESTIGATE → continue to Investigate
-    └─ SKIP → jump to Implement (with reason)
+[Step 1: Plan-Refine] ← orchestrator + user dialogue → PLAN.md
     ↓
-[Investigate] ← Explore agent (model: sonnet)
-    → produces codebase context for implementer
+[Step 2: Plan-Spike] ← spike agent (worktree) + spike reviewer → PLAN.md updated
     ↓
-[Implement] ← implementer-agent (model by complexity)
-    ├─ DONE → continue
-    ├─ DONE_WITH_CONCERNS → assess, then continue
-    ├─ NEEDS_CONTEXT → provide context, re-dispatch
-    └─ BLOCKED → escalate or re-dispatch with stronger model
+[Step 3: Plan-Execute] ← implementer loop → WORKLOG.md + DR → PLAN.md updated
     ↓
-[Spec Compliance Review] ← spec-review-agent (model: sonnet)
-    loop: review → fix-agent → re-review (max 2)
-    ├─ ✅ Compliant → continue
-    └─ ❌ Issues remain → report to user, stop
+[Step 4: Spec Compliance Review] → [Step 5: Code Quality Review]
     ↓
-[Code Quality Review] ← review-agent (model: opus, reviewing-code preloaded)
-    loop: review → fix-agent → re-review (max 3)
-    ├─ ✅ Approved (Critical/High = 0) → continue
-    └─ ❌ Critical/High remain → report to user, stop
-    ↓
-[Completion Verification] ← inline (not subagent)
-    ├─ ALL PASS → final report
-    └─ FAILURES → report, do not claim completion
+[Step 6: Verification] → [Step 7: Final Report]
 ```
 
-## Step 0 — Resolve Task
+## Working Directory
 
-Parse the task argument:
+Create `{cwd}/.devflow/{YYYY-MM-DDTHH-MM-SS}_{task-slug}/` with PLAN.md and WORKLOG.md. Use [templates/plan.md](templates/plan.md) and [templates/worklog.md](templates/worklog.md) as starting points. Store this path as `{devflow_dir}`.
+
+---
+
+## Step 0 — Resolve Task
 
 - **GitHub issue URL**: `gh issue view <url> --json title,body,labels`
 - **File path**: Read the file
 - **Inline text**: Use as-is
 
-Store the resolved spec text — it will be passed to both implementer and reviewers.
+---
 
-### Assess Investigation Need
+## Step 1 — Plan-Refine (Interactive)
 
-After resolving the task, decide whether codebase investigation is needed. Display the decision and reason to the user.
+Performed by the orchestrator, NOT a subagent.
 
-**SKIP investigation when:**
-- The task creates an entirely new project, module, or package with no existing code to reference
-- The task spec already includes specific file paths, patterns, and architecture context sufficient for implementation
-- The task is purely mechanical with no dependency on existing code (e.g., config change, dependency version bump, boilerplate scaffold)
+1. **Explore context** — scan project structure and relevant files (skip for new projects)
+2. **Clarify** — ask questions **one at a time**, prefer **multiple choice**, 3-5 questions typically suffice
+3. **Propose approaches** — present **2-3 options** with trade-offs, lead with your recommendation
+4. **Write PLAN.md** — fill [templates/plan.md](templates/plan.md), present to user for approval
 
-**INVESTIGATE when:**
-- The task modifies or extends existing code
-- The task needs to follow existing patterns or conventions
-- The task's impact on other parts of the codebase is unclear
-- The task description is high-level and doesn't specify which files to change
+**Gate:** User must approve PLAN.md before proceeding.
 
-When in doubt, investigate. The cost of unnecessary investigation is low (a few seconds of read-only exploration); the cost of missing context is high (wrong patterns, broken dependencies, rework).
+---
 
-If skipping, display: `> Investigation: SKIP — {reason}` and proceed directly to Step 2 (Implement) with `{context}` set to "No existing code context (new project/module)." or similar.
+## Step 2 — Plan-Spike (Isolated Prototype)
 
-If investigating, display: `> Investigation: NEEDED — {reason}` and proceed to Step 1.
+### Assess Need
 
-## Step 1 — Investigate
+- **SKIP** when: purely mechanical task, well-established approach with clear precedents, PLAN.md already highly specific
+- **RUN** when (default): unfamiliar technology, unknowns, complex existing code, PLAN.md specificity uncertain
 
-### Dispatch Explore Subagent
+Display: `> Spike: {RUN | SKIP} — {reason}`
 
-Read [investigation-prompt.md](investigation-prompt.md) and fill in the placeholders:
-- `{resolved_spec_text}` — the full task specification
-- `{cwd}` — working directory
+### Execute
 
-Launch an Agent with `subagent_type: "Explore"` and `model: "sonnet"`. Set thoroughness to "very thorough".
+1. **Investigate** (if existing code): dispatch [prompts/investigation.md](prompts/investigation.md) with `thoroughness: "very thorough"`
+2. **Prototype**: dispatch [prompts/spike.md](prompts/spike.md) with `isolation: "worktree"` — code is auto-discarded
+3. **Update PLAN.md**: extract learnings into `## Spike Learnings`
+4. **Review sufficiency**: dispatch [prompts/spike-review.md](prompts/spike-review.md) — context-free, sees only PLAN.md
+5. **Refine if needed**: fix gaps, re-run review (max 2 iterations). Unresolved gaps → ask user.
 
-### Store Investigation Results
+**Gate:** PLAN.md must pass spike review before proceeding.
 
-The Explore agent returns a structured report. Store the full report — it becomes the `{context}` value passed to the implementer in Step 2.
+---
 
-## Step 2 — Implement
+## Step 3 — Plan-Execute (Implementation Loop)
 
-### Model Selection
+Initialize WORKLOG.md from [templates/worklog.md](templates/worklog.md).
 
-Assess task complexity and select model. See **Model Selection Summary** at the end of this document for the full table.
+### Dispatch
 
-### Dispatch Implementer Subagent
+Read and dispatch [prompts/implementer.md](prompts/implementer.md). See **Model Selection** at bottom.
 
-Read [implementer-prompt.md](implementer-prompt.md) and fill in the placeholders:
-- `{resolved_spec_text}` — the full task specification
-- `{cwd}` — working directory
-- `{context}` — investigation report from Step 1 (or minimal context note if investigation was skipped)
+### Handle Status
 
-Launch an Agent with `subagent_type: "implementer-agent"` and `model: {selected_model}`.
+| Status | Action |
+|--------|--------|
+| DONE | Append log → Step 4 |
+| DONE_WITH_CONCERNS | Append log → assess: correctness issue → address; observation → proceed |
+| NEEDS_DECISION | Handle DR (below) → re-dispatch |
+| NEEDS_CONTEXT | Append log → provide info → re-dispatch |
+| BLOCKED | Append log → escalate (context / stronger model / decompose / ask user) |
 
-### Handle Implementer Status
+### DR Handling
 
-- **DONE**: Proceed to Step 3.
-- **DONE_WITH_CONCERNS**: Read concerns. Correctness/scope issue → address before review. Observation → note and proceed to Step 3.
-- **NEEDS_CONTEXT**: Provide missing info, re-dispatch same model.
-- **BLOCKED**: Assess blocker:
-  1. Context problem → provide more context, re-dispatch
-  2. Needs more reasoning → re-dispatch with `opus`
-  3. Task too large → break into subtasks, implement sequentially
-  4. Spec itself is wrong → escalate to user
+1. Present the DR to the user as-is — user picks an option
+2. Append DR + decision to PLAN.md `## Decision Log`
+3. Append to WORKLOG.md
+4. Re-dispatch implementer with updated PLAN.md
 
-**Never** retry the same model with no changes. If it's stuck, something needs to change.
+Never retry the same model with no changes.
 
-## Step 3 — Spec Compliance Review Loop (max 2 iterations)
+---
 
-### 3a. Dispatch Spec Reviewer Subagent
+## Step 4 — Spec Compliance Review (max 2 iterations)
 
-Read [spec-reviewer-prompt.md](spec-reviewer-prompt.md) and fill in:
-- `{cwd}` — working directory
-- `{resolved_spec_text}` — the specification
-- `{target_files}` — files changed by implementer
+1. Dispatch [prompts/spec-reviewer.md](prompts/spec-reviewer.md)
+2. Parse `---SUMMARY---`: if MISSING + EXTRA + MISUNDERSTOOD = 0 → Step 5
+3. Otherwise: dispatch [prompts/fix.md](prompts/fix.md), loop back to 1
 
-Launch an Agent with `subagent_type: "spec-review-agent"` and `model: "sonnet"`.
+If issues remain after max iterations: report to user and stop.
 
-### 3b. Check Exit Condition
+---
 
-Parse the `---SUMMARY---` block.
+## Step 5 — Code Quality Review (max 3 iterations)
 
-- If **MISSING = 0 AND EXTRA = 0 AND MISUNDERSTOOD = 0**: proceed to Step 4.
-- Otherwise: dispatch fix subagent.
+1. Dispatch [prompts/code-quality-reviewer.md](prompts/code-quality-reviewer.md)
+2. Parse `---SUMMARY---`: if CRITICAL + HIGH = 0 → Step 6. Medium/Low reported but don't block.
+3. Otherwise: dispatch [prompts/fix.md](prompts/fix.md) (Critical → High priority), loop back to 1
 
-### 3c. Dispatch Fix Subagent
+If Critical/High remain after max iterations: report to user and stop.
 
-Read [fix-prompt.md](fix-prompt.md) and fill in placeholders with spec and review findings.
+---
 
-Launch an Agent with `subagent_type: "fix-agent"` and `model: "sonnet"`.
+## Step 6 — Completion Verification
 
-### 3d. Next Iteration
+Run the project's verification commands in order. Read CLAUDE.md, README.md, package.json, Makefile, or other project config files to discover available commands.
 
-Go back to 3a. If max iterations reached with issues remaining: report to user and stop.
+1. **Format** — run formatter if available
+2. **Lint** — run linter if available
+3. **Build** — run build if available
+4. **Test** — run tests if available (prefer unit tests over integration/e2e)
 
-## Step 4 — Code Quality Review Loop (max 3 iterations)
+Skip any step with no discoverable command. If a step fails, determine whether the failure is caused by devflow changes or is pre-existing. Only devflow-caused failures block completion.
 
-### 4a. Dispatch Code Quality Reviewer Subagent
+If any devflow-caused failure remains: do NOT claim completion.
 
-Read [code-quality-reviewer-prompt.md](code-quality-reviewer-prompt.md) and fill in:
-- `{cwd}` — working directory
-- `{target_files}` — files changed
-- `{what_was_implemented}` — summary from implementer
-- `{base_sha}` / `{head_sha}` — git commit range
+---
 
-Launch an Agent with `subagent_type: "review-agent"` and `model: "opus"`.
-
-The `review-agent` has the `reviewing-code` skill preloaded via its agent definition.
-
-### 4b. Check Exit Condition
-
-Parse the `---SUMMARY---` block.
-
-- If **CRITICAL = 0 AND HIGH = 0**: proceed to Step 5. Medium/Low are reported but don't block.
-- Otherwise: dispatch fix subagent.
-
-### 4c. Dispatch Fix Subagent
-
-Read [fix-prompt.md](fix-prompt.md) and fill in with review findings.
-
-Launch an Agent with `subagent_type: "fix-agent"` and `model: "sonnet"`.
-Fix in priority order: Critical → High. Medium/Low are not fixed in this loop.
-
-### 4d. Next Iteration
-
-Go back to 4a. If max iterations reached with Critical/High remaining: report to user and stop.
-
-## Step 5 — Completion Verification
-
-Invoke the verify-completion skill by calling the Skill tool with skill: "verify-completion".
-
-If the skill reports failures: do NOT claim completion.
-
-## Step 6 — Final Report
+## Step 7 — Final Report
 
 ```markdown
 ## Development Flow Complete
 
 **Task**: {task summary}
 
-### Investigation
+### Plan-Refine
+- **Approach selected**: {brief description}
+
+### Spike
 - **Result**: {Performed | Skipped — reason}
-- **Key findings**: {brief summary or "N/A"}
+- **Key learnings**: {brief summary or "N/A"}
 
 ### Implementation
 - **Model used**: {model}
 - **Files changed**: {list}
+- **DRs raised**: {count}
 - **Tests**: {pass count}
 
-### Spec Compliance
-- **Iterations**: {n} / 2
-- **Result**: {Compliant | Issues remain}
-
-### Code Quality
-- **Iterations**: {n} / 3
-- **Result**: {Clean | Issues remain}
-- **Remaining**: {Medium/Low findings if any}
+### Reviews
+- **Spec compliance**: {Compliant | Issues remain} (iteration {n}/2)
+- **Code quality**: {Clean | Issues remain} (iteration {n}/3)
 
 ### Verification
 | Check | Result |
@@ -221,27 +172,32 @@ If the skill reports failures: do NOT claim completion.
 | Test  | {PASS/FAIL/SKIP} |
 | Build | {PASS/FAIL/SKIP} |
 
-**Verdict**: {COMPLETE | ISSUES REMAIN — see above}
+**Verdict**: {COMPLETE | ISSUES REMAIN}
 ```
 
-## Model Selection Summary
+Append to WORKLOG.md.
 
-| Role | Subagent Type | Model | Why |
-|------|---------------|-------|-----|
-| Codebase investigation | Explore | sonnet | Read-only, thorough exploration |
-| Standard implementation | implementer-agent | sonnet | Default for most tasks |
-| Design-heavy implementation | implementer-agent | opus | Strong reasoning |
-| Spec compliance review | spec-review-agent | sonnet | Criteria-based comparison |
-| Code quality review | review-agent | opus | Holistic judgment |
-| Fix | fix-agent | sonnet | Directed fixes |
+---
 
-## Important Rules
+## Model Selection
 
-- **Use ONLY the designated subagent types.** Explore, implementer-agent, spec-review-agent, review-agent, fix-agent.
-- **Spec compliance before code quality.** Wrong thing built well is still wrong.
-- **Do not skip review stages.** Even for "trivial" tasks.
-- **Subagents are independent.** Each gets fresh context via templates — no shared state.
-- **Model selection is deliberate.** Match model to task complexity.
-- **Verification is inline.** Evidence must be in orchestrator context.
-- **Escalate, don't force.** If implementer is blocked, change approach.
-- **One task at a time.** Don't parallelize implementation subagents.
+| Role | Subagent Type | Model |
+|------|---------------|-------|
+| Codebase investigation | Explore | sonnet |
+| Spike implementation | implementer-agent | sonnet |
+| Spike review | spike-review-agent | sonnet |
+| Standard implementation | implementer-agent | sonnet |
+| Design-heavy implementation | implementer-agent | opus |
+| Spec compliance review | spec-review-agent | sonnet |
+| Code quality review | review-agent | opus |
+| Fix | fix-agent | sonnet |
+
+## Rules
+
+- **Plan-Refine is interactive** — orchestrator conducts dialogue, not a subagent
+- **Spike code is disposable** — run in worktree, extract learnings, discard code
+- **Spike review is context-free** — reviewer sees only PLAN.md
+- **DRs are blockers only** — style/preference choices are made autonomously
+- **Spec compliance before code quality** — wrong thing built well is still wrong
+- **Do not skip review stages**
+- **One task at a time** — don't parallelize implementation subagents

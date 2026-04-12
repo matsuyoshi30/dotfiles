@@ -1,3 +1,12 @@
+<!-- Orchestrator-only: dispatch metadata (not part of the agent's instructions)
+- subagent_type: Explore
+- model: sonnet
+- thoroughness: very thorough
+- placeholders: {cwd}, {resolved_spec_text}
+-->
+
+---
+
 Investigate the codebase to prepare context for an implementer who will work on the following task.
 
 Working directory: {cwd}

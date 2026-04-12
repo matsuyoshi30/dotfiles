@@ -1,3 +1,11 @@
+<!-- Orchestrator-only: dispatch metadata (not part of the agent's instructions)
+- subagent_type: fix-agent
+- model: sonnet
+- placeholders: {cwd}, {review_output}
+-->
+
+---
+
 Apply the following review findings to the codebase.
 
 Working directory: {cwd}
