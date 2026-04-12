@@ -53,9 +53,13 @@ Before reporting: completeness (everything in PLAN.md?), YAGNI (nothing extra?),
 
 ## Report Format
 
+Report using exactly this structure so the orchestrator can append it directly to WORKLOG.md:
+
+```
+## {timestamp} — {action summary}
 - **Status**: DONE | DONE_WITH_CONCERNS | NEEDS_DECISION | NEEDS_CONTEXT | BLOCKED
-- What you implemented
-- Test results
-- Files changed
-- Concerns, DRs, or blockers (if any)
-- Learnings discovered during implementation
+- **What was done**: {what you implemented and test results}
+- **Files changed**: {list of changed files}
+- **Learnings**: {what was discovered during implementation}
+- **DR**: {if any, describe the decision needed — otherwise "N/A"}
+```

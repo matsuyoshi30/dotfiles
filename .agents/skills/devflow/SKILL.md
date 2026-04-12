@@ -33,15 +33,11 @@ Plan-Refine → Plan-Spike → Plan-Execute → Review → Verify.
 
 Create `{cwd}/.devflow/{YYYY-MM-DDTHH-MM-SS}_{task-slug}/` with PLAN.md and WORKLOG.md. Use [templates/plan.md](templates/plan.md) and [templates/worklog.md](templates/worklog.md) as starting points. Store this path as `{devflow_dir}`.
 
----
-
 ## Step 0 — Resolve Task
 
 - **GitHub issue URL**: `gh issue view <url> --json title,body,labels`
 - **File path**: Read the file
 - **Inline text**: Use as-is
-
----
 
 ## Step 1 — Plan-Refine (Interactive)
 
@@ -53,8 +49,6 @@ Performed by the orchestrator, NOT a subagent.
 4. **Write PLAN.md** — fill [templates/plan.md](templates/plan.md), present to user for approval
 
 **Gate:** User must approve PLAN.md before proceeding.
-
----
 
 ## Step 2 — Plan-Spike (Isolated Prototype)
 
@@ -75,8 +69,6 @@ Display: `> Spike: {RUN | SKIP} — {reason}`
 
 **Gate:** PLAN.md must pass spike review before proceeding.
 
----
-
 ## Step 3 — Plan-Execute (Implementation Loop)
 
 Initialize WORKLOG.md from [templates/worklog.md](templates/worklog.md).
@@ -85,15 +77,17 @@ Initialize WORKLOG.md from [templates/worklog.md](templates/worklog.md).
 
 Read and dispatch [prompts/implementer.md](prompts/implementer.md). See **Model Selection** at bottom.
 
-### Handle Status
+### Handle Status and Log
+
+After each implementer dispatch completes, **append the implementer's report to WORKLOG.md as-is** (the report already uses the WORKLOG entry format).
 
 | Status | Action |
 |--------|--------|
-| DONE | Append log → Step 4 |
-| DONE_WITH_CONCERNS | Append log → assess: correctness issue → address; observation → proceed |
-| NEEDS_DECISION | Handle DR (below) → re-dispatch |
-| NEEDS_CONTEXT | Append log → provide info → re-dispatch |
-| BLOCKED | Append log → escalate (context / stronger model / decompose / ask user) |
+| DONE | Append to WORKLOG.md → Step 4 |
+| DONE_WITH_CONCERNS | Append to WORKLOG.md → assess: correctness issue → address; observation → proceed |
+| NEEDS_DECISION | Append to WORKLOG.md → Handle DR (below) → re-dispatch |
+| NEEDS_CONTEXT | Append to WORKLOG.md → provide info → re-dispatch |
+| BLOCKED | Append to WORKLOG.md → escalate (context / stronger model / decompose / ask user) |
 
 ### DR Handling
 
@@ -104,27 +98,39 @@ Read and dispatch [prompts/implementer.md](prompts/implementer.md). See **Model 
 
 Never retry the same model with no changes.
 
----
-
 ## Step 4 — Spec Compliance Review (max 2 iterations)
 
 1. Dispatch [prompts/spec-reviewer.md](prompts/spec-reviewer.md)
 2. Parse `---SUMMARY---`: if MISSING + EXTRA + MISUNDERSTOOD = 0 → Step 5
 3. Otherwise: dispatch [prompts/fix.md](prompts/fix.md), loop back to 1
+4. **Log**: after each iteration, append to WORKLOG.md:
+   ```
+   ## {timestamp} — Spec compliance review (iteration {n})
+   - **Status**: {DONE if pass, DONE_WITH_CONCERNS if issues fixed, BLOCKED if max iterations}
+   - **What was done**: {MISSING/EXTRA/MISUNDERSTOOD counts, fixes applied if any}
+   - **Files changed**: {list from fix agent, or "(none)" if review only}
+   - **Learnings**: {notable findings}
+   - **DR**: N/A
+   ```
 
 If issues remain after max iterations: report to user and stop.
-
----
 
 ## Step 5 — Code Quality Review (max 3 iterations)
 
 1. Dispatch [prompts/code-quality-reviewer.md](prompts/code-quality-reviewer.md)
 2. Parse `---SUMMARY---`: if CRITICAL + HIGH = 0 → Step 6. Medium/Low reported but don't block.
 3. Otherwise: dispatch [prompts/fix.md](prompts/fix.md) (Critical → High priority), loop back to 1
+4. **Log**: after each iteration, append to WORKLOG.md:
+   ```
+   ## {timestamp} — Code quality review (iteration {n})
+   - **Status**: {DONE if pass, DONE_WITH_CONCERNS if issues fixed, BLOCKED if max iterations}
+   - **What was done**: {CRITICAL/HIGH/MEDIUM/LOW counts, fixes applied if any}
+   - **Files changed**: {list from fix agent, or "(none)" if review only}
+   - **Learnings**: {notable findings}
+   - **DR**: N/A
+   ```
 
 If Critical/High remain after max iterations: report to user and stop.
-
----
 
 ## Step 6 — Completion Verification
 
@@ -138,8 +144,6 @@ Run the project's verification commands in order. Read CLAUDE.md, README.md, pac
 Skip any step with no discoverable command. If a step fails, determine whether the failure is caused by devflow changes or is pre-existing. Only devflow-caused failures block completion.
 
 If any devflow-caused failure remains: do NOT claim completion.
-
----
 
 ## Step 7 — Final Report
 
@@ -177,18 +181,16 @@ If any devflow-caused failure remains: do NOT claim completion.
 
 Append to WORKLOG.md.
 
----
-
 ## Model Selection
 
 | Role | Subagent Type | Model |
 |------|---------------|-------|
-| Codebase investigation | Explore | sonnet |
+| Codebase investigation | Explore | opus |
 | Spike implementation | implementer-agent | sonnet |
-| Spike review | spike-review-agent | sonnet |
+| Spike review | spike-review-agent | opus |
 | Standard implementation | implementer-agent | sonnet |
 | Design-heavy implementation | implementer-agent | opus |
-| Spec compliance review | spec-review-agent | sonnet |
+| Spec compliance review | spec-review-agent | opus |
 | Code quality review | review-agent | opus |
 | Fix | fix-agent | sonnet |
 
