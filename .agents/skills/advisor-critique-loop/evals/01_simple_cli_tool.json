@@ -1,0 +1,13 @@
+{
+  "skills": ["advisor-critique-loop"],
+  "query": "Create a CLI tool that takes a directory path as a command-line argument and displays a list of file sizes inside it",
+  "files": [],
+  "expected_behavior": [
+    "Phase 1 generates .advisor/<run-id>/01_requirements.md with scope clarified (recursive vs non-recursive, output format, error behavior)",
+    "Phase 2 generates .advisor/<run-id>/02_design.md containing language selection rationale and alternatives",
+    "Phase 3 generates .advisor/<run-id>/03_impl_plan.md with tasks topologically sorted and depends_on fields populated",
+    "Phase 4 generates implementation code and test files, with test execution exiting with code 0",
+    "Each phase's review files (.advisor/<run-id>/<phase>_review_*.json) are valid JSON with a verdict field of either LGTM or NEEDS_FIX",
+    "All phases conclude with LGTM verdicts and run.sh exits with code 0"
+  ]
+}

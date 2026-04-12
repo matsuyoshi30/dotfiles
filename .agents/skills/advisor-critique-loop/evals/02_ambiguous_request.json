@@ -1,0 +1,11 @@
+{
+  "skills": ["advisor-critique-loop"],
+  "query": "Build a user management feature",
+  "files": [],
+  "expected_behavior": [
+    "Phase 1's 01_requirements.md contains an 'Open Questions' section listing at least one of: authentication method, permission model, or persistence target as TBD",
+    "Phase 1's first Critic review (01_review_1.json) has verdict NEEDS_FIX with at least one issue of severity blocker or major",
+    "A second review file (01_review_2.json) exists, with either fewer issues than the first review or a verdict of LGTM",
+    "If ambiguity cannot be resolved, run_phase.sh exits with code 2 (STUCK) or code 3 (MAX_ITER), and an escalation message is printed to stderr"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "skills": ["advisor-critique-loop"],
+  "query": "Create a simple script that converts Markdown files to HTML",
+  "files": [],
+  "preconditions": {
+    "cursor-agent": "not installed"
+  },
+  "expected_behavior": [
+    "After detect_tools.sh runs, .advisor/tools.json has cursor set to false and implementer set to claude-sonnet-4-6",
+    "Phase 4's Driver runs as Claude Sonnet and generates .advisor/<run-id>/04_impl_notes.md",
+    "All four phase artifacts (01_requirements.md, 02_design.md, 03_impl_plan.md, 04_impl_notes.md) exist in .advisor/<run-id>/",
+    "All review files are valid JSON and jq '.verdict' succeeds on each",
+    "run.sh exits with code 0"
+  ]
+}
