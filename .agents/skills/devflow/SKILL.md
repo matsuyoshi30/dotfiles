@@ -229,8 +229,7 @@ If the skill reports failures: do NOT claim completion.
 | Role | Subagent Type | Model | Why |
 |------|---------------|-------|-----|
 | Codebase investigation | Explore | sonnet | Read-only, thorough exploration |
-| Mechanical implementation | implementer-agent | haiku | Fast, low cost |
-| Integration implementation | implementer-agent | sonnet | Balance |
+| Standard implementation | implementer-agent | sonnet | Default for most tasks |
 | Design-heavy implementation | implementer-agent | opus | Strong reasoning |
 | Spec compliance review | spec-review-agent | sonnet | Criteria-based comparison |
 | Code quality review | review-agent | opus | Holistic judgment |
