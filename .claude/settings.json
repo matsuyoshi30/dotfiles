@@ -176,12 +176,44 @@
           }
         ]
       }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"Auto-fire memory-manager skill (restore phase): Read ~/.matsuyoshi30/memory/short-term/current.md if it exists to restore prior session state. Do NOT read index.md, long-term, or mid-term files yet — wait for the user first prompt to filter by relevance.\"}}'"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"UserPromptSubmit\",\"additionalContext\":\"Auto-fire memory-manager skill (context-aware restore, first prompt only): Read ~/.matsuyoshi30/memory/index.md. Based on the user prompt, current branch name, and CWD, selectively read only the relevant ~/.matsuyoshi30/memory/long-term/*.md files and the matching ~/.matsuyoshi30/memory/mid-term/{task-id}/state.md if one exists. Skip entries that are not relevant to the current task.\"}}'",
+            "once": true
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreCompact\",\"additionalContext\":\"Auto-fire memory-manager skill (persist phase): Before compaction, save current state to ~/.matsuyoshi30/memory/short-term/current.md per the short-term template. If a distinct task is in progress, also save to ~/.matsuyoshi30/memory/mid-term/{task-id}/state.md per the mid-term template. Include paths, URLs, and resumption context needed to continue after compaction.\"}}'"
+          }
+        ]
+      }
     ]
   },
   "statusLine": {
     "type": "command",
     "command": "~/.claude/statusline.py"
   },
+  "autoMemoryEnabled": false,
   "enabledPlugins": {
     "typescript-lsp@claude-plugins-official": true,
     "playwright-skill@playwright-skill": true,

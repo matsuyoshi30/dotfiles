@@ -1,6 +1,6 @@
 ---
 name: memory-manager
-description: Manages work context in a 3-tier structure (short/mid/long-term), enabling memory restoration after compaction or session switches
+description: Manages work context in a 3-tier structure (short/mid/long-term), enabling memory restoration after compaction or session switches. Auto-fires via hooks at session start (restore short-term), on first user prompt (selectively load long-term/mid-term based on context), and before compaction (persist state). Also used when the user mentions memory, context restoration, or task resumption.
 user-invocable: false
 allowed-tools: Read, Write, Grep, Glob, Bash
 ---
