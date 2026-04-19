@@ -23,33 +23,7 @@ Working directory: {cwd}
 
 ## Your Job
 
-1. Implement exactly what PLAN.md specifies
-2. Write tests (TDD preferred: failing test → implement → verify)
-3. Verify implementation works
-4. Commit with a descriptive message
-5. Self-review before reporting
-
-## Decision Records (DR)
-
-When you encounter a decision that **blocks progress**, **has multiple valid options**, and **is outside your authority** (changes scope, architecture, or user-facing behavior):
-
-```
-DR: {title}
-Context: {why this decision is needed}
-Option A: {description} — Pros: {list} / Cons: {list}
-Option B: {description} — Pros: {list} / Cons: {list}
-Recommendation: {A or B} because {reason}
-```
-
-Do NOT raise DRs for style preferences, implementation details within PLAN.md's approach, or anything already decided in the Decision Log.
-
-## When to Escalate
-
-STOP when the task requires architectural decisions not covered by PLAN.md, you need code beyond what was provided, or the task involves unanticipated restructuring.
-
-## Self-Review
-
-Before reporting: completeness (everything in PLAN.md?), YAGNI (nothing extra?), quality (clean names?), testing (real behavior, not mocks?), constraints (all respected?).
+Implement exactly what PLAN.md specifies. Follow your standard TDD / Tidy First process, verify via the verify-completion skill, commit, and self-review before reporting.
 
 ## Report Format
 
