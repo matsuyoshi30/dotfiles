@@ -81,6 +81,24 @@ digraph devflow {
 
 Create `{cwd}/.devflow/{YYYY-MM-DDTHH-MM-SS}_{task-slug}/` with PLAN.md and WORKLOG.md. Use [templates/plan.md](templates/plan.md) and [templates/worklog.md](templates/worklog.md) as starting points. Store this path as `{devflow_dir}`. Step 1 will write `{devflow_dir}/exploration.md`.
 
+## Orchestrator Progress Checklist
+
+Create TodoWrite todos for each step at start, then mark done as you progress:
+
+```
+- [ ] Step 0: Resolve task (URL / file / inline → summary)
+- [ ] Step 1: Explore — dispatch explorer-agent, write exploration.md (skip if brand-new project)
+- [ ] Step 2: Plan-Refine — decide DIALOGUE vs DIRECT, produce PLAN.md, get user approval
+- [ ] Step 3: Plan-Spike — decide RUN vs SKIP, update PLAN.md, pass spike-plan review (max 2)
+- [ ] Step 4: Plan-Execute — implementer loop, handle DR/NEEDS_CONTEXT/BLOCKED, append to WORKLOG.md
+- [ ] Step 5: Spec compliance review — loop until MISSING+EXTRA+MISUNDERSTOOD = 0 (max 2)
+- [ ] Step 6: Code quality review — loop until CRITICAL+HIGH = 0 (max 3)
+- [ ] Step 7: Completion verification — format / lint / build / test
+- [ ] Step 8: Final report — present verdict, append to WORKLOG.md
+```
+
+Do not skip steps. Step 1 may be skipped only for brand-new projects with no existing code. Step 3 Spike may be SKIP per its criteria.
+
 ## Step 0 — Resolve Task
 
 - **GitHub issue URL**: `gh issue view <url> --json title,body,labels`
@@ -190,15 +208,7 @@ Never retry the same model with no changes.
 1. Dispatch [prompts/spec-reviewer.md](prompts/spec-reviewer.md)
 2. Parse `---SUMMARY---`: if MISSING + EXTRA + MISUNDERSTOOD = 0 → Step 6
 3. Otherwise: dispatch [prompts/fix.md](prompts/fix.md), loop back to 1
-4. **Log**: after each iteration, append to WORKLOG.md:
-   ```
-   ## {timestamp} — Spec compliance review (iteration {n})
-   - **Status**: {DONE if pass, DONE_WITH_CONCERNS if issues fixed, BLOCKED if max iterations}
-   - **What was done**: {MISSING/EXTRA/MISUNDERSTOOD counts, fixes applied if any}
-   - **Files changed**: {list from fix agent, or "(none)" if review only}
-   - **Learnings**: {notable findings}
-   - **DR**: N/A
-   ```
+4. **Log**: after each iteration, append a WORKLOG entry using [templates/review-log-entry.md](templates/review-log-entry.md) (spec variant: MISSING/EXTRA/MISUNDERSTOOD counts)
 
 If issues remain after max iterations: report to user and stop.
 
@@ -207,15 +217,7 @@ If issues remain after max iterations: report to user and stop.
 1. Dispatch [prompts/code-quality-reviewer.md](prompts/code-quality-reviewer.md)
 2. Parse `---SUMMARY---`: if CRITICAL + HIGH = 0 → Step 7. Medium/Low reported but don't block.
 3. Otherwise: dispatch [prompts/fix.md](prompts/fix.md) (Critical → High priority), loop back to 1
-4. **Log**: after each iteration, append to WORKLOG.md:
-   ```
-   ## {timestamp} — Code quality review (iteration {n})
-   - **Status**: {DONE if pass, DONE_WITH_CONCERNS if issues fixed, BLOCKED if max iterations}
-   - **What was done**: {CRITICAL/HIGH/MEDIUM/LOW counts, fixes applied if any}
-   - **Files changed**: {list from fix agent, or "(none)" if review only}
-   - **Learnings**: {notable findings}
-   - **DR**: N/A
-   ```
+4. **Log**: after each iteration, append a WORKLOG entry using [templates/review-log-entry.md](templates/review-log-entry.md) (quality variant: CRITICAL/HIGH/MEDIUM/LOW counts)
 
 If Critical/High remain after max iterations: report to user and stop.
 
@@ -234,42 +236,7 @@ If any devflow-caused failure remains: do NOT claim completion.
 
 ## Step 8 — Final Report
 
-```markdown
-## Development Flow Complete
-
-**Task**: {task summary}
-
-### Exploration
-- **Output**: {devflow_dir}/exploration.md
-
-### Plan-Refine
-- **Approach selected**: {brief description}
-
-### Spike
-- **Result**: {Performed | Skipped — reason}
-- **Key learnings**: {brief summary or "N/A"}
-
-### Implementation
-- **Model used**: sonnet
-- **Files changed**: {list}
-- **DRs raised**: {count}
-- **Tests**: {pass count}
-
-### Reviews
-- **Spec compliance**: {Compliant | Issues remain} (iteration {n}/2)
-- **Code quality**: {Clean | Issues remain} (iteration {n}/3)
-
-### Verification
-| Check | Result |
-|-------|--------|
-| Lint  | {PASS/FAIL/SKIP} |
-| Test  | {PASS/FAIL/SKIP} |
-| Build | {PASS/FAIL/SKIP} |
-
-**Verdict**: {COMPLETE | ISSUES REMAIN}
-```
-
-Append to WORKLOG.md.
+Fill [templates/final-report.md](templates/final-report.md), present to the user, and append to WORKLOG.md.
 
 ## Model Selection
 
