@@ -15,18 +15,53 @@ Plan-Refine → Plan-Spike → Plan-Execute → Review → Verify.
 
 ## Overview
 
-```
-[Step 0: Resolve Task]
-    ↓
-[Step 1: Plan-Refine] ← orchestrator + user dialogue → PLAN.md
-    ↓
-[Step 2: Plan-Spike] ← spike agent (worktree) + spike reviewer → PLAN.md updated
-    ↓
-[Step 3: Plan-Execute] ← implementer loop → WORKLOG.md + DR → PLAN.md updated
-    ↓
-[Step 4: Spec Compliance Review] → [Step 5: Code Quality Review]
-    ↓
-[Step 6: Verification] → [Step 7: Final Report]
+```dot
+digraph devflow {
+    rankdir=TB;
+    "Step 0: Resolve Task" [shape=doublecircle];
+    "Step 1: Plan-Refine\n(orchestrator + user)" [shape=box];
+    "User approves PLAN.md?" [shape=diamond];
+    "Step 2: Plan-Spike" [shape=box];
+    "Spike: RUN or SKIP?" [shape=diamond];
+    "Investigate + Prototype\n+ Update PLAN" [shape=box];
+    "Spike plan review:\nSUFFICIENT?" [shape=diamond];
+    "Step 3: Plan-Execute\n(implementer loop)" [shape=box];
+    "Implementer status" [shape=diamond];
+    "Handle DR with user" [shape=box];
+    "Step 4: Spec review" [shape=box];
+    "Spec issues = 0?" [shape=diamond];
+    "Fix agent (spec)" [shape=box];
+    "Step 5: Code quality review" [shape=box];
+    "Critical + High = 0?" [shape=diamond];
+    "Fix agent (quality)" [shape=box];
+    "Step 6: Verification" [shape=box];
+    "Step 7: Final Report" [shape=doublecircle];
+
+    "Step 0: Resolve Task" -> "Step 1: Plan-Refine\n(orchestrator + user)";
+    "Step 1: Plan-Refine\n(orchestrator + user)" -> "User approves PLAN.md?";
+    "User approves PLAN.md?" -> "Step 1: Plan-Refine\n(orchestrator + user)" [label="no"];
+    "User approves PLAN.md?" -> "Step 2: Plan-Spike" [label="yes"];
+    "Step 2: Plan-Spike" -> "Spike: RUN or SKIP?";
+    "Spike: RUN or SKIP?" -> "Investigate + Prototype\n+ Update PLAN" [label="RUN"];
+    "Spike: RUN or SKIP?" -> "Step 3: Plan-Execute\n(implementer loop)" [label="SKIP"];
+    "Investigate + Prototype\n+ Update PLAN" -> "Spike plan review:\nSUFFICIENT?";
+    "Spike plan review:\nSUFFICIENT?" -> "Investigate + Prototype\n+ Update PLAN" [label="no (max 2)"];
+    "Spike plan review:\nSUFFICIENT?" -> "Step 3: Plan-Execute\n(implementer loop)" [label="yes"];
+    "Step 3: Plan-Execute\n(implementer loop)" -> "Implementer status";
+    "Implementer status" -> "Step 4: Spec review" [label="DONE"];
+    "Implementer status" -> "Handle DR with user" [label="NEEDS_DECISION"];
+    "Handle DR with user" -> "Step 3: Plan-Execute\n(implementer loop)";
+    "Implementer status" -> "Step 3: Plan-Execute\n(implementer loop)" [label="NEEDS_CONTEXT /\nBLOCKED (re-dispatch)"];
+    "Step 4: Spec review" -> "Spec issues = 0?";
+    "Spec issues = 0?" -> "Fix agent (spec)" [label="no (max 2)"];
+    "Fix agent (spec)" -> "Step 4: Spec review";
+    "Spec issues = 0?" -> "Step 5: Code quality review" [label="yes"];
+    "Step 5: Code quality review" -> "Critical + High = 0?";
+    "Critical + High = 0?" -> "Fix agent (quality)" [label="no (max 3)"];
+    "Fix agent (quality)" -> "Step 5: Code quality review";
+    "Critical + High = 0?" -> "Step 6: Verification" [label="yes"];
+    "Step 6: Verification" -> "Step 7: Final Report";
+}
 ```
 
 ## Working Directory
