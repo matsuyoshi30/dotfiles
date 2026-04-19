@@ -194,5 +194,7 @@
     "discord@claude-plugins-official": true
   },
   "skipDangerousModePermissionPrompt": true,
+  "effortLevel": "high",
+  "advisorModel": "opus",
   "awaySummaryEnabled": false
 }
