@@ -110,7 +110,7 @@ Initialize WORKLOG.md from [templates/worklog.md](templates/worklog.md).
 
 ### Dispatch
 
-Read and dispatch [prompts/implementer.md](prompts/implementer.md). See **Model Selection** at bottom.
+Read and dispatch [prompts/implementer.md](prompts/implementer.md) (sonnet). See **Model Selection** at bottom.
 
 ### Handle Status and Log
 
@@ -119,7 +119,7 @@ After each implementer dispatch completes, **append the implementer's report to 
 | Status | Action |
 |--------|--------|
 | DONE | Append to WORKLOG.md → Step 4 |
-| DONE_WITH_CONCERNS | Append to WORKLOG.md → assess: correctness issue → address; observation → proceed |
+| DONE_WITH_CONCERNS | Append to WORKLOG.md → Step 4 |
 | NEEDS_DECISION | Append to WORKLOG.md → Handle DR (below) → re-dispatch |
 | NEEDS_CONTEXT | Append to WORKLOG.md → provide info → re-dispatch |
 | BLOCKED | Append to WORKLOG.md → escalate (context / stronger model / decompose / ask user) |
@@ -195,7 +195,7 @@ If any devflow-caused failure remains: do NOT claim completion.
 - **Key learnings**: {brief summary or "N/A"}
 
 ### Implementation
-- **Model used**: {model}
+- **Model used**: sonnet
 - **Files changed**: {list}
 - **DRs raised**: {count}
 - **Tests**: {pass count}
@@ -218,16 +218,17 @@ Append to WORKLOG.md.
 
 ## Model Selection
 
-| Role | Subagent Type | Model |
-|------|---------------|-------|
-| Codebase investigation | Explore | opus |
-| Spike implementation | implementer-agent | sonnet |
-| Spike plan review | spike-plan-review-agent | opus |
-| Standard implementation | implementer-agent | sonnet |
-| Design-heavy implementation | implementer-agent | opus |
-| Spec compliance review | spec-review-agent | opus |
-| Code quality review | review-agent | opus |
-| Fix | fix-agent | sonnet |
+Execution-phase roles (driving and fixing code) run on **sonnet**; every review stage runs on **opus**. Inside Step 3, the implementer and fix agents consult Opus via the `advisor()` tool for judgment calls mid-task — see each agent's "Advisor Usage" section.
+
+| Role | Phase | Subagent Type | Model |
+|------|-------|---------------|-------|
+| Codebase investigation | pre-execution | Explore | opus |
+| Spike implementation | execution | implementer-agent | sonnet |
+| Spike plan review | review | spike-plan-review-agent | opus |
+| Implementation | execution | implementer-agent | sonnet |
+| Spec compliance review | review | spec-review-agent | opus |
+| Code quality review | review | review-agent | opus |
+| Fix | execution | fix-agent | sonnet |
 
 ## Rules
 

@@ -1,6 +1,6 @@
 <!-- Orchestrator-only: dispatch metadata (not part of the agent's instructions)
 - subagent_type: Explore
-- model: sonnet
+- model: opus
 - thoroughness: very thorough
 - placeholders: {cwd}, {resolved_spec_text}
 -->

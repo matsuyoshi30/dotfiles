@@ -1,6 +1,6 @@
 <!-- Orchestrator-only: dispatch metadata (not part of the agent's instructions)
 - subagent_type: spike-plan-review-agent
-- model: sonnet
+- model: opus
 - placeholders: {plan_md}
 - note: this agent has NO access to the codebase, investigation report, or prototype code
 -->

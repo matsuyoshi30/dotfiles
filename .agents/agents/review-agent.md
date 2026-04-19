@@ -4,7 +4,7 @@ description: Read-only code review subagent. Analyzes code for quality, security
 tools: Read, Glob, Grep
 skills:
   - reviewing-code
-model: inherit
+model: opus
 ---
 
 You are a code review agent. Apply the reviewing-code methodology to analyze the files you are given.

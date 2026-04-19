@@ -1,6 +1,6 @@
 <!-- Orchestrator-only: dispatch metadata (not part of the agent's instructions)
 - subagent_type: spec-review-agent
-- model: sonnet
+- model: opus
 - placeholders: {cwd}, {plan_md}, {target_files}
 -->
 
