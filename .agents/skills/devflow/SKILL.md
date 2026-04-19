@@ -1,15 +1,16 @@
 ---
 name: devflow
-description: End-to-end development workflow that orchestrates plan refinement (user dialogue), spike prototyping, implementation with WORKLOG/DR loop, and multi-stage review. Use when the user has a clear task or spec and wants autonomous implementation with quality gates.
-allowed-tools: Agent(implementer-agent, spec-review-agent, review-agent, fix-agent, spike-plan-review-agent, Explore), Bash, Read, Write, Edit, Glob, Grep
+description: End-to-end development workflow that orchestrates codebase exploration, plan refinement (user dialogue), spike prototyping, implementation with WORKLOG/DR loop, and multi-stage review. Use when the user has a clear task or spec and wants autonomous implementation with quality gates.
+allowed-tools: Agent(explorer-agent, implementer-agent, spec-review-agent, review-agent, fix-agent, spike-plan-review-agent, Explore), Bash, Read, Write, Edit, Glob, Grep
 user-invocable: true
 ---
 
 # Development Flow
 
-Plan-Refine → Plan-Spike → Plan-Execute → Review → Verify.
+Explore → Plan-Refine → Plan-Spike → Plan-Execute → Review → Verify.
 
 - **PLAN.md** — single source of truth. All agents read it; only the orchestrator updates it.
+- **exploration.md** — codebase survey output from Step 1. Read-only reference for later steps.
 - **WORKLOG.md** — append-only execution log. Agents report; orchestrator appends.
 - **DR (Decision Record)** — blocker-only A/B choices that bridge agent autonomy and human judgment.
 
@@ -19,54 +20,56 @@ Plan-Refine → Plan-Spike → Plan-Execute → Review → Verify.
 digraph devflow {
     rankdir=TB;
     "Step 0: Resolve Task" [shape=doublecircle];
-    "Step 1: Plan-Refine\n(orchestrator + user)" [shape=box];
+    "Step 1: Explore\n(explorer-agent)" [shape=box];
+    "Step 2: Plan-Refine\n(orchestrator + user)" [shape=box];
     "User approves PLAN.md?" [shape=diamond];
-    "Step 2: Plan-Spike" [shape=box];
+    "Step 3: Plan-Spike" [shape=box];
     "Spike: RUN or SKIP?" [shape=diamond];
     "Investigate + Prototype\n+ Update PLAN" [shape=box];
     "Spike plan review:\nSUFFICIENT?" [shape=diamond];
-    "Step 3: Plan-Execute\n(implementer loop)" [shape=box];
+    "Step 4: Plan-Execute\n(implementer loop)" [shape=box];
     "Implementer status" [shape=diamond];
     "Handle DR with user" [shape=box];
-    "Step 4: Spec review" [shape=box];
+    "Step 5: Spec review" [shape=box];
     "Spec issues = 0?" [shape=diamond];
     "Fix agent (spec)" [shape=box];
-    "Step 5: Code quality review" [shape=box];
+    "Step 6: Code quality review" [shape=box];
     "Critical + High = 0?" [shape=diamond];
     "Fix agent (quality)" [shape=box];
-    "Step 6: Verification" [shape=box];
-    "Step 7: Final Report" [shape=doublecircle];
+    "Step 7: Verification" [shape=box];
+    "Step 8: Final Report" [shape=doublecircle];
 
-    "Step 0: Resolve Task" -> "Step 1: Plan-Refine\n(orchestrator + user)";
-    "Step 1: Plan-Refine\n(orchestrator + user)" -> "User approves PLAN.md?";
-    "User approves PLAN.md?" -> "Step 1: Plan-Refine\n(orchestrator + user)" [label="no"];
-    "User approves PLAN.md?" -> "Step 2: Plan-Spike" [label="yes"];
-    "Step 2: Plan-Spike" -> "Spike: RUN or SKIP?";
+    "Step 0: Resolve Task" -> "Step 1: Explore\n(explorer-agent)";
+    "Step 1: Explore\n(explorer-agent)" -> "Step 2: Plan-Refine\n(orchestrator + user)";
+    "Step 2: Plan-Refine\n(orchestrator + user)" -> "User approves PLAN.md?";
+    "User approves PLAN.md?" -> "Step 2: Plan-Refine\n(orchestrator + user)" [label="no"];
+    "User approves PLAN.md?" -> "Step 3: Plan-Spike" [label="yes"];
+    "Step 3: Plan-Spike" -> "Spike: RUN or SKIP?";
     "Spike: RUN or SKIP?" -> "Investigate + Prototype\n+ Update PLAN" [label="RUN"];
-    "Spike: RUN or SKIP?" -> "Step 3: Plan-Execute\n(implementer loop)" [label="SKIP"];
+    "Spike: RUN or SKIP?" -> "Step 4: Plan-Execute\n(implementer loop)" [label="SKIP"];
     "Investigate + Prototype\n+ Update PLAN" -> "Spike plan review:\nSUFFICIENT?";
     "Spike plan review:\nSUFFICIENT?" -> "Investigate + Prototype\n+ Update PLAN" [label="no (max 2)"];
-    "Spike plan review:\nSUFFICIENT?" -> "Step 3: Plan-Execute\n(implementer loop)" [label="yes"];
-    "Step 3: Plan-Execute\n(implementer loop)" -> "Implementer status";
-    "Implementer status" -> "Step 4: Spec review" [label="DONE"];
+    "Spike plan review:\nSUFFICIENT?" -> "Step 4: Plan-Execute\n(implementer loop)" [label="yes"];
+    "Step 4: Plan-Execute\n(implementer loop)" -> "Implementer status";
+    "Implementer status" -> "Step 5: Spec review" [label="DONE"];
     "Implementer status" -> "Handle DR with user" [label="NEEDS_DECISION"];
-    "Handle DR with user" -> "Step 3: Plan-Execute\n(implementer loop)";
-    "Implementer status" -> "Step 3: Plan-Execute\n(implementer loop)" [label="NEEDS_CONTEXT /\nBLOCKED (re-dispatch)"];
-    "Step 4: Spec review" -> "Spec issues = 0?";
+    "Handle DR with user" -> "Step 4: Plan-Execute\n(implementer loop)";
+    "Implementer status" -> "Step 4: Plan-Execute\n(implementer loop)" [label="NEEDS_CONTEXT /\nBLOCKED (re-dispatch)"];
+    "Step 5: Spec review" -> "Spec issues = 0?";
     "Spec issues = 0?" -> "Fix agent (spec)" [label="no (max 2)"];
-    "Fix agent (spec)" -> "Step 4: Spec review";
-    "Spec issues = 0?" -> "Step 5: Code quality review" [label="yes"];
-    "Step 5: Code quality review" -> "Critical + High = 0?";
+    "Fix agent (spec)" -> "Step 5: Spec review";
+    "Spec issues = 0?" -> "Step 6: Code quality review" [label="yes"];
+    "Step 6: Code quality review" -> "Critical + High = 0?";
     "Critical + High = 0?" -> "Fix agent (quality)" [label="no (max 3)"];
-    "Fix agent (quality)" -> "Step 5: Code quality review";
-    "Critical + High = 0?" -> "Step 6: Verification" [label="yes"];
-    "Step 6: Verification" -> "Step 7: Final Report";
+    "Fix agent (quality)" -> "Step 6: Code quality review";
+    "Critical + High = 0?" -> "Step 7: Verification" [label="yes"];
+    "Step 7: Verification" -> "Step 8: Final Report";
 }
 ```
 
 ## Working Directory
 
-Create `{cwd}/.devflow/{YYYY-MM-DDTHH-MM-SS}_{task-slug}/` with PLAN.md and WORKLOG.md. Use [templates/plan.md](templates/plan.md) and [templates/worklog.md](templates/worklog.md) as starting points. Store this path as `{devflow_dir}`.
+Create `{cwd}/.devflow/{YYYY-MM-DDTHH-MM-SS}_{task-slug}/` with PLAN.md and WORKLOG.md. Use [templates/plan.md](templates/plan.md) and [templates/worklog.md](templates/worklog.md) as starting points. Store this path as `{devflow_dir}`. Step 1 will write `{devflow_dir}/exploration.md`.
 
 ## Step 0 — Resolve Task
 
@@ -74,18 +77,25 @@ Create `{cwd}/.devflow/{YYYY-MM-DDTHH-MM-SS}_{task-slug}/` with PLAN.md and WORK
 - **File path**: Read the file
 - **Inline text**: Use as-is
 
-## Step 1 — Plan-Refine (Interactive)
+## Step 1 — Explore (Subagent)
+
+Dispatch [prompts/explorer.md](prompts/explorer.md). The **explorer-agent** (sonnet) surveys the codebase and writes `{devflow_dir}/exploration.md`. Skip for brand-new projects with no existing code.
+
+- Pass the resolved task summary and `{devflow_dir}/exploration.md` as the target path.
+- `exploration.md` is a reference document for Step 2, not a gate — do not block on completeness.
+
+## Step 2 — Plan-Refine (Interactive)
 
 Performed by the orchestrator, NOT a subagent.
 
-1. **Explore context** — scan project structure and relevant files (skip for new projects)
+1. **Read exploration.md** — use `{devflow_dir}/exploration.md` as the primary source of project context
 2. **Clarify** — ask questions **one at a time**, prefer **multiple choice**, 3-5 questions typically suffice
 3. **Propose approaches** — present **2-3 options** with trade-offs, lead with your recommendation
 4. **Write PLAN.md** — fill [templates/plan.md](templates/plan.md), present to user for approval
 
 **Gate:** User must approve PLAN.md before proceeding.
 
-## Step 2 — Plan-Spike (Isolated Prototype)
+## Step 3 — Plan-Spike (Isolated Prototype)
 
 ### Assess Need
 
@@ -104,7 +114,7 @@ Display: `> Spike: {RUN | SKIP} — {reason}`
 
 **Gate:** PLAN.md must pass spike review before proceeding.
 
-## Step 3 — Plan-Execute (Implementation Loop)
+## Step 4 — Plan-Execute (Implementation Loop)
 
 Initialize WORKLOG.md from [templates/worklog.md](templates/worklog.md).
 
@@ -118,8 +128,8 @@ After each implementer dispatch completes, **append the implementer's report to 
 
 | Status | Action |
 |--------|--------|
-| DONE | Append to WORKLOG.md → Step 4 |
-| DONE_WITH_CONCERNS | Append to WORKLOG.md → Step 4 |
+| DONE | Append to WORKLOG.md → Step 5 |
+| DONE_WITH_CONCERNS | Append to WORKLOG.md → Step 5 |
 | NEEDS_DECISION | Append to WORKLOG.md → Handle DR (below) → re-dispatch |
 | NEEDS_CONTEXT | Append to WORKLOG.md → provide info → re-dispatch |
 | BLOCKED | Append to WORKLOG.md → escalate (context / stronger model / decompose / ask user) |
@@ -133,10 +143,10 @@ After each implementer dispatch completes, **append the implementer's report to 
 
 Never retry the same model with no changes.
 
-## Step 4 — Spec Compliance Review (max 2 iterations)
+## Step 5 — Spec Compliance Review (max 2 iterations)
 
 1. Dispatch [prompts/spec-reviewer.md](prompts/spec-reviewer.md)
-2. Parse `---SUMMARY---`: if MISSING + EXTRA + MISUNDERSTOOD = 0 → Step 5
+2. Parse `---SUMMARY---`: if MISSING + EXTRA + MISUNDERSTOOD = 0 → Step 6
 3. Otherwise: dispatch [prompts/fix.md](prompts/fix.md), loop back to 1
 4. **Log**: after each iteration, append to WORKLOG.md:
    ```
@@ -150,10 +160,10 @@ Never retry the same model with no changes.
 
 If issues remain after max iterations: report to user and stop.
 
-## Step 5 — Code Quality Review (max 3 iterations)
+## Step 6 — Code Quality Review (max 3 iterations)
 
 1. Dispatch [prompts/code-quality-reviewer.md](prompts/code-quality-reviewer.md)
-2. Parse `---SUMMARY---`: if CRITICAL + HIGH = 0 → Step 6. Medium/Low reported but don't block.
+2. Parse `---SUMMARY---`: if CRITICAL + HIGH = 0 → Step 7. Medium/Low reported but don't block.
 3. Otherwise: dispatch [prompts/fix.md](prompts/fix.md) (Critical → High priority), loop back to 1
 4. **Log**: after each iteration, append to WORKLOG.md:
    ```
@@ -167,7 +177,7 @@ If issues remain after max iterations: report to user and stop.
 
 If Critical/High remain after max iterations: report to user and stop.
 
-## Step 6 — Completion Verification
+## Step 7 — Completion Verification
 
 Run the project's verification commands in order. Read CLAUDE.md, README.md, package.json, Makefile, or other project config files to discover available commands.
 
@@ -180,12 +190,15 @@ Skip any step with no discoverable command. If a step fails, determine whether t
 
 If any devflow-caused failure remains: do NOT claim completion.
 
-## Step 7 — Final Report
+## Step 8 — Final Report
 
 ```markdown
 ## Development Flow Complete
 
 **Task**: {task summary}
+
+### Exploration
+- **Output**: {devflow_dir}/exploration.md
 
 ### Plan-Refine
 - **Approach selected**: {brief description}
@@ -218,11 +231,12 @@ Append to WORKLOG.md.
 
 ## Model Selection
 
-Execution-phase roles (driving and fixing code) run on **sonnet**; every review stage runs on **opus**. Inside Step 3, the implementer and fix agents consult Opus via the `advisor()` tool for judgment calls mid-task — see each agent's "Advisor Usage" section.
+Execution-phase roles (driving and fixing code) run on **sonnet**; every review stage runs on **opus**. Inside Step 4, the implementer and fix agents consult Opus via the `advisor()` tool for judgment calls mid-task — see each agent's "Advisor Usage" section.
 
 | Role | Phase | Subagent Type | Model |
 |------|-------|---------------|-------|
-| Codebase investigation | pre-execution | Explore | opus |
+| Codebase exploration | pre-plan | explorer-agent | sonnet |
+| Spike-phase investigation | pre-execution | Explore | opus |
 | Spike implementation | execution | implementer-agent | sonnet |
 | Spike plan review | review | spike-plan-review-agent | opus |
 | Implementation | execution | implementer-agent | sonnet |
@@ -232,6 +246,7 @@ Execution-phase roles (driving and fixing code) run on **sonnet**; every review 
 
 ## Rules
 
+- **Explore is read-only** — explorer-agent only writes exploration.md; never edits source files
 - **Plan-Refine is interactive** — orchestrator conducts dialogue, not a subagent
 - **Spike code is disposable** — run in worktree, extract learnings, discard code
 - **Spike review is context-free** — reviewer sees only PLAN.md
