@@ -287,6 +287,15 @@ Execution-phase roles (driving and fixing code) run on **sonnet**; every review 
 | Code quality review | review | review-agent | opus |
 | Fix | execution | fix-agent | sonnet |
 
+## Planning Principles
+
+Apply when writing or updating PLAN.md (Step 2 Plan-Refine, Step 3 Spike updates, Step 4 DR-driven revisions).
+
+- **Fact-based, not speculative** — ground claims in exploration.md, code reads, or spike output; mark unknowns as unknowns rather than guessing
+- **Spec is implementation-independent** — Goal, Definition of Done, and Approach must be verifiable without reading the implementation code
+- **Separate structural from behavioral changes** — plan refactors (structure) and behavior changes as distinct steps; never mix them in one step
+- **Step granularity: implementer-ready** — each step must be executable by the implementer without further clarification; if a step would need a DR to start, split it further upfront
+
 ## Rules
 
 - **Explore is read-only** — explorer-agent only writes exploration.md; never edits source files
