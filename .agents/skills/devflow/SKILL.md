@@ -1,7 +1,7 @@
 ---
 name: devflow
-description: End-to-end development workflow that orchestrates codebase exploration, plan refinement (user dialogue), spike prototyping, implementation with WORKLOG/DR loop, and multi-stage review. Use when the user has a clear task or spec and wants autonomous implementation with quality gates.
-allowed-tools: Agent(explorer-agent, implementer-agent, spec-review-agent, review-agent, fix-agent, spike-plan-review-agent, Explore), Bash, Read, Write, Edit, Glob, Grep
+description: End-to-end development workflow that orchestrates codebase exploration, plan refinement (user dialogue or subagent drafting), spike prototyping, implementation with WORKLOG/DR loop, and multi-stage review. Use when the user has a clear task or spec and wants autonomous implementation with quality gates.
+allowed-tools: Agent(explorer-agent, plan-draft-agent, implementer-agent, spec-review-agent, review-agent, fix-agent, spike-plan-review-agent, Explore), Bash, Read, Write, Edit, Glob, Grep
 user-invocable: true
 ---
 
@@ -21,7 +21,11 @@ digraph devflow {
     rankdir=TB;
     "Step 0: Resolve Task" [shape=doublecircle];
     "Step 1: Explore\n(explorer-agent)" [shape=box];
-    "Step 2: Plan-Refine\n(orchestrator + user)" [shape=box];
+    "Step 2: Plan-Refine" [shape=box];
+    "Plan: DIALOGUE or DIRECT?" [shape=diamond];
+    "Dialogue with user\n(orchestrator)" [shape=box];
+    "Draft PLAN.md\n(plan-draft-agent)" [shape=box];
+    "plan-draft status" [shape=diamond];
     "User approves PLAN.md?" [shape=diamond];
     "Step 3: Plan-Spike" [shape=box];
     "Spike: RUN or SKIP?" [shape=diamond];
@@ -40,9 +44,15 @@ digraph devflow {
     "Step 8: Final Report" [shape=doublecircle];
 
     "Step 0: Resolve Task" -> "Step 1: Explore\n(explorer-agent)";
-    "Step 1: Explore\n(explorer-agent)" -> "Step 2: Plan-Refine\n(orchestrator + user)";
-    "Step 2: Plan-Refine\n(orchestrator + user)" -> "User approves PLAN.md?";
-    "User approves PLAN.md?" -> "Step 2: Plan-Refine\n(orchestrator + user)" [label="no"];
+    "Step 1: Explore\n(explorer-agent)" -> "Step 2: Plan-Refine";
+    "Step 2: Plan-Refine" -> "Plan: DIALOGUE or DIRECT?";
+    "Plan: DIALOGUE or DIRECT?" -> "Dialogue with user\n(orchestrator)" [label="DIALOGUE"];
+    "Plan: DIALOGUE or DIRECT?" -> "Draft PLAN.md\n(plan-draft-agent)" [label="DIRECT"];
+    "Dialogue with user\n(orchestrator)" -> "User approves PLAN.md?";
+    "Draft PLAN.md\n(plan-draft-agent)" -> "plan-draft status";
+    "plan-draft status" -> "User approves PLAN.md?" [label="DRAFTED"];
+    "plan-draft status" -> "Dialogue with user\n(orchestrator)" [label="NEEDS_DIALOGUE"];
+    "User approves PLAN.md?" -> "Dialogue with user\n(orchestrator)" [label="no"];
     "User approves PLAN.md?" -> "Step 3: Plan-Spike" [label="yes"];
     "Step 3: Plan-Spike" -> "Spike: RUN or SKIP?";
     "Spike: RUN or SKIP?" -> "Investigate + Prototype\n+ Update PLAN" [label="RUN"];
@@ -84,21 +94,48 @@ Dispatch [prompts/explorer.md](prompts/explorer.md). The **explorer-agent** (son
 - Pass the resolved task summary and `{devflow_dir}/exploration.md` as the target path.
 - `exploration.md` is a reference document for Step 2, not a gate — do not block on completeness.
 
-## Step 2 — Plan-Refine (Interactive)
+## Step 2 — Plan-Refine
 
-Performed by the orchestrator, NOT a subagent.
+### Assess Need
+
+- **DIALOGUE** (default) when any of:
+  - Requirements are ambiguous or have multiple reasonable interpretations
+  - Multiple viable approaches with non-obvious trade-offs
+  - Definition of Done cannot be stated verifiably from task + exploration.md alone
+  - exploration.md surfaced unknowns that affect approach selection
+  - User preference is required for technical choices (naming, layering, library selection, etc.)
+- **DIRECT** only when ALL of:
+  - Task spec is explicit (Issue/spec/inline text states what to build)
+  - Definition of Done is derivable without user input
+  - Approach has a clear precedent in the codebase (exploration.md points to a pattern)
+  - No technical choices require user judgment
+
+Display: `> Plan-Refine: {DIALOGUE | DIRECT} — {reason}`
+
+If in doubt, choose DIALOGUE. DIRECT is an optimization for unambiguous tasks; DIALOGUE is the safe default.
+
+### DIALOGUE path (orchestrator, interactive)
 
 1. **Read exploration.md** — use `{devflow_dir}/exploration.md` as the primary source of project context
 2. **Clarify** — ask questions **one at a time**, prefer **multiple choice**, 3-5 questions typically suffice
 3. **Propose approaches** — present **2-3 options** with trade-offs, lead with your recommendation
 4. **Write PLAN.md** — fill [templates/plan.md](templates/plan.md), present to user for approval
 
-**Required sections** — every PLAN.md must have these filled in (not empty, not placeholder):
+### DIRECT path (subagent)
+
+1. Dispatch [prompts/plan-draft.md](prompts/plan-draft.md) — **plan-draft-agent** (opus) reads the task and exploration.md, then writes `{devflow_dir}/PLAN.md`
+2. Parse returned status:
+   - `DRAFTED` — orchestrator reads PLAN.md, verifies required sections are filled with concrete content (not "TBD"), presents to user for approval
+   - `NEEDS_DIALOGUE` — the task turned out to be ambiguous. Fall back to the DIALOGUE path using the agent's returned questions as a starting point.
+
+### Required sections
+
+Every PLAN.md must have these filled in (not empty, not placeholder):
 - `## Goal` — what and why
-- `## Definition of Done` — **mandatory**. Verifiable, concrete completion criteria (observable behavior, test conditions, regression guards). If you cannot state how to verify completion, clarify with the user before writing the plan. Never leave this blank or write "TBD".
+- `## Definition of Done` — **mandatory**. Verifiable, concrete completion criteria (observable behavior, test conditions, regression guards). Never leave blank or write "TBD".
 - `## Approach` — selected approach and rationale
 
-**Gate:** User must approve PLAN.md before proceeding. If `## Definition of Done` is missing or vague, do not present for approval — refine first.
+**Gate:** User must approve PLAN.md before proceeding. If `## Definition of Done` is missing or vague, do not present for approval — refine first (DIALOGUE path even if you started on DIRECT).
 
 ## Step 3 — Plan-Spike (Isolated Prototype)
 
@@ -241,6 +278,7 @@ Execution-phase roles (driving and fixing code) run on **sonnet**; every review 
 | Role | Phase | Subagent Type | Model |
 |------|-------|---------------|-------|
 | Codebase exploration | pre-plan | explorer-agent | sonnet |
+| Plan drafting (DIRECT path only) | plan | plan-draft-agent | opus |
 | Spike-phase investigation | pre-execution | Explore | opus |
 | Spike implementation | execution | implementer-agent | sonnet |
 | Spike plan review | review | spike-plan-review-agent | opus |
@@ -252,7 +290,8 @@ Execution-phase roles (driving and fixing code) run on **sonnet**; every review 
 ## Rules
 
 - **Explore is read-only** — explorer-agent only writes exploration.md; never edits source files
-- **Plan-Refine is interactive** — orchestrator conducts dialogue, not a subagent
+- **Plan-Refine gate: DIALOGUE is the default** — only use DIRECT (subagent drafting) when the task is unambiguous and approach has clear codebase precedent. When in doubt, choose DIALOGUE.
+- **plan-draft-agent cannot ask the user** — if it encounters ambiguity, it returns `NEEDS_DIALOGUE` and the orchestrator falls back to the DIALOGUE path. Never give plan-draft-agent license to guess on missing requirements.
 - **Spike code is disposable** — run in worktree, extract learnings, discard code
 - **Spike review is context-free** — reviewer sees only PLAN.md
 - **DRs are blockers only** — style/preference choices are made autonomously
