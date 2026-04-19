@@ -1,7 +1,10 @@
 <!-- Orchestrator-only: dispatch metadata (not part of the agent's instructions)
 - subagent_type: explorer-agent
 - model: sonnet
-- placeholders: {cwd}, {task_summary}, {exploration_md_path}
+- placeholders: {cwd}, {task_summary}, {task_source}, {exploration_md_path}
+- {task_summary} must be ≤ 1500 chars (see SKILL.md Step 0). Never inline the full
+  ticket/spec body here — subagent system context is already large and a bloated
+  task_summary can trigger `Prompt is too long` before the agent runs.
 -->
 
 ---
@@ -13,6 +16,8 @@ Working directory: {cwd}
 ## Task Context
 
 {task_summary}
+
+Full task source (read only if the summary above is insufficient): {task_source}
 
 ## What to Do
 

@@ -122,11 +122,18 @@ Do not skip steps. Step 1 may be skipped only for brand-new projects with no exi
 - **File path**: Read the file
 - **Inline text**: Use as-is
 
+### Produce `task_summary` (mandatory)
+
+Raw ticket bodies in subagent prompts can trigger `Prompt is too long` before the agent runs. Summarize instead.
+
+- `task_summary`: ≤ 1500 chars covering goal, constraints, acceptance criteria.
+- `task_source`: URL, absolute file path, or `{devflow_dir}/task-source.md` (write inline text here) pointing to the full body. Passed alongside `task_summary` to subagents that may need to read more.
+
 ## Step 1 — Explore (Codebase Survey)
 
 Dispatch [prompts/explorer.md](prompts/explorer.md). The **explorer-agent** (sonnet) surveys the codebase and writes `{devflow_dir}/exploration.md`. Skip for brand-new projects with no existing code.
 
-- Pass the resolved task summary and `{devflow_dir}/exploration.md` as the target path.
+- Pass the resolved `{task_summary}` (≤ 1500 chars per Step 0) and `{task_source}` (URL or path to the full ticket/spec), plus `{devflow_dir}/exploration.md` as the target path.
 - `exploration.md` is a reference document for Step 2, not a gate — do not block on completeness.
 
 ## Step 2 — Plan-Refine
