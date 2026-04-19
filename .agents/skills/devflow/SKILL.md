@@ -77,7 +77,7 @@ Create `{cwd}/.devflow/{YYYY-MM-DDTHH-MM-SS}_{task-slug}/` with PLAN.md and WORK
 - **File path**: Read the file
 - **Inline text**: Use as-is
 
-## Step 1 — Explore (Subagent)
+## Step 1 — Explore (Codebase Survey)
 
 Dispatch [prompts/explorer.md](prompts/explorer.md). The **explorer-agent** (sonnet) surveys the codebase and writes `{devflow_dir}/exploration.md`. Skip for brand-new projects with no existing code.
 
