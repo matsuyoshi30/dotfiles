@@ -1,7 +1,7 @@
 ---
 name: devflow
 description: End-to-end development workflow that orchestrates plan refinement (user dialogue), spike prototyping, implementation with WORKLOG/DR loop, and multi-stage review. Use when the user has a clear task or spec and wants autonomous implementation with quality gates.
-allowed-tools: Agent(implementer-agent, spec-review-agent, review-agent, fix-agent, spike-review-agent, Explore), Bash, Read, Write, Edit, Glob, Grep
+allowed-tools: Agent(implementer-agent, spec-review-agent, review-agent, fix-agent, spike-plan-review-agent, Explore), Bash, Read, Write, Edit, Glob, Grep
 user-invocable: true
 ---
 
@@ -187,7 +187,7 @@ Append to WORKLOG.md.
 |------|---------------|-------|
 | Codebase investigation | Explore | opus |
 | Spike implementation | implementer-agent | sonnet |
-| Spike review | spike-review-agent | opus |
+| Spike plan review | spike-plan-review-agent | opus |
 | Standard implementation | implementer-agent | sonnet |
 | Design-heavy implementation | implementer-agent | opus |
 | Spec compliance review | spec-review-agent | opus |
