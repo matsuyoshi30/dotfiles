@@ -7,7 +7,9 @@
 <!-- What NOT to do, rules to follow, guardrails -->
 
 ## Definition of Done
-<!-- Verifiable completion criteria -->
+<!-- REQUIRED — do not leave empty. List verifiable, concrete completion criteria:
+     observable behaviors, test conditions, regression guards. Each item must be
+     checkable (pass/fail), not aspirational. -->
 
 ## Approach
 <!-- Selected approach and rationale -->

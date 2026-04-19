@@ -93,7 +93,12 @@ Performed by the orchestrator, NOT a subagent.
 3. **Propose approaches** — present **2-3 options** with trade-offs, lead with your recommendation
 4. **Write PLAN.md** — fill [templates/plan.md](templates/plan.md), present to user for approval
 
-**Gate:** User must approve PLAN.md before proceeding.
+**Required sections** — every PLAN.md must have these filled in (not empty, not placeholder):
+- `## Goal` — what and why
+- `## Definition of Done` — **mandatory**. Verifiable, concrete completion criteria (observable behavior, test conditions, regression guards). If you cannot state how to verify completion, clarify with the user before writing the plan. Never leave this blank or write "TBD".
+- `## Approach` — selected approach and rationale
+
+**Gate:** User must approve PLAN.md before proceeding. If `## Definition of Done` is missing or vague, do not present for approval — refine first.
 
 ## Step 3 — Plan-Spike (Isolated Prototype)
 
