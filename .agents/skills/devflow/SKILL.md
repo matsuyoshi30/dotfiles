@@ -1,7 +1,7 @@
 ---
 name: devflow
 description: End-to-end development workflow that orchestrates codebase exploration, plan refinement (user dialogue or subagent drafting), spike prototyping, implementation with WORKLOG/DR loop, and multi-stage review. Use when the user has a clear task or spec and wants autonomous implementation with quality gates.
-allowed-tools: Agent(explorer-agent, plan-draft-agent, implementer-agent, spec-review-agent, review-agent, fix-agent, spike-plan-review-agent, Explore), Bash, Read, Write, Edit, Glob, Grep
+allowed-tools: Agent(explorer-agent, plan-draft-agent, implementer-agent, spec-review-agent, review-agent, fix-agent, spike-plan-review-agent, Explore), Bash, Read, Write, Edit, Glob, Grep, Skill(preparing-worktrees)
 user-invocable: true
 ---
 
@@ -31,6 +31,8 @@ digraph devflow {
     "Spike: RUN or SKIP?" [shape=diamond];
     "Investigate + Prototype\n+ Update PLAN" [shape=box];
     "Spike plan review:\nSUFFICIENT?" [shape=diamond];
+    "Step 4 preamble:\nIsolation gate" [shape=diamond];
+    "Create persistent worktree\n(preparing-worktrees)" [shape=box];
     "Step 4: Plan-Execute\n(implementer loop)" [shape=box];
     "Implementer status" [shape=diamond];
     "Handle DR with user" [shape=box];
@@ -56,10 +58,13 @@ digraph devflow {
     "User approves PLAN.md?" -> "Step 3: Plan-Spike" [label="yes"];
     "Step 3: Plan-Spike" -> "Spike: RUN or SKIP?";
     "Spike: RUN or SKIP?" -> "Investigate + Prototype\n+ Update PLAN" [label="RUN"];
-    "Spike: RUN or SKIP?" -> "Step 4: Plan-Execute\n(implementer loop)" [label="SKIP"];
+    "Spike: RUN or SKIP?" -> "Step 4 preamble:\nIsolation gate" [label="SKIP"];
     "Investigate + Prototype\n+ Update PLAN" -> "Spike plan review:\nSUFFICIENT?";
     "Spike plan review:\nSUFFICIENT?" -> "Investigate + Prototype\n+ Update PLAN" [label="no (max 2)"];
-    "Spike plan review:\nSUFFICIENT?" -> "Step 4: Plan-Execute\n(implementer loop)" [label="yes"];
+    "Spike plan review:\nSUFFICIENT?" -> "Step 4 preamble:\nIsolation gate" [label="yes"];
+    "Step 4 preamble:\nIsolation gate" -> "Create persistent worktree\n(preparing-worktrees)" [label="WORKTREE"];
+    "Step 4 preamble:\nIsolation gate" -> "Step 4: Plan-Execute\n(implementer loop)" [label="IN_PLACE"];
+    "Create persistent worktree\n(preparing-worktrees)" -> "Step 4: Plan-Execute\n(implementer loop)";
     "Step 4: Plan-Execute\n(implementer loop)" -> "Implementer status";
     "Implementer status" -> "Step 5: Spec review" [label="DONE"];
     "Implementer status" -> "Handle DR with user" [label="NEEDS_DECISION"];
@@ -79,7 +84,18 @@ digraph devflow {
 
 ## Working Directory
 
-Create `{cwd}/.devflow/{YYYY-MM-DDTHH-MM-SS}_{task-slug}/` with PLAN.md and WORKLOG.md. Use [templates/plan.md](templates/plan.md) and [templates/worklog.md](templates/worklog.md) as starting points. Store this path as `{devflow_dir}`. Step 1 will write `{devflow_dir}/exploration.md`.
+Resolve the **base repo root** once at the start: `{base_repo} = git -C {cwd} rev-parse --show-toplevel`. All devflow documents live on the base repo's working tree so they survive worktree teardown and branch cleanup.
+
+- `{devflow_dir}` = **absolute path** `{base_repo}/.devflow/{YYYY-MM-DDTHH-MM-SS}_{task-slug}/`
+- `{worktree_dir}` = where source edits happen. Defaults to `{base_repo}` until Step 4 decides otherwise.
+
+Create `{devflow_dir}` with PLAN.md and WORKLOG.md. Use [templates/plan.md](templates/plan.md) and [templates/worklog.md](templates/worklog.md) as starting points. Step 1 will write `{devflow_dir}/exploration.md`.
+
+**Cwd discipline for all steps:**
+- Document I/O (PLAN.md, WORKLOG.md, exploration.md) — always use the `{devflow_dir}` absolute path, regardless of current cwd.
+- Code reads, edits, tests, builds — run with cwd set to `{worktree_dir}`.
+
+Step 4's Isolation gate may replace `{worktree_dir}` with a dedicated git worktree (see Step 4 preamble). Steps 5, 6, and 7 then operate on that `{worktree_dir}` while continuing to write logs under `{devflow_dir}`.
 
 ## Orchestrator Progress Checklist
 
@@ -90,6 +106,7 @@ Create TodoWrite todos for each step at start, then mark done as you progress:
 - [ ] Step 1: Explore — dispatch explorer-agent, write exploration.md (skip if brand-new project)
 - [ ] Step 2: Plan-Refine — decide DIALOGUE vs DIRECT, produce PLAN.md, get user approval
 - [ ] Step 3: Plan-Spike — decide RUN vs SKIP, update PLAN.md, pass spike-plan review (max 2)
+- [ ] Step 4 preamble: Isolation gate — decide WORKTREE vs IN_PLACE, create worktree if needed
 - [ ] Step 4: Plan-Execute — implementer loop, handle DR/NEEDS_CONTEXT/BLOCKED, append to WORKLOG.md
 - [ ] Step 5: Spec compliance review — loop until MISSING+EXTRA+MISUNDERSTOOD = 0 (max 2)
 - [ ] Step 6: Code quality review — loop until CRITICAL+HIGH = 0 (max 3)
@@ -176,7 +193,35 @@ Display: `> Spike: {RUN | SKIP} — {reason}`
 
 ## Step 4 — Plan-Execute (Implementation Loop)
 
-Initialize WORKLOG.md from [templates/worklog.md](templates/worklog.md).
+### Preamble: Isolation Gate
+
+Decide where the implementation loop runs. This sets `{worktree_dir}` for Step 4 onward.
+
+- **WORKTREE** (default for non-trivial work) when any of:
+  - PLAN.md `## Steps` count ≥ 5, or touches multiple directories / packages
+  - Long-running builds or tests (the user will want to keep the base branch usable in parallel)
+  - Base repo already has in-flight uncommitted changes (`git -C {base_repo} status --porcelain` non-empty)
+  - User explicitly asked for an isolated branch
+- **IN_PLACE** when all of:
+  - ≤ 2 steps, single file or a tight cluster
+  - Docs-only, config tweak, or a trivial fix
+  - Base repo is clean
+  - User has not asked for isolation
+
+Respect a user hint from Step 0 ("軽いので worktree なしで" / "重いので worktree で") when present — it overrides the heuristics.
+
+Display: `> Isolation: {WORKTREE | IN_PLACE} — {reason}` and wait for user confirmation.
+
+**On WORKTREE:**
+1. Derive a branch name from the task slug (e.g. `devflow/{task-slug}`).
+2. Invoke the `preparing-worktrees` skill with that branch name. It selects the directory (`.wt/` preferred), verifies `.gitignore`, creates the worktree, and runs project setup. It returns the absolute worktree path.
+3. Set `{worktree_dir}` to the returned path. All subsequent code-touching dispatches (implementer, fix, reviewers, verification) run with cwd = `{worktree_dir}`.
+4. Keep writing PLAN.md / WORKLOG.md / exploration.md to `{devflow_dir}` on the base repo — these paths are absolute.
+
+**On IN_PLACE:**
+- `{worktree_dir} = {base_repo}`. Nothing else changes.
+
+Initialize WORKLOG.md from [templates/worklog.md](templates/worklog.md) and record the isolation decision in its first entry.
 
 ### Dispatch
 
@@ -223,7 +268,7 @@ If Critical/High remain after max iterations: report to user and stop.
 
 ## Step 7 — Completion Verification
 
-Run the project's verification commands in order. Read CLAUDE.md, README.md, package.json, Makefile, or other project config files to discover available commands.
+Run the project's verification commands in `{worktree_dir}` (not `{base_repo}` when WORKTREE was chosen). Read CLAUDE.md, README.md, package.json, Makefile, or other project config files to discover available commands.
 
 1. **Format** — run formatter if available
 2. **Lint** — run linter if available
@@ -269,6 +314,8 @@ Apply when writing or updating PLAN.md (Step 2 Plan-Refine, Step 3 Spike updates
 - **Plan-Refine gate: DIALOGUE is the default** — only use DIRECT (subagent drafting) when the task is unambiguous and approach has clear codebase precedent. When in doubt, choose DIALOGUE.
 - **plan-draft-agent cannot ask the user** — if it encounters ambiguity, it returns `NEEDS_DIALOGUE` and the orchestrator falls back to the DIALOGUE path. Never give plan-draft-agent license to guess on missing requirements.
 - **Spike code is disposable** — run in worktree, extract learnings, discard code
+- **Docs stay on the base repo** — PLAN.md, WORKLOG.md, exploration.md always live under `{devflow_dir}` (absolute path on `{base_repo}`), even when Step 4 runs in a worktree. Only source code edits and verification commands run in `{worktree_dir}`.
+- **Isolation gate decision is user-approved** — the Step 4 preamble must display `Isolation: {WORKTREE | IN_PLACE} — {reason}` and wait for confirmation; do not auto-create worktrees.
 - **Spike review is context-free** — reviewer sees only PLAN.md
 - **DRs are blockers only** — style/preference choices are made autonomously
 - **Spec compliance before code quality** — wrong thing built well is still wrong
