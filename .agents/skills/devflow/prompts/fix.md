@@ -1,7 +1,7 @@
 <!-- Orchestrator-only: dispatch metadata (not part of the agent's instructions)
 - subagent_type: fix-agent
 - model: sonnet
-- placeholders: {cwd}, {review_output}
+- placeholders: {cwd}, {review_output}, {baseline_json_path}
 -->
 
 ---
@@ -9,6 +9,10 @@
 Apply the following review findings to the codebase.
 
 Working directory: {cwd}
+
+## Pre-existing Failures (Out of Scope)
+
+Read `{baseline_json_path}` before you start. Signature = `{file, first_error_line}` (normalized). Failures matching a baseline signature are pre-existing and out of scope — do not try to fix them, and do not treat them as blockers in the verification step below.
 
 ## Review Findings
 
@@ -30,8 +34,8 @@ Working directory: {cwd}
    d. **Test** (prefer unit tests over integration/e2e if distinguishable)
 
    If a step fails:
-   - Determine whether the failure is caused by your changes or is pre-existing.
-   - If caused by your changes: fix it and re-run the failing step. Repeat until it passes.
+   - Determine whether the failure is caused by your changes or is pre-existing (baseline-matching counts as pre-existing by definition).
+   - If caused by your changes: fix it and re-run the failing step. **Retry budget: if the same signature fails twice in a row after your fixes, stop retrying. Record it under Unresolved Issues and continue.**
    - If pre-existing: note it and continue to the next step.
    - Do NOT ignore or skip failures without this assessment.
 

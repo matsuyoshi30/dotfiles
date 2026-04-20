@@ -107,7 +107,8 @@ Create TodoWrite todos for each step at start, then mark done as you progress:
 - [ ] Step 2: Plan-Refine — decide DIALOGUE vs DIRECT, produce PLAN.md, get user approval
 - [ ] Step 3: Plan-Spike — decide RUN vs SKIP, update PLAN.md, pass spike-plan review (max 2)
 - [ ] Step 4 preamble: Isolation gate — decide WORKTREE vs IN_PLACE, create worktree if needed
-- [ ] Step 4: Plan-Execute — implementer loop, handle DR/NEEDS_CONTEXT/BLOCKED, append to WORKLOG.md
+- [ ] Step 4 preamble: Pre-flight baseline — run format/lint/build/test on unmodified tree, write baseline.json
+- [ ] Step 4: Plan-Execute — implementer loop, handle DR/NEEDS_CONTEXT/BLOCKED, retry-budget check, append to WORKLOG.md
 - [ ] Step 5: Spec compliance review — loop until MISSING+EXTRA+MISUNDERSTOOD = 0 (max 2)
 - [ ] Step 6: Code quality review — loop until CRITICAL+HIGH = 0 (max 3)
 - [ ] Step 7: Completion verification — format / lint / build / test
@@ -230,6 +231,27 @@ Display: `> Isolation: {WORKTREE | IN_PLACE} — {reason}` and wait for user con
 
 Initialize WORKLOG.md from [templates/worklog.md](templates/worklog.md) and record the isolation decision in its first entry.
 
+### Pre-flight Baseline
+
+Before dispatching the implementer, run the project's verification commands once in `{worktree_dir}` on the **unmodified** tree to capture failures that exist before any devflow edits. This prevents implementer/fix agents from spending time "fixing" issues unrelated to the task (e.g., transient compile errors in other modules with team-known workarounds).
+
+1. Discover format/lint/build/test commands the same way Step 7 does (CLAUDE.md, README.md, package.json, Makefile, etc.).
+2. Run each available command, redirecting stdout+stderr to a capture file.
+3. For each failing command, extract failure signatures (one per distinct failure) and write to `{devflow_dir}/baseline.json`. A **signature** is `{file, first_error_line}` (normalized). Example:
+   ```json
+   {
+     "captured_at": "{timestamp}",
+     "commands": [{"step": "build", "cmd": "./gradlew build", "status": "FAIL"}],
+     "signatures": [
+       {"step": "build", "module": "moduleX", "file": "src/Foo.kt", "first_error_line": "error: unresolved reference: Bar"}
+     ]
+   }
+   ```
+   If a command passes, record `status: "PASS"` with no signatures.
+4. Append a WORKLOG entry tagged `BASELINE_CAPTURED` summarising the PASS/FAIL counts and unique signature count.
+
+If every command passes, `baseline.json` has an empty `signatures` array — still create the file so later steps can read it unconditionally.
+
 ### Dispatch
 
 Read and dispatch [prompts/implementer.md](prompts/implementer.md) (sonnet). See **Model Selection** at bottom.
@@ -245,6 +267,15 @@ After each implementer dispatch completes, **append the implementer's report to 
 | NEEDS_DECISION | Append to WORKLOG.md → Handle DR (below) → re-dispatch |
 | NEEDS_CONTEXT | Append to WORKLOG.md → provide info → re-dispatch |
 | BLOCKED | Append to WORKLOG.md → escalate (context / stronger model / decompose / ask user) |
+
+### Retry Budget
+
+Two-layer cap — agents self-report BLOCKED after one retry; the orchestrator enforces the same cap in case the agent keeps trying instead.
+
+Before re-dispatching after a non-DONE status, scan the two most recent implementer/fix entries in WORKLOG.md. If the same signature appears in both, do NOT re-dispatch:
+
+1. Append a WORKLOG entry tagged `ABORTED_RETRY_LOOP` with the repeated signature.
+2. Escalate to the user with the signature and both attempts — user decides (add to baseline / provide workaround / change approach / abandon step).
 
 ### DR Handling
 
@@ -283,6 +314,8 @@ Run the project's verification commands in `{worktree_dir}` (not `{base_repo}` w
 4. **Test** — run tests if available (prefer unit tests over integration/e2e)
 
 Skip any step with no discoverable command. If a step fails, determine whether the failure is caused by devflow changes or is pre-existing. Only devflow-caused failures block completion.
+
+**Baseline cross-check**: load `{devflow_dir}/baseline.json` from the Step 4 preamble. Any Step 7 failure whose signature matches a baseline entry is pre-existing by definition — log it as `SKIPPED_PRE_EXISTING` in WORKLOG and do not treat it as a blocker. Failures with no matching baseline signature are devflow-caused.
 
 If any devflow-caused failure remains: do NOT claim completion.
 
@@ -328,3 +361,5 @@ Apply when writing or updating PLAN.md (Step 2 Plan-Refine, Step 3 Spike updates
 - **Spec compliance before code quality** — wrong thing built well is still wrong
 - **Do not skip review stages**
 - **One task at a time** — don't parallelize implementation subagents
+- **Baseline is the scope boundary** — pre-existing failures recorded in `baseline.json` are out of scope. Implementer/fix/verification agents must not attempt to "fix" baseline-matching failures; they log `SKIPPED_PRE_EXISTING` and continue.
+- **Retry loops end early, not silently** — the same failure signature twice in a row stops the loop and surfaces to the user as `ABORTED_RETRY_LOOP`. Never keep re-dispatching hoping the next attempt is different.
