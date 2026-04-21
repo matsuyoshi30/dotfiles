@@ -1,6 +1,8 @@
 ---
 name: shaping-spec
 description: Turns a rough idea about an existing codebase into a semi-structured spec file through codebase-aware dialogue. Use when the user has vague thoughts and wants to shape them into input for downstream skills (devflow / superpowers:writing-plans / advisor-critique-loop). Produces a single markdown spec; does not produce a PLAN.md or write code.
+# `allowed-tools` and `user-invocable` are Claude Code harness extensions
+# beyond Anthropic's required name/description. Other harnesses ignore them.
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent(Explore), Skill(devflow, superpowers:writing-plans, advisor-critique-loop)
 user-invocable: true
 ---
@@ -13,9 +15,9 @@ Bridge from "I have a rough idea about this codebase" to "here is a spec a downs
 
 ## Positioning vs Adjacent Skills
 
-- **superpowers:brainstorming** — general-purpose design doc authoring; not codebase-first.
-- **devflow Step 2 DIALOGUE** — writes PLAN.md (implementation-bound).
-- **shaping-spec (this skill)** — codebase-first shaping of a vague idea into a spec that downstream skills can refine further.
+- **superpowers:brainstorming** — general design-doc dialogue, not codebase-aware; use when there is no existing codebase to ground the idea against.
+- **devflow** — autonomous end-to-end implementation; expects a clear, codebase-grounded spec or plan as input. Use when the work is ready to execute.
+- **shaping-spec (this skill)** — codebase-aware shaping of a vague idea into a downstream-ready spec. Use when the idea is too vague to hand to an implementation-bound skill.
 
 ## Output Location
 
@@ -46,6 +48,18 @@ The generated spec file is written to `{base_dir}/specs/{YYYY-MM-DDTHH-MM-SS}_{s
 `{YYYY-MM-DDTHH-MM-SS}` uses local time, e.g. `2026-04-21T15-30-42`. Uniqueness at 1-second granularity is assumed — if the write somehow collides, re-run with a fresh timestamp.
 
 ## Flow
+
+At the start, register this checklist via TodoWrite and tick items off as you go:
+
+```
+shaping-spec progress:
+- [ ] Step 0: Receive rough idea + summarise back
+- [ ] Step 1: Light exploration (escalate to Explore subagent if criteria met)
+- [ ] Step 2: Ground-truth confirmation
+- [ ] Step 3: Shaping dialogue (Goal / Constraints / DoD; opt-in optionals)
+- [ ] Step 4: Slug propose → write spec → user approve
+- [ ] Step 5: Recommend downstream → user choose → invoke or stop
+```
 
 ### Step 0 — Receive Rough Idea
 
@@ -93,14 +107,15 @@ For each of the optional sections (`Approach Options`, `Out of Scope`, `Risks / 
 ### Step 4 — Write Spec and Get Approval
 
 1. Read `templates/spec.md`.
-2. Fill it in:
+2. **Propose `{slug}`** — derive a kebab-case identifier (~50 chars max) from the user's idea and confirm with the user before writing. Example: *"Slug 案: `login-error-ux`。これで OK？別案あれば教えてください。"*
+3. Fill it in:
    - `## Goal`, `## Constraints`, `## Definition of Done` — from Step 3 dialogue.
    - `## Context` — from Step 1 exploration and Step 2 confirmation (concrete file/module/path list).
    - Optional sections — only those the user opted into in Step 3.
    - Delete any optional section that was not opted into.
-3. Determine `{base_dir}` per `## Output Location`, then write to `{base_dir}/specs/{timestamp}_{slug}.md`.
-4. Show the path and ask: *"Please check this — edits or OK?"*
-5. On edit requests, modify in place and re-confirm.
+4. Determine `{base_dir}` per `## Output Location`, then write to `{base_dir}/specs/{timestamp}_{slug}.md`.
+5. Show the path and ask: *"Please check this — edits or OK?"*
+6. On edit requests, modify in place and re-confirm.
 
 ### Step 5 — Downstream Routing
 
@@ -112,6 +127,8 @@ Propose a downstream skill, then let the user choose:
 | **superpowers:writing-plans** | New design elements; the shape of the solution still needs to be decided. |
 | **advisor-critique-loop** | Complex, multi-step, or high-stakes; multi-model review adds value. |
 | **Stop here** | User prefers to take the spec elsewhere manually. |
+
+> Maintenance note: this table is at 4 entries — the ceiling per "avoid offering too many options". Adding a 5th means regrouping (e.g. nest spec-only vs implementation-bound), not appending.
 
 Display in this form:
 
@@ -137,3 +154,40 @@ If the user stops here, end the session with the spec path and the suggested ski
 - **Downstream is a single hop** — invoke at most one downstream skill per session. If the user wants multiple, close this session and let them chain manually.
 - **`## Downstream` is mandatory** — the spec must always end with a `## Downstream` section recording the recommended skill and a one-line reason. If the user opted for "Stop here", record that verbatim with the recommended skill still listed. Do not delete this section when pruning optional ones.
 - **Spec is the single artifact** — do not also write WORKLOG / notes / scratch files. Everything that matters is in the spec file.
+
+## Example (mini)
+
+A condensed walk-through showing the dialogue style and a typical filled spec.
+
+**User input (Step 0):** 「ログイン周りで何か直したい気がする」
+
+**Step 0 confirm:**
+> 「理解: 認証フロー周りを改善したい、という曖昧な状態。合っていますか？」
+
+**Step 2 ground-truth (after light Grep):**
+> 「`src/auth/login.ts` と `src/auth/errors.ts` のあたりですか？それとも別の領域？」
+
+**Step 3 Goal (multiple choice):**
+> 「Goal はどれが近いですか？
+> A. ログイン失敗時のエラー UX 改善（推奨: 影響範囲が局所的）
+> B. セッション期限切れの扱い変更
+> C. それ以外（自由記述）」
+
+**Resulting spec (excerpt):**
+
+```markdown
+## Goal
+ログイン失敗時のエラーメッセージとリトライ動線を改善する。
+
+## Context
+- src/auth/login.ts (form handler)
+- src/auth/errors.ts (error mapping)
+
+## Definition of Done
+- [ ] エラー文言が i18n 経由で表示される
+- [ ] パスワード誤りと未登録メールで文言が分かれる
+- [ ] 既存テスト緑、新規テスト追加
+
+## Downstream
+**devflow** — DoD が明確で既存コード拡張のため。
+```
