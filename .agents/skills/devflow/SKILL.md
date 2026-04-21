@@ -106,8 +106,7 @@ Create TodoWrite todos for each step at start, then mark done as you progress:
 - [ ] Step 1: Explore — dispatch explorer-agent, write exploration.md (skip if brand-new project)
 - [ ] Step 2: Plan-Refine — decide DIALOGUE vs DIRECT, produce PLAN.md, get user approval
 - [ ] Step 3: Plan-Spike — decide RUN vs SKIP, update PLAN.md, pass spike-plan review (max 2)
-- [ ] Step 4 preamble: Isolation gate — decide WORKTREE vs IN_PLACE, create worktree if needed
-- [ ] Step 4 preamble: Pre-flight baseline — run format/lint/build/test on unmodified tree, write baseline.json
+- [ ] Step 4 preamble: Isolation gate (WORKTREE/IN_PLACE) → worktree creation (WORKTREE only) → Pre-flight baseline — run in this strict order, baseline runs in the final `{worktree_dir}`
 - [ ] Step 4: Plan-Execute — implementer loop, handle DR/NEEDS_CONTEXT/BLOCKED, retry-budget check, append to WORKLOG.md
 - [ ] Step 5: Spec compliance review — loop until MISSING+EXTRA+MISUNDERSTOOD = 0 (max 2)
 - [ ] Step 6: Code quality review — loop until CRITICAL+HIGH = 0 (max 3)
@@ -195,11 +194,24 @@ Display: `> Spike: {RUN | SKIP} — {reason}`
 2. **Prototype**: dispatch [prompts/spike.md](prompts/spike.md) with `isolation: "worktree"` — code is auto-discarded
 3. **Update PLAN.md**: extract learnings into `## Spike Learnings`
 4. **Review sufficiency**: dispatch [prompts/spike-review.md](prompts/spike-review.md) — context-free, sees only PLAN.md
-5. **Refine if needed**: fix gaps, re-run review (max 2 iterations). Unresolved gaps → ask user.
+5. **Refine if needed** (INSUFFICIENT verdict): choose one:
+   - **PLAN-only patch** (default): add the missing approach/steps/evidence to PLAN.md, no new code. Use when the reviewer's gap is about *plan content* (missing strategy, unclear DoD path, step granularity).
+   - **Re-spike**: re-dispatch investigation and/or spike prototype when the gap is about *factual uncertainty* the previous spike did not resolve (e.g., unverified performance claim, untested integration path). Count as one iteration toward the max.
+   Re-run review (max 2 iterations total). If iter 2 also returns INSUFFICIENT, stop and ask the user with **four explicit options**: (A) relax DoD (reduce target / shift acceptance criteria), (B) invest in another spike round (extra budget, specific unknown to close), (C) change approach (switch technology / design) → return to Step 2, (D) abandon the task. Present the reviewer's remaining gaps alongside these options.
 
-**Gate:** PLAN.md must pass spike review before proceeding.
+**Gate 1 (review):** PLAN.md must pass spike review.
+**Gate 2 (user re-approval):** Present a **unified diff** of the Spike-Learnings-enriched PLAN.md. Minimum required hunks: `## Spike Learnings` addition, plus any modifications to `## Approach` / `## Constraints` / `## Definition of Done`, **plus any `## Steps` changes that derive from those sections** (e.g., a step added because DoD added a measurement criterion, or a step rewritten because Approach picked a different library). Summary-only presentation is insufficient because DoD/Constraints changes can silently alter the contract. Obtain explicit re-approval before proceeding to Step 4. Skip this gate only when Spike was SKIP-ed in §"Assess Need" (no diff exists).
 
 ## Step 4 — Plan-Execute (Implementation Loop)
+
+### Preamble: sequence
+
+Run the Step 4 preamble in this strict order:
+1. **Isolation gate** — display decision + reason, wait for user confirmation.
+2. **Worktree creation** (only if WORKTREE) — invoke `preparing-worktrees` skill, set `{worktree_dir}` to its return value.
+3. **Pre-flight baseline** — run verification commands in `{worktree_dir}` on the **unmodified tree** (= the HEAD commit of the worktree immediately after creation, before any devflow edit. For WORKTREE: HEAD of the new branch as checked out by `preparing-worktrees`. For IN_PLACE: current HEAD of the base repo, stashing any in-flight uncommitted changes before capture and restoring them after so baseline reflects committed state only), write `baseline.json`.
+
+Do not reorder; later steps assume `{worktree_dir}` is fixed before baseline capture.
 
 ### Preamble: Isolation Gate
 
@@ -313,7 +325,7 @@ Run the project's verification commands in `{worktree_dir}` (not `{base_repo}` w
 3. **Build** — run build if available
 4. **Test** — run tests if available (prefer unit tests over integration/e2e)
 
-Skip any step with no discoverable command. If a step fails, determine whether the failure is caused by devflow changes or is pre-existing. Only devflow-caused failures block completion.
+Skip any step where **no discoverable command verifies the changed files in this task** — not merely when the project has no such command at all. Example: a docs-only change to `README.md` in a Go project should skip `go test` because `go test` does not inspect Markdown, even though the command is discoverable project-wide. Use `git diff --name-only` to enumerate the changed file set and match it against each command's scope (source files for build/test, style-specific checkers for docs). If a step fails, determine whether the failure is caused by devflow changes or is pre-existing. Only devflow-caused failures block completion.
 
 **Baseline cross-check**: load `{devflow_dir}/baseline.json` from the Step 4 preamble. Any Step 7 failure whose signature matches a baseline entry is pre-existing by definition — log it as `SKIPPED_PRE_EXISTING` in WORKLOG and do not treat it as a blocker. Failures with no matching baseline signature are devflow-caused.
 

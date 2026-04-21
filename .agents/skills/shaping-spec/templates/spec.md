@@ -34,6 +34,8 @@
 ## Open Questions
 <!-- Points to be clarified by downstream. -->
 
+<!-- === End optional sections. Below is MANDATORY — never delete. === -->
+
 ## Downstream
-<!-- Recommended downstream skill(s) and the one ultimately chosen.
-     Filled in by shaping-spec at the end of the flow. -->
+<!-- MANDATORY. Recommended downstream skill + one-line reason + the
+     choice made (including "Stop here"). Filled in at Step 5. -->

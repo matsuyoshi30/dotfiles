@@ -24,6 +24,9 @@ The generated spec file is written to `{base_dir}/specs/{YYYY-MM-DDTHH-MM-SS}_{s
 `{base_dir}` is resolved in this order:
 
 1. **CLAUDE.md-declared notes directory.**
+
+   `{project_root}` means the git top-level of the codebase being shaped (i.e. the repo the user is asking about), not necessarily the process cwd. If cwd differs from the shaping target, use the shaping target's repo root. If the target has no git repo, use the nearest ancestor directory that does, or fall back to cwd only if neither exists.
+
    Read these files in order, including any file referenced via `@filename.md` imports (recursively, one level is enough in practice):
    - `{project_root}/CLAUDE.md`
    - `$HOME/.claude/CLAUDE.md`
@@ -33,6 +36,8 @@ The generated spec file is written to `{base_dir}/specs/{YYYY-MM-DDTHH-MM-SS}_{s
    - A path token: starts with `/`, `~`, `$HOME`, `.`, or is wrapped in backticks
 
    Extract the paths, expand `$HOME` and `~`, and test each as a fallback chain. Use the first one that exists and is a directory.
+
+   **Tie-breaking for parallel candidates.** If a single CLAUDE.md / AGENTS.md line lists multiple parallel path candidates, always evaluate them in the **textual order they appear in that file** and adopt the first existing one. Do not reorder based on what adjacent skills (`memory`, etc.) happen to prefer — this rule is the single source of truth, so that the same environment yields the same `{base_dir}` regardless of executor.
 
 2. **Fallback.** `$HOME/.shaping-spec/`. Create it if missing.
 
@@ -130,4 +135,5 @@ If the user stops here, end the session with the spec path and the suggested ski
 - **No PLAN.md output** — if the conversation naturally produces step-by-step plans, trim them back to Goal / DoD / Approach Options and let the downstream skill expand.
 - **Exploration is read-only** — Grep / Glob / Read only. Any write outside the spec file is a bug.
 - **Downstream is a single hop** — invoke at most one downstream skill per session. If the user wants multiple, close this session and let them chain manually.
+- **`## Downstream` is mandatory** — the spec must always end with a `## Downstream` section recording the recommended skill and a one-line reason. If the user opted for "Stop here", record that verbatim with the recommended skill still listed. Do not delete this section when pruning optional ones.
 - **Spec is the single artifact** — do not also write WORKLOG / notes / scratch files. Everything that matters is in the spec file.
