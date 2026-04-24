@@ -73,8 +73,8 @@ setopt hist_reduce_blanks  # Strip extra whitespace when saving history
 
 ########################################
 # ghq
-peco-src () {
-    local repo=$(ghq list | peco --query "$LBUFFER")
+fzf-src () {
+    local repo=$(ghq list | fzf --query "$LBUFFER")
     if [ -n "$repo" ]; then
         repo=$(ghq list --full-path --exact $repo)
         BUFFER="cd ${repo}"
@@ -82,8 +82,8 @@ peco-src () {
     fi
     zle clear-screen
 }
-zle -N peco-src
-bindkey '^]' peco-src
+zle -N fzf-src
+bindkey '^]' fzf-src
 
 ########################################
 # git-wt
@@ -93,7 +93,7 @@ fi
 
 gwt() {
   local root=$(git rev-parse --show-toplevel)
-  local wt=$(git wt | tail -n +2 | sed "s|${root}/|./|g; s|${root}|.|g" | peco | awk '{print $(NF-1)}')
+  local wt=$(git wt | tail -n +2 | sed "s|${root}/|./|g; s|${root}|.|g" | fzf | awk '{print $(NF-1)}')
   if [ -n "$wt" ]; then
     git wt ${wt}
   fi
@@ -101,7 +101,7 @@ gwt() {
 
 gwtdl() {
   local root=$(git rev-parse --show-toplevel)
-  local wt=$(git wt | tail -n +2 | sed "s|${root}/|./|g; s|${root}|.|g" | peco | awk '{print $1}')
+  local wt=$(git wt | tail -n +2 | sed "s|${root}/|./|g; s|${root}|.|g" | fzf | awk '{print $1}')
   if [ -n "$wt" ]; then
     git worktree remove "${root}/${wt#./}"
   fi
@@ -130,8 +130,8 @@ alias glst='git log --stat'
 alias glo='git log --oneline'
 alias glos='git log --oneline --stat'
 alias glon='git log --oneline --name-only'
-alias gco='git branch|peco|xargs git checkout'
-alias gdl='git branch|peco|xargs git branch -D'
+alias gco='git branch|fzf|xargs git checkout'
+alias gdl='git branch|fzf|xargs git branch -D'
 alias gdmb="git branch --merged | grep -vE '(master|main|develop)' | xargs -n1 git branch -D"
 alias gdmwt='git worktree list | while read -r path commit branch; do b=${branch#[}; b=${b%]}; if echo "$b" | grep -qvE "^(master|main|develop)$" && git branch --merged | grep -qw "$b"; then git worktree remove "$path"; fi; done'
 
