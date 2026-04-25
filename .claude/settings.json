@@ -2,7 +2,7 @@
   "env": {
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
     "CLAUDE_CODE_NO_FLICKER": "1",
-    "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": 50
+    "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "50"
   },
   "permissions": {
     "allow": [
@@ -213,7 +213,6 @@
     "type": "command",
     "command": "~/.claude/statusline.py"
   },
-  "autoMemoryEnabled": false,
   "enabledPlugins": {
     "typescript-lsp@claude-plugins-official": true,
     "playwright-skill@playwright-skill": true,
@@ -225,8 +224,10 @@
     "superpowers@claude-plugins-official": true,
     "discord@claude-plugins-official": true
   },
-  "skipDangerousModePermissionPrompt": true,
   "effortLevel": "high",
   "advisorModel": "opus",
-  "awaySummaryEnabled": false
+  "awaySummaryEnabled": false,
+  "autoMemoryEnabled": false,
+  "skipDangerousModePermissionPrompt": true,
+  "theme": "dark-ansi"
 }
