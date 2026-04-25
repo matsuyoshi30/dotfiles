@@ -1,6 +1,6 @@
 ---
 name: devflow
-description: End-to-end development workflow that orchestrates codebase exploration, plan refinement (user dialogue or subagent drafting), spike prototyping, implementation with WORKLOG/DR loop, and multi-stage review. Use when the user has a clear task or spec and wants autonomous implementation with quality gates.
+description: End-to-end development workflow that orchestrates codebase exploration, plan refinement (user dialogue or subagent drafting), spike prototyping, implementation with WORKLOG/DR loop, and multi-stage review. Supports `--auto` mode for lightweight tasks where the orchestrator auto-approves its own recommended choice at each gate. Use when the user has a clear task or spec and wants autonomous implementation with quality gates.
 allowed-tools: Agent, Bash, Read, Write, Edit, Glob, Grep, TodoWrite, Skill
 user-invocable: true
 ---
@@ -20,6 +20,8 @@ Explore → Plan-Refine → Plan-Spike → Plan-Execute → Review → Verify.
 digraph devflow {
     rankdir=TB;
     "Step 0: Resolve Task" [shape=doublecircle];
+    "Step 0.5: Lightweight check\n(auto mode only)" [shape=diamond];
+    "Confirm with user:\nstay auto / switch / abort" [shape=box];
     "Step 1: Explore\n(explorer-agent)" [shape=box];
     "Step 2: Plan-Refine" [shape=box];
     "Plan: DIALOGUE or DIRECT?" [shape=diamond];
@@ -46,7 +48,10 @@ digraph devflow {
     "Step 8: Final Report" [shape=doublecircle];
     "Step 9: Retrospective\n(background, fire-and-forget)" [shape=box, style=dashed];
 
-    "Step 0: Resolve Task" -> "Step 1: Explore\n(explorer-agent)";
+    "Step 0: Resolve Task" -> "Step 0.5: Lightweight check\n(auto mode only)";
+    "Step 0.5: Lightweight check\n(auto mode only)" -> "Step 1: Explore\n(explorer-agent)" [label="LIGHT or non-auto"];
+    "Step 0.5: Lightweight check\n(auto mode only)" -> "Confirm with user:\nstay auto / switch / abort" [label="NOT_LIGHT (auto)"];
+    "Confirm with user:\nstay auto / switch / abort" -> "Step 1: Explore\n(explorer-agent)";
     "Step 1: Explore\n(explorer-agent)" -> "Step 2: Plan-Refine";
     "Step 2: Plan-Refine" -> "Plan: DIALOGUE or DIRECT?";
     "Plan: DIALOGUE or DIRECT?" -> "Dialogue with user\n(orchestrator)" [label="DIALOGUE"];
@@ -105,6 +110,7 @@ Create TodoWrite todos for each step at start, then mark done as you progress:
 
 ```
 - [ ] Step 0: Resolve task (URL / file / inline → summary)
+- [ ] Step 0.5: Lightweight check (auto mode only) — classify LIGHT / NOT_LIGHT; on NOT_LIGHT, confirm with user (stay auto / switch to interactive / abort)
 - [ ] Step 1: Explore — dispatch explorer-agent, write exploration.md (skip if brand-new project)
 - [ ] Step 2: Plan-Refine — decide DIALOGUE vs DIRECT, produce PLAN.md, get user approval
 - [ ] Step 3: Plan-Spike — decide RUN vs SKIP, update PLAN.md, pass spike-plan review (max 2)
@@ -118,6 +124,12 @@ Create TodoWrite todos for each step at start, then mark done as you progress:
 ```
 
 Do not skip steps. Step 1 may be skipped when **any** of: (a) brand-new project with no existing code, or (b) the change is confined to a single docs/config file (e.g. README typo, version bump in a manifest) and the task spec is self-contained with no dependency on existing code precedent. In case (b), record the skip rationale in `{devflow_dir}/exploration.md` as a one-line stub (`<!-- Skipped: {reason} -->`) so later steps can read it unconditionally. Step 3 Spike may be SKIP per its criteria. Step 9 runs in background after Step 8 — the orchestrator dispatches and immediately reports devflow complete; do not block on Retro.
+
+## Auto Mode (`--auto`)
+
+Opt-in via `--auto` (e.g. `/devflow --auto <task>`). On activation, the orchestrator runs **Step 0.5 Lightweight Check** before Step 1, then auto-approves recommended choices at subsequent gates — except hard guardrails (DoD gaps, ABORTED_RETRY_LOOP, repeated spike INSUFFICIENT, post-max-iter review failures, non-dominant DR alternatives) which always escalate to the user. Every auto-approval is logged to WORKLOG as `AUTO_APPROVED: {gate} → {choice} (reason)`.
+
+See [reference/auto-mode.md](reference/auto-mode.md) for: Step 0.5 LIGHT/NOT_LIGHT classification, the per-gate auto-behavior table, mid-task `AUTO_DRIFT_DETECTED` safeguard.
 
 ## Step 0 — Resolve Task
 
@@ -250,8 +262,8 @@ Initialize WORKLOG.md from [templates/worklog.md](templates/worklog.md) and reco
 
 Before dispatching the implementer, run the project's verification commands once in `{worktree_dir}` on the **unmodified** tree to capture failures that exist before any devflow edits. This prevents implementer/fix agents from spending time "fixing" issues unrelated to the task (e.g., transient compile errors in other modules with team-known workarounds).
 
-1. Discover format/lint/build/test commands the same way Step 7 does. Use this **discovery priority** (first hit wins per category): (a) CLAUDE.md / AGENTS.md project-specific section, (b) Makefile / Justfile / Taskfile targets, (c) package.json `scripts` (npm/pnpm/yarn), (d) language-conventional commands inferable from manifest (`go.mod` → `go build/test`, `Cargo.toml` → `cargo build/test`, `pyproject.toml` → `pytest`, etc.), (e) README.md prose. If two sources conflict, the higher-priority source wins.
-2. Apply the **same scope filter as Step 7** (see L331): use `git diff --name-only` against the unmodified HEAD to enumerate the prospective changed-file set (when known from PLAN.md `## Steps`); if a command's scope cannot match any prospective file (e.g. `go test` for a docs-only PLAN), record it as `status: "SKIPPED_OUT_OF_SCOPE"` with no signatures rather than running it. When the changed-file set is unknown, default to running all discovered commands.
+1. Discover format/lint/build/test commands per the discovery priority defined in Step 7 ("Verification command discovery and scope filter").
+2. Apply the same scope filter (see Step 7) against the prospective changed-file set (from PLAN.md `## Steps`, when known) computed from the unmodified HEAD. When a command is out of scope, record it as `status: "SKIPPED_OUT_OF_SCOPE"` with no signatures rather than running it.
 3. Run each in-scope command, redirecting stdout+stderr to a capture file.
 4. For each failing command, extract failure signatures (one per distinct failure) and write to `{devflow_dir}/baseline.json`. A **baseline signature** is `{file, first_error_line}` (normalized). The optional `module` field uses the language's natural module unit: Go = package import path, Rust = crate name, Kotlin/Java = Gradle/Maven module, JS/TS = workspace package name, Python = top-level package; omit `module` when not applicable. Example:
    ```json
@@ -322,14 +334,25 @@ If Critical/High remain after max iterations: report to user and stop.
 
 ## Step 7 — Completion Verification
 
-Run the project's verification commands in `{worktree_dir}` (not `{base_repo}` when WORKTREE was chosen). Read CLAUDE.md, README.md, package.json, Makefile, or other project config files to discover available commands.
+Run the project's verification commands in `{worktree_dir}` (not `{base_repo}` when WORKTREE was chosen).
 
-1. **Format** — run formatter if available
-2. **Lint** — run linter if available
-3. **Build** — run build if available
-4. **Test** — run tests if available (prefer unit tests over integration/e2e)
+### Verification command discovery and scope filter
 
-Skip any step where **no discoverable command verifies the changed files in this task** — not merely when the project has no such command at all. Example: a docs-only change to `README.md` in a Go project should skip `go test` because `go test` does not inspect Markdown, even though the command is discoverable project-wide. Use `git diff --name-only` to enumerate the changed file set and match it against each command's scope (source files for build/test, style-specific checkers for docs). If a step fails, determine whether the failure is caused by devflow changes or is pre-existing. Only devflow-caused failures block completion.
+Both Step 4 Pre-flight Baseline and Step 7 use this same discovery + scope filter. Single source of truth.
+
+**Discovery priority** (first hit wins per category — format / lint / build / test):
+(a) CLAUDE.md / AGENTS.md project-specific section, (b) Makefile / Justfile / Taskfile targets, (c) package.json `scripts` (npm/pnpm/yarn), (d) language-conventional commands inferable from manifest (`go.mod` → `go build/test`, `Cargo.toml` → `cargo build/test`, `pyproject.toml` → `pytest`, etc.), (e) README.md prose. If two sources conflict, the higher-priority source wins.
+
+**Scope filter**: use `git diff --name-only` to enumerate the changed file set (Step 4 baseline: prospective set from PLAN.md `## Steps`; Step 7: actual set after implementation) and match it against each command's scope (source files for build/test, style-specific checkers for docs). Skip a command when **no discoverable command verifies the changed files in this task** — not merely when the project has no such command at all. Example: a docs-only change to `README.md` in a Go project skips `go test` because `go test` does not inspect Markdown. When the changed-file set is unknown (Step 4 baseline with vague PLAN), default to running all discovered commands.
+
+### Step 7 execution
+
+1. **Format** — run formatter if in scope
+2. **Lint** — run linter if in scope
+3. **Build** — run build if in scope
+4. **Test** — run tests if in scope (prefer unit tests over integration/e2e)
+
+If a step fails, determine whether the failure is caused by devflow changes or is pre-existing. Only devflow-caused failures block completion.
 
 **Baseline cross-check**: load `{devflow_dir}/baseline.json` from the Step 4 preamble. Any Step 7 failure whose signature matches a baseline entry is pre-existing by definition — log it as `SKIPPED_PRE_EXISTING` in WORKLOG and do not treat it as a blocker. Failures with no matching baseline signature are devflow-caused.
 
@@ -423,3 +446,4 @@ Apply when writing or updating PLAN.md (Step 2 Plan-Refine, Step 3 Spike updates
 - **Retro is fire-and-forget** — the orchestrator dispatches `retro-agent` in background after Step 8 and does not wait, poll, or block. devflow completion is announced at Step 8.
 - **Retro never blocks devflow completion** — Retro failures are logged as `RETRO_FAILED` in WORKLOG and reported to the user, but never undo the Step 8 completion verdict.
 - **Retro is read-only against artifacts** — `retro-agent` writes only `{devflow_dir}/retrospective.md`. It never edits SKILL.md, prompts/, templates/, or source code. This is enforced by the agent's `allowed-tools: Read, Write` and reaffirmed in the prompt.
+- **Auto mode is opt-in and bounded** — `--auto` activates Step 0.5 lightweight check first, only auto-approves gates where the recommendation has clear rationale, and **never** auto-resolves DoD gaps, ABORTED_RETRY_LOOP, repeated spike INSUFFICIENT, or post-max-iterations review failures. Every auto-approval is logged to WORKLOG as `AUTO_APPROVED: {gate} → {choice} (reason)`.
