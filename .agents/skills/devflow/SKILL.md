@@ -1,7 +1,7 @@
 ---
 name: devflow
 description: End-to-end development workflow that orchestrates codebase exploration, plan refinement (user dialogue or subagent drafting), spike prototyping, implementation with WORKLOG/DR loop, and multi-stage review. Use when the user has a clear task or spec and wants autonomous implementation with quality gates.
-allowed-tools: Agent(explorer-agent, plan-draft-agent, implementer-agent, spec-review-agent, review-agent, fix-agent, spike-plan-review-agent, Explore), Bash, Read, Write, Edit, Glob, Grep, Skill(preparing-worktrees)
+allowed-tools: Agent, Bash, Read, Write, Edit, Glob, Grep, TodoWrite, Skill
 user-invocable: true
 ---
 
@@ -44,6 +44,7 @@ digraph devflow {
     "Fix agent (quality)" [shape=box];
     "Step 7: Verification" [shape=box];
     "Step 8: Final Report" [shape=doublecircle];
+    "Step 9: Retrospective\n(background, fire-and-forget)" [shape=box, style=dashed];
 
     "Step 0: Resolve Task" -> "Step 1: Explore\n(explorer-agent)";
     "Step 1: Explore\n(explorer-agent)" -> "Step 2: Plan-Refine";
@@ -79,6 +80,7 @@ digraph devflow {
     "Fix agent (quality)" -> "Step 6: Code quality review";
     "Critical + High = 0?" -> "Step 7: Verification" [label="yes"];
     "Step 7: Verification" -> "Step 8: Final Report";
+    "Step 8: Final Report" -> "Step 9: Retrospective\n(background, fire-and-forget)" [label="async"];
 }
 ```
 
@@ -111,10 +113,11 @@ Create TodoWrite todos for each step at start, then mark done as you progress:
 - [ ] Step 5: Spec compliance review — loop until MISSING+EXTRA+MISUNDERSTOOD = 0 (max 2)
 - [ ] Step 6: Code quality review — loop until CRITICAL+HIGH = 0 (max 3)
 - [ ] Step 7: Completion verification — format / lint / build / test
-- [ ] Step 8: Final report — present verdict, append to WORKLOG.md
+- [ ] Step 8: Final report — present verdict, append to WORKLOG.md (devflow user-visible completion point)
+- [ ] Step 9: Retrospective — dispatch retro-agent in background, do not wait; on completion notification append `RETRO_DONE`/`RETRO_FAILED` to WORKLOG and notify user with one line
 ```
 
-Do not skip steps. Step 1 may be skipped only for brand-new projects with no existing code. Step 3 Spike may be SKIP per its criteria.
+Do not skip steps. Step 1 may be skipped only for brand-new projects with no existing code. Step 3 Spike may be SKIP per its criteria. Step 9 runs in background after Step 8 — the orchestrator dispatches and immediately reports devflow complete; do not block on Retro.
 
 ## Step 0 — Resolve Task
 
@@ -228,7 +231,7 @@ Decide where the implementation loop runs. This sets `{worktree_dir}` for Step 4
   - Base repo is clean
   - User has not asked for isolation
 
-Respect a user hint from Step 0 ("軽いので worktree なしで" / "重いので worktree で") when present — it overrides the heuristics.
+Respect a user hint from Step 0 (e.g. "軽いので worktree なしで" / "lightweight, skip worktree", or "重いので worktree で" / "heavy, use worktree") when present — it overrides the heuristics.
 
 Display: `> Isolation: {WORKTREE | IN_PLACE} — {reason}` and wait for user confirmation.
 
@@ -249,7 +252,7 @@ Before dispatching the implementer, run the project's verification commands once
 
 1. Discover format/lint/build/test commands the same way Step 7 does (CLAUDE.md, README.md, package.json, Makefile, etc.).
 2. Run each available command, redirecting stdout+stderr to a capture file.
-3. For each failing command, extract failure signatures (one per distinct failure) and write to `{devflow_dir}/baseline.json`. A **signature** is `{file, first_error_line}` (normalized). Example:
+3. For each failing command, extract failure signatures (one per distinct failure) and write to `{devflow_dir}/baseline.json`. A **baseline signature** is `{file, first_error_line}` (normalized) — used to identify pre-existing failures that must not be "fixed" by devflow. Example:
    ```json
    {
      "captured_at": "{timestamp}",
@@ -335,6 +338,46 @@ If any devflow-caused failure remains: do NOT claim completion.
 
 Fill [templates/final-report.md](templates/final-report.md), present to the user, and append to WORKLOG.md.
 
+When announcing devflow completion, include the expected retrospective output path so the user can locate it asynchronously even if the Step 9 background notification is missed (e.g., session ends before retro-agent finishes):
+
+```
+Retrospective will be written to: {devflow_dir}/retrospective.md
+```
+
+
+## Step 9 — Retrospective (background)
+
+Step 8 is the user-visible completion point. Step 9 runs after Step 8 as a fire-and-forget background dispatch so the user can move on immediately.
+
+### Dispatch (orchestrator)
+
+Immediately after appending Final Report to WORKLOG.md and reporting "devflow complete" to the user:
+
+1. Dispatch [prompts/retrospective.md](prompts/retrospective.md) with `run_in_background: true`. Pass `{devflow_dir}` (absolute path), `{task_slug}`, `{branch}`, and `{date}`.
+2. Do not wait. Do not poll. Continue with whatever the user asks next.
+
+### Completion notification handling (orchestrator)
+
+When the background `retro-agent` finishes, you receive a notification with its return value. Handle it as follows:
+
+| Return | Action |
+|--------|--------|
+| `{"status": "DONE", "path": "..."}` | Append a WORKLOG entry tagged `RETRO_DONE: {path}`, then notify the user with one line: `Retrospective written: {path}` |
+| `{"status": "FAILED", "reason": "..."}` | Append a WORKLOG entry tagged `RETRO_FAILED: {reason}`, then notify the user with one line: `Retrospective failed: {reason}` |
+
+If the session ends before the notification arrives, the entry is lost. This is acceptable — Retro is best-effort, never a blocker.
+
+### Agent contract
+
+The retro-agent runs on **opus** with `allowed-tools: Read, Write` only. It:
+
+- Reads `{devflow_dir}/PLAN.md` (required), `{devflow_dir}/WORKLOG.md` (required), and optional artifacts (`exploration.md`, `baseline.json`, `task-source.md`)
+- Writes exactly one file: `{devflow_dir}/retrospective.md`
+- Never edits SKILL.md, prompts/, templates/, or source code (enforced by allowed-tools)
+- Runs a single pass — no re-reads, no `advisor()`, no codebase exploration
+
+The output template lives at [templates/retrospective.md](templates/retrospective.md). It has four sections: Summary, Analysis (with Devflow Signals table + What Worked / What Didn't Work / Gate Decisions Reviewed), Knowledge, Improvements (proposals only).
+
 ## Model Selection
 
 Execution-phase roles (driving and fixing code) run on **sonnet**; every review stage runs on **opus**. Inside Step 4, the implementer and fix agents consult Opus via the `advisor()` tool for judgment calls mid-task — see each agent's "Advisor Usage" section.
@@ -350,6 +393,7 @@ Execution-phase roles (driving and fixing code) run on **sonnet**; every review 
 | Spec compliance review | review | spec-review-agent | opus |
 | Code quality review | review | review-agent | opus |
 | Fix | execution | fix-agent | sonnet |
+| Retrospective | post-completion (background) | retro-agent | opus |
 
 ## Planning Principles
 
@@ -375,3 +419,6 @@ Apply when writing or updating PLAN.md (Step 2 Plan-Refine, Step 3 Spike updates
 - **One task at a time** — don't parallelize implementation subagents
 - **Baseline is the scope boundary** — pre-existing failures recorded in `baseline.json` are out of scope. Implementer/fix/verification agents must not attempt to "fix" baseline-matching failures; they log `SKIPPED_PRE_EXISTING` and continue.
 - **Retry loops end early, not silently** — the same failure signature twice in a row stops the loop and surfaces to the user as `ABORTED_RETRY_LOOP`. Never keep re-dispatching hoping the next attempt is different.
+- **Retro is fire-and-forget** — the orchestrator dispatches `retro-agent` in background after Step 8 and does not wait, poll, or block. devflow completion is announced at Step 8.
+- **Retro never blocks devflow completion** — Retro failures are logged as `RETRO_FAILED` in WORKLOG and reported to the user, but never undo the Step 8 completion verdict.
+- **Retro is read-only against artifacts** — `retro-agent` writes only `{devflow_dir}/retrospective.md`. It never edits SKILL.md, prompts/, templates/, or source code. This is enforced by the agent's `allowed-tools: Read, Write` and reaffirmed in the prompt.
