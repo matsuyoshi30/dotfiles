@@ -117,7 +117,7 @@ Create TodoWrite todos for each step at start, then mark done as you progress:
 - [ ] Step 9: Retrospective — dispatch retro-agent in background, do not wait; on completion notification append `RETRO_DONE`/`RETRO_FAILED` to WORKLOG and notify user with one line
 ```
 
-Do not skip steps. Step 1 may be skipped only for brand-new projects with no existing code. Step 3 Spike may be SKIP per its criteria. Step 9 runs in background after Step 8 — the orchestrator dispatches and immediately reports devflow complete; do not block on Retro.
+Do not skip steps. Step 1 may be skipped when **any** of: (a) brand-new project with no existing code, or (b) the change is confined to a single docs/config file (e.g. README typo, version bump in a manifest) and the task spec is self-contained with no dependency on existing code precedent. In case (b), record the skip rationale in `{devflow_dir}/exploration.md` as a one-line stub (`<!-- Skipped: {reason} -->`) so later steps can read it unconditionally. Step 3 Spike may be SKIP per its criteria. Step 9 runs in background after Step 8 — the orchestrator dispatches and immediately reports devflow complete; do not block on Retro.
 
 ## Step 0 — Resolve Task
 
@@ -134,7 +134,7 @@ Raw ticket bodies in subagent prompts can trigger `Prompt is too long` before th
 
 ## Step 1 — Explore (Codebase Survey)
 
-Dispatch [prompts/explorer.md](prompts/explorer.md). The **explorer-agent** (sonnet) surveys the codebase and writes `{devflow_dir}/exploration.md`. Skip for brand-new projects with no existing code.
+Dispatch [prompts/explorer.md](prompts/explorer.md). The **explorer-agent** (sonnet) surveys the codebase and writes `{devflow_dir}/exploration.md`. Skip when (a) brand-new project with no existing code, or (b) the change is confined to a single docs/config file and the task spec has no dependency on existing code precedent. On (b)-skip, write a stub `<!-- Skipped: {reason} -->` to `{devflow_dir}/exploration.md` so Step 2 can still read it unconditionally.
 
 - Pass the resolved `{task_summary}` (≤ 1500 chars per Step 0) and `{task_source}` (URL or path to the full ticket/spec), plus `{devflow_dir}/exploration.md` as the target path.
 - `exploration.md` is a reference document for Step 2, not a gate — do not block on completeness.
@@ -250,9 +250,10 @@ Initialize WORKLOG.md from [templates/worklog.md](templates/worklog.md) and reco
 
 Before dispatching the implementer, run the project's verification commands once in `{worktree_dir}` on the **unmodified** tree to capture failures that exist before any devflow edits. This prevents implementer/fix agents from spending time "fixing" issues unrelated to the task (e.g., transient compile errors in other modules with team-known workarounds).
 
-1. Discover format/lint/build/test commands the same way Step 7 does (CLAUDE.md, README.md, package.json, Makefile, etc.).
-2. Run each available command, redirecting stdout+stderr to a capture file.
-3. For each failing command, extract failure signatures (one per distinct failure) and write to `{devflow_dir}/baseline.json`. A **baseline signature** is `{file, first_error_line}` (normalized) — used to identify pre-existing failures that must not be "fixed" by devflow. Example:
+1. Discover format/lint/build/test commands the same way Step 7 does. Use this **discovery priority** (first hit wins per category): (a) CLAUDE.md / AGENTS.md project-specific section, (b) Makefile / Justfile / Taskfile targets, (c) package.json `scripts` (npm/pnpm/yarn), (d) language-conventional commands inferable from manifest (`go.mod` → `go build/test`, `Cargo.toml` → `cargo build/test`, `pyproject.toml` → `pytest`, etc.), (e) README.md prose. If two sources conflict, the higher-priority source wins.
+2. Apply the **same scope filter as Step 7** (see L331): use `git diff --name-only` against the unmodified HEAD to enumerate the prospective changed-file set (when known from PLAN.md `## Steps`); if a command's scope cannot match any prospective file (e.g. `go test` for a docs-only PLAN), record it as `status: "SKIPPED_OUT_OF_SCOPE"` with no signatures rather than running it. When the changed-file set is unknown, default to running all discovered commands.
+3. Run each in-scope command, redirecting stdout+stderr to a capture file.
+4. For each failing command, extract failure signatures (one per distinct failure) and write to `{devflow_dir}/baseline.json`. A **baseline signature** is `{file, first_error_line}` (normalized). The optional `module` field uses the language's natural module unit: Go = package import path, Rust = crate name, Kotlin/Java = Gradle/Maven module, JS/TS = workspace package name, Python = top-level package; omit `module` when not applicable. Example:
    ```json
    {
      "captured_at": "{timestamp}",
@@ -263,7 +264,7 @@ Before dispatching the implementer, run the project's verification commands once
    }
    ```
    If a command passes, record `status: "PASS"` with no signatures.
-4. Append a WORKLOG entry tagged `BASELINE_CAPTURED` summarising the PASS/FAIL counts and unique signature count.
+5. Append a WORKLOG entry tagged `BASELINE_CAPTURED` summarising the PASS/FAIL/SKIPPED_OUT_OF_SCOPE counts and unique signature count.
 
 If every command passes, `baseline.json` has an empty `signatures` array — still create the file so later steps can read it unconditionally.
 
