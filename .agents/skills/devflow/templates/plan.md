@@ -20,6 +20,16 @@
 ## Decision Log
 <!-- DRs accumulated during execution -->
 
+## Dependency Inventory (refactor / move tasks only)
+<!-- Required for move/rename/extract tasks. Omit otherwise.
+
+(a) Symbols being moved: enumerate
+(b) All classes the moved code imports (including same-module imports)
+(c) Sibling files that reference the moved code by bare name (to detect same-package implicit imports)
+(d) Helper / utility functions the moved code uses (check for cross-module duplicates)
+
+For each entry, mark one of: "move", "inline", "promote to shared", "leave in place". -->
+
 ---
 
 ## Example (delete before use)

@@ -27,6 +27,23 @@ Working directory: {cwd}
 
 Implement exactly what PLAN.md specifies. Follow your standard TDD / Tidy First process, verify via the verify-completion skill, commit, and self-review before reporting.
 
+### Phase-end commit discipline (large refactors)
+
+When PLAN.md has multiple phases / many-file scope (≥ 30 files touched, multiple modules, or rename/import-rewrite heavy), **commit at the end of each phase**. Do not try to land all phases in one dispatch. The orchestrator can reconstruct progress from durable commits even if you stop early; uncommitted work in a single 100+ tool-use dispatch is fragile.
+
+If a single phase still risks exceeding context, stop after the commit and return `DONE` with the commit hash and a one-line summary. Splitting via durable commits is preferred over one giant report.
+
+### Final report token budget
+
+Keep the final report **minimal**. The orchestrator already has WORKLOG, baseline.json, and can `git log` / `git diff`. Useful content:
+
+- Commit hash(es) created in this dispatch
+- File count touched (e.g., "59 files renamed/moved")
+- DoD static-check results (pass/fail per item)
+- Status (DONE / DR / etc.)
+
+**Do not** paste full diffs, full file listings, or long prose into the report. If "Prompt is too long" is approaching, prefer "commit + minimal status" over "comprehensive report" — durable progress beats a verbose final message.
+
 ## Handling Failures During Implementation
 
 When a build/lint/test/format command fails during your work, classify the failure before acting:

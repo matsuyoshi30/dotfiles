@@ -40,10 +40,10 @@ digraph devflow {
     "Handle DR with user" [shape=box];
     "Step 5: Spec review" [shape=box];
     "Spec issues = 0?" [shape=diamond];
-    "Fix agent (spec)" [shape=box];
+    "fix-agent (spec)" [shape=box];
     "Step 6: Code quality review" [shape=box];
     "Critical + High = 0?" [shape=diamond];
-    "Fix agent (quality)" [shape=box];
+    "fix-agent (quality)" [shape=box];
     "Step 7: Verification" [shape=box];
     "Step 8: Final Report" [shape=doublecircle];
     "Step 9: Retrospective\n(background, fire-and-forget)" [shape=box, style=dashed];
@@ -77,12 +77,12 @@ digraph devflow {
     "Handle DR with user" -> "Step 4: Plan-Execute\n(implementer loop)";
     "Implementer status" -> "Step 4: Plan-Execute\n(implementer loop)" [label="NEEDS_CONTEXT /\nBLOCKED (re-dispatch)"];
     "Step 5: Spec review" -> "Spec issues = 0?";
-    "Spec issues = 0?" -> "Fix agent (spec)" [label="no (max 2)"];
-    "Fix agent (spec)" -> "Step 5: Spec review";
+    "Spec issues = 0?" -> "fix-agent (spec)" [label="no (max 2)"];
+    "fix-agent (spec)" -> "Step 5: Spec review";
     "Spec issues = 0?" -> "Step 6: Code quality review" [label="yes"];
     "Step 6: Code quality review" -> "Critical + High = 0?";
-    "Critical + High = 0?" -> "Fix agent (quality)" [label="no (max 3)"];
-    "Fix agent (quality)" -> "Step 6: Code quality review";
+    "Critical + High = 0?" -> "fix-agent (quality)" [label="no (max 3)"];
+    "fix-agent (quality)" -> "Step 6: Code quality review";
     "Critical + High = 0?" -> "Step 7: Verification" [label="yes"];
     "Step 7: Verification" -> "Step 8: Final Report";
     "Step 8: Final Report" -> "Step 9: Retrospective\n(background, fire-and-forget)" [label="async"];
@@ -115,7 +115,7 @@ Create TodoWrite todos for each step at start, then mark done as you progress:
 - [ ] Step 2: Plan-Refine — decide DIALOGUE vs DIRECT, produce PLAN.md, get user approval
 - [ ] Step 3: Plan-Spike — decide RUN vs SKIP, update PLAN.md, pass spike-plan review (max 2)
 - [ ] Step 4 preamble: Isolation gate (WORKTREE/IN_PLACE) → worktree creation (WORKTREE only) → Pre-flight baseline — run in this strict order, baseline runs in the final `{worktree_dir}`
-- [ ] Step 4: Plan-Execute — implementer loop, handle DR/NEEDS_CONTEXT/BLOCKED, retry-budget check, append to WORKLOG.md
+- [ ] Step 4: Plan-Execute — implementer-agent loop, handle DR/NEEDS_CONTEXT/BLOCKED, retry-budget check, append to WORKLOG.md
 - [ ] Step 5: Spec compliance review — loop until MISSING+EXTRA+MISUNDERSTOOD = 0 (max 2)
 - [ ] Step 6: Code quality review — loop until CRITICAL+HIGH = 0 (max 3)
 - [ ] Step 7: Completion verification — format / lint / build / test
@@ -250,7 +250,7 @@ Display: `> Isolation: {WORKTREE | IN_PLACE} — {reason}` and wait for user con
 **On WORKTREE:**
 1. Derive a branch name from the task slug (e.g. `devflow/{task-slug}`).
 2. Invoke the `preparing-worktrees` skill with that branch name. It selects the directory (`.wt/` preferred), verifies `.gitignore`, creates the worktree, and runs project setup. It returns the absolute worktree path.
-3. Set `{worktree_dir}` to the returned path. All subsequent code-touching dispatches (implementer, fix, reviewers, verification) run with cwd = `{worktree_dir}`.
+3. Set `{worktree_dir}` to the returned path. All subsequent code-touching dispatches (implementer-agent, fix-agent, reviewers, verification) run with cwd = `{worktree_dir}`.
 4. Keep writing PLAN.md / WORKLOG.md / exploration.md to `{devflow_dir}` on the base repo — these paths are absolute.
 
 **On IN_PLACE:**
@@ -260,7 +260,7 @@ Initialize WORKLOG.md from [templates/worklog.md](templates/worklog.md) and reco
 
 ### Pre-flight Baseline
 
-Before dispatching the implementer, run the project's verification commands once in `{worktree_dir}` on the **unmodified** tree to capture failures that exist before any devflow edits. This prevents implementer/fix agents from spending time "fixing" issues unrelated to the task (e.g., transient compile errors in other modules with team-known workarounds).
+Before dispatching the implementer-agent, run the project's verification commands once in `{worktree_dir}` on the **unmodified** tree to capture failures that exist before any devflow edits. This prevents implementer-agent / fix-agent from spending time "fixing" issues unrelated to the task (e.g., transient compile errors in other modules with team-known workarounds).
 
 1. Discover format/lint/build/test commands per the discovery priority defined in Step 7 ("Verification command discovery and scope filter").
 2. Apply the same scope filter (see Step 7) against the prospective changed-file set (from PLAN.md `## Steps`, when known) computed from the unmodified HEAD. When a command is out of scope, record it as `status: "SKIPPED_OUT_OF_SCOPE"` with no signatures rather than running it.
@@ -286,7 +286,7 @@ Read and dispatch [prompts/implementer.md](prompts/implementer.md) (sonnet). See
 
 ### Handle Status and Log
 
-After each implementer dispatch completes, **append the implementer's report to WORKLOG.md as-is** (the report already uses the WORKLOG entry format).
+After each implementer-agent dispatch completes, **append the implementer-agent's report to WORKLOG.md as-is** (the report already uses the WORKLOG entry format).
 
 | Status | Action |
 |--------|--------|
@@ -300,7 +300,7 @@ After each implementer dispatch completes, **append the implementer's report to 
 
 Two-layer cap — agents self-report BLOCKED after one retry; the orchestrator enforces the same cap in case the agent keeps trying instead.
 
-Before re-dispatching after a non-DONE status, scan the two most recent implementer/fix entries in WORKLOG.md. If the same signature appears in both, do NOT re-dispatch:
+Before re-dispatching after a non-DONE status, scan the two most recent implementer-agent / fix-agent entries in WORKLOG.md. If the same signature appears in both, do NOT re-dispatch:
 
 1. Append a WORKLOG entry tagged `ABORTED_RETRY_LOOP` with the repeated signature.
 2. Escalate to the user with the signature and both attempts — user decides (add to baseline / provide workaround / change approach / abandon step).
@@ -310,7 +310,7 @@ Before re-dispatching after a non-DONE status, scan the two most recent implemen
 1. Present the DR to the user as-is — user picks an option
 2. Append DR + decision to PLAN.md `## Decision Log`
 3. Append to WORKLOG.md
-4. Re-dispatch implementer with updated PLAN.md
+4. Re-dispatch implementer-agent with updated PLAN.md
 
 Never retry the same model with no changes.
 
@@ -404,7 +404,7 @@ The output template lives at [templates/retrospective.md](templates/retrospectiv
 
 ## Model Selection
 
-Execution-phase roles (driving and fixing code) run on **sonnet**; every review stage runs on **opus**. Inside Step 4, the implementer and fix agents consult Opus via the `advisor()` tool for judgment calls mid-task — see each agent's "Advisor Usage" section.
+Execution-phase roles (driving and fixing code) run on **sonnet**; every review stage runs on **opus**. Inside Step 4, implementer-agent and fix-agent consult Opus via the `advisor()` tool for judgment calls mid-task — see each agent's "Advisor Usage" section.
 
 | Role | Phase | Subagent Type | Model |
 |------|-------|---------------|-------|
@@ -426,7 +426,7 @@ Apply when writing or updating PLAN.md (Step 2 Plan-Refine, Step 3 Spike updates
 - **Fact-based, not speculative** — ground claims in exploration.md, code reads, or spike output; mark unknowns as unknowns rather than guessing
 - **Spec is implementation-independent** — Goal, Definition of Done, and Approach must be verifiable without reading the implementation code
 - **Separate structural from behavioral changes** — plan refactors (structure) and behavior changes as distinct steps; never mix them in one step
-- **Step granularity: implementer-ready** — each step must be executable by the implementer without further clarification; if a step would need a DR to start, split it further upfront
+- **Step granularity: implementer-ready** — each step must be executable by the implementer-agent without further clarification; if a step would need a DR to start, split it further upfront
 
 ## Rules
 

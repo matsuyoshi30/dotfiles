@@ -38,6 +38,15 @@ Focus on what the planner will need to make decisions for this task. Omit sectio
 - Report facts from actually reading the code, not guesses.
 - Cite concrete file paths and line numbers.
 
+### Many-file mode
+
+When the task touches a category of repeated files (Resolvers, DAOs, mappers, proto extensions, etc.) where the same pattern is likely to appear 10+ times:
+
+- Prefer **Glob / Grep** over Read.
+- Cap Read to **≤ 5 representative files** — reading every instance burns context.
+- Output a **table** (file path + 1-line role) instead of quoting source.
+- If a fact requires reading more files, push that into the planner's responsibility — your job is the inventory, not the encyclopedia.
+
 ## Output
 
 Write `{exploration_md_path}` with clear section headers per topic. Return a short summary of what you wrote and where the key findings are.
