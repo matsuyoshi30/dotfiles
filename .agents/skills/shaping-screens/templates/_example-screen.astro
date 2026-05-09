@@ -1,0 +1,21 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import StateSwitcher from "../components/StateSwitcher.astro";
+---
+
+<BaseLayout title="Example Screen">
+  <h1>Example Screen</h1>
+  <p>Screen purpose: <strong>(the skill overwrites this per screen)</strong></p>
+
+  <StateSwitcher>
+    <div slot="loading">Loading...</div>
+    <div slot="empty">Empty state. Show a CTA here.</div>
+    <div slot="error">Error: failed to load. <button>Retry</button></div>
+    <div slot="success">
+      <p>Success-state content goes here.</p>
+    </div>
+  </StateSwitcher>
+
+  <hr />
+  <p><a href="/">Back to sitemap</a></p>
+</BaseLayout>

@@ -1,0 +1,32 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+// The shaping-screens skill rewrites this array when screens are added.
+const screens: { path: string; name: string; states: string[] }[] = [
+  // Example: { path: "/example-screen", name: "Example Screen", states: ["loading", "empty", "error", "success"] },
+];
+---
+
+<BaseLayout title="Sitemap">
+  <h1>Screens</h1>
+  {screens.length === 0 ? (
+    <p><em>No screens yet. The skill will add them.</em></p>
+  ) : (
+    <ul>
+      {screens.map((s) => (
+        <li>
+          <a href={s.path}>{s.name}</a>
+          <small>
+            {" — states: "}
+            {s.states.map((st, i) => (
+              <>
+                <a href={`${s.path}?state=${st}`}>{st}</a>
+                {i < s.states.length - 1 ? " / " : ""}
+              </>
+            ))}
+          </small>
+        </li>
+      ))}
+    </ul>
+  )}
+</BaseLayout>

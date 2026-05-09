@@ -1,0 +1,47 @@
+---
+const url = new URL(Astro.request.url);
+const current = url.searchParams.get("state") ?? "success";
+const states = ["loading", "empty", "error", "success"] as const;
+type State = typeof states[number];
+const isValid = (s: string): s is State => (states as readonly string[]).includes(s);
+const state: State = isValid(current) ? current : "success";
+---
+
+<nav class="state-switcher" aria-label="State switcher">
+  {states.map((s) => (
+    <a href={`?state=${s}`} class:list={["state-link", { active: s === state }]}>
+      {s}
+    </a>
+  ))}
+</nav>
+
+<div data-state={state} class="state-slot">
+  {state === "loading" && <slot name="loading" />}
+  {state === "empty" && <slot name="empty" />}
+  {state === "error" && <slot name="error" />}
+  {state === "success" && <slot name="success" />}
+</div>
+
+<style>
+  .state-switcher {
+    display: flex;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+    padding: var(--space-2);
+    background: var(--color-border);
+    border-radius: var(--radius-md);
+    width: fit-content;
+  }
+  .state-link {
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    color: var(--color-muted);
+    font-size: 14px;
+  }
+  .state-link.active {
+    background: var(--color-bg);
+    color: var(--color-fg);
+    font-weight: 600;
+  }
+</style>
