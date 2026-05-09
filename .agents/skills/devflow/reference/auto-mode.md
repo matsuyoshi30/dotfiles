@@ -35,11 +35,12 @@ When auto mode is active (and the user did not switch to interactive at Step 0.5
 | Gate | Auto behavior |
 |------|---------------|
 | Step 2 Plan-Refine: DIALOGUE vs DIRECT | Choose DIRECT when criteria are met; otherwise still DIRECT (skip dialogue) but flag that DoD must be self-derivable. |
-| Step 2 PLAN.md user approval | Auto-approve **only if** required sections (`## Goal`, `## Definition of Done`, `## Approach`) are concretely filled. Vague / TBD DoD → fall back to interactive (this never auto-approves). |
+| Step 2 PLAN.md user approval | Auto-approve **only if** all required sections (`## Goal`, `## Definition of Done`, `## Approach`, and `## Steps` with per-entry `files:`/`scope:` + `depends_on:` metadata per SKILL.md `### Required sections`) are concretely filled. Vague / TBD DoD or missing step metadata → fall back to interactive (this never auto-approves). |
 | Step 3 Spike: RUN vs SKIP | Default SKIP for LIGHT tasks; auto-approve recommendation. |
 | Step 3 Spike re-approval (unified diff) | Auto-approve. |
 | Step 3 INSUFFICIENT after iter 2 (A/B/C/D) | **Hard guardrail — always escalate to user.** Auto cannot resolve repeated spike insufficiency. |
 | Step 4 Isolation gate | Default IN_PLACE for LIGHT tasks; auto-approve recommendation. |
+| Step 4 Execution Mode gate | Auto-approve when classification is unambiguous (see `reference/execution-mode.md`): LIGHT → `PER_PLAN`, otherwise the rule-based pick. When two modes score equally close (e.g. 4 steps with mixed independence), **hard guardrail — escalate**. |
 | Step 4 DR (Decision Record) | Auto-pick the recommended option **only when** the recommendation has a clear rationale (one option strictly dominates). When alternatives are close, **hard guardrail — escalate to user**. |
 | Step 4 ABORTED_RETRY_LOOP | **Hard guardrail — always escalate to user.** Same failure twice does not become resolvable by auto-progression. |
 | Step 5/6 review failures after max iterations | **Hard guardrail — always escalate to user.** |

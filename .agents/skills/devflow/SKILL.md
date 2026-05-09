@@ -34,8 +34,9 @@ digraph devflow {
     "Investigate + Prototype\n+ Update PLAN" [shape=box];
     "Spike plan review:\nSUFFICIENT?" [shape=diamond];
     "Step 4 preamble:\nIsolation gate" [shape=diamond];
+    "Step 4 preamble:\nExecution Mode gate" [shape=diamond];
     "Create persistent worktree\n(preparing-worktrees)" [shape=box];
-    "Step 4: Plan-Execute\n(implementer loop)" [shape=box];
+    "Step 4: Plan-Execute\n(per-mode dispatch)" [shape=box];
     "Implementer status" [shape=diamond];
     "Handle DR with user" [shape=box];
     "Step 5: Spec review" [shape=box];
@@ -68,14 +69,15 @@ digraph devflow {
     "Investigate + Prototype\n+ Update PLAN" -> "Spike plan review:\nSUFFICIENT?";
     "Spike plan review:\nSUFFICIENT?" -> "Investigate + Prototype\n+ Update PLAN" [label="no (max 2)"];
     "Spike plan review:\nSUFFICIENT?" -> "Step 4 preamble:\nIsolation gate" [label="yes"];
-    "Step 4 preamble:\nIsolation gate" -> "Create persistent worktree\n(preparing-worktrees)" [label="WORKTREE"];
-    "Step 4 preamble:\nIsolation gate" -> "Step 4: Plan-Execute\n(implementer loop)" [label="IN_PLACE"];
-    "Create persistent worktree\n(preparing-worktrees)" -> "Step 4: Plan-Execute\n(implementer loop)";
-    "Step 4: Plan-Execute\n(implementer loop)" -> "Implementer status";
+    "Step 4 preamble:\nIsolation gate" -> "Step 4 preamble:\nExecution Mode gate";
+    "Step 4 preamble:\nExecution Mode gate" -> "Create persistent worktree\n(preparing-worktrees)" [label="WORKTREE"];
+    "Step 4 preamble:\nExecution Mode gate" -> "Step 4: Plan-Execute\n(per-mode dispatch)" [label="IN_PLACE"];
+    "Create persistent worktree\n(preparing-worktrees)" -> "Step 4: Plan-Execute\n(per-mode dispatch)";
+    "Step 4: Plan-Execute\n(per-mode dispatch)" -> "Implementer status";
     "Implementer status" -> "Step 5: Spec review" [label="DONE"];
     "Implementer status" -> "Handle DR with user" [label="NEEDS_DECISION"];
-    "Handle DR with user" -> "Step 4: Plan-Execute\n(implementer loop)";
-    "Implementer status" -> "Step 4: Plan-Execute\n(implementer loop)" [label="NEEDS_CONTEXT /\nBLOCKED (re-dispatch)"];
+    "Handle DR with user" -> "Step 4: Plan-Execute\n(per-mode dispatch)";
+    "Implementer status" -> "Step 4: Plan-Execute\n(per-mode dispatch)" [label="NEEDS_CONTEXT /\nBLOCKED (re-dispatch)"];
     "Step 5: Spec review" -> "Spec issues = 0?";
     "Spec issues = 0?" -> "fix-agent (spec)" [label="no (max 2)"];
     "fix-agent (spec)" -> "Step 5: Spec review";
@@ -114,10 +116,10 @@ Create TodoWrite todos for each step at start, then mark done as you progress:
 - [ ] Step 1: Explore — dispatch explorer-agent, write exploration.md (skip if brand-new project)
 - [ ] Step 2: Plan-Refine — decide DIALOGUE vs DIRECT, produce PLAN.md, get user approval
 - [ ] Step 3: Plan-Spike — decide RUN vs SKIP, update PLAN.md, pass spike-plan review (max 2)
-- [ ] Step 4 preamble: Isolation gate (WORKTREE/IN_PLACE) → worktree creation (WORKTREE only) → Pre-flight baseline — run in this strict order, baseline runs in the final `{worktree_dir}`
-- [ ] Step 4: Plan-Execute — implementer-agent loop, handle DR/NEEDS_CONTEXT/BLOCKED, retry-budget check, append to WORKLOG.md
-- [ ] Step 5: Spec compliance review — loop until MISSING+EXTRA+MISUNDERSTOOD = 0 (max 2)
-- [ ] Step 6: Code quality review — loop until CRITICAL+HIGH = 0 (max 3)
+- [ ] Step 4 preamble: Isolation gate (WORKTREE/IN_PLACE) → Execution Mode gate (PER_PLAN/PER_TASK/HYBRID) → worktree creation (WORKTREE only) → Pre-flight baseline — run in this strict order, baseline runs in the final `{worktree_dir}`
+- [ ] Step 4: Plan-Execute — per-mode dispatch (whole-plan / per-step / foundation+per-step), handle DR/NEEDS_CONTEXT/BLOCKED, retry-budget check (per-step under PER_TASK), append to WORKLOG.md
+- [ ] Step 5: Spec compliance review — PER_PLAN: full-diff loop until MISSING+EXTRA+MISUNDERSTOOD = 0 (max 2). PER_TASK/HYBRID feature: per-step (during Step 4) + final cross-step (max 1).
+- [ ] Step 6: Code quality review — PER_PLAN: full-diff loop until CRITICAL+HIGH = 0 (max 3). PER_TASK/HYBRID feature: per-step (during Step 4) + final cross-step (max 1).
 - [ ] Step 7: Completion verification — format / lint / build / test
 - [ ] Step 8: Final report — present verdict, append to WORKLOG.md (devflow user-visible completion point)
 - [ ] Step 9: Retrospective — dispatch retro-agent in background, do not wait; on completion notification append `RETRO_DONE`/`RETRO_FAILED` to WORKLOG and notify user with one line
@@ -185,14 +187,17 @@ If in doubt, choose DIALOGUE. DIRECT is an optimization for unambiguous tasks; D
    - `DRAFTED` — orchestrator reads PLAN.md, verifies required sections are filled with concrete content (not "TBD"), presents to user for approval
    - `NEEDS_DIALOGUE` — the task turned out to be ambiguous. Fall back to the DIALOGUE path using the agent's returned questions as a starting point.
 
+**Trivial-task inline exemption**: when the task is a single-file edit of ≤ ~5 lines with a fully explicit spec (e.g., add a frontmatter field, fix a typo, bump a version string), the orchestrator may write PLAN.md inline without dispatching plan-draft-agent. Inline-drafted PLAN.md must still satisfy `### Required sections` below. Record the choice in WORKLOG as `PLAN_DRAFT: INLINE — {reason}`. If unsure whether the task qualifies, dispatch plan-draft-agent (it is the safe default).
+
 ### Required sections
 
 Every PLAN.md must have these filled in (not empty, not placeholder):
 - `## Goal` — what and why
 - `## Definition of Done` — **mandatory**. Verifiable, concrete completion criteria (observable behavior, test conditions, regression guards). Never leave blank or write "TBD".
 - `## Approach` — selected approach and rationale
+- `## Steps` — implementer-ready units with `files:` (or `scope:`) and `depends_on:` metadata per entry. Format and granularity targets in [templates/plan.md](templates/plan.md). Step granularity feeds the Execution Mode gate (Step 4 preamble) — see [reference/execution-mode.md](reference/execution-mode.md).
 
-**Gate:** User must approve PLAN.md before proceeding. If `## Definition of Done` is missing or vague, do not present for approval — refine first (DIALOGUE path even if you started on DIRECT).
+**Gate:** User must approve PLAN.md before proceeding. If `## Definition of Done` is missing/vague, or if `## Steps` lacks per-entry metadata, do not present for approval — refine first (DIALOGUE path even if you started on DIRECT).
 
 ## Step 3 — Plan-Spike (Isolated Prototype)
 
@@ -223,8 +228,9 @@ Display: `> Spike: {RUN | SKIP} — {reason}`
 
 Run the Step 4 preamble in this strict order:
 1. **Isolation gate** — display decision + reason, wait for user confirmation.
-2. **Worktree creation** (only if WORKTREE) — invoke `preparing-worktrees` skill, set `{worktree_dir}` to its return value.
-3. **Pre-flight baseline** — run verification commands in `{worktree_dir}` on the **unmodified tree** (= the HEAD commit of the worktree immediately after creation, before any devflow edit. For WORKTREE: HEAD of the new branch as checked out by `preparing-worktrees`. For IN_PLACE: current HEAD of the base repo, stashing any in-flight uncommitted changes before capture and restoring them after so baseline reflects committed state only), write `baseline.json`.
+2. **Execution Mode gate** — classify `PER_PLAN` / `PER_TASK` / `HYBRID` from PLAN.md `## Steps` metadata, display + wait for user confirmation. Criteria, HYBRID phase format, and per-mode dispatch contracts live in [reference/execution-mode.md](reference/execution-mode.md). **Single-step collapse**: when step count = 1, mode is forced to `PER_PLAN`; display as a single line (`> Execution mode: PER_PLAN — single-step plan, gate auto-collapsed`) and proceed without a separate confirmation prompt — record `EXECUTION_MODE: PER_PLAN (single-step collapse)` in WORKLOG.
+3. **Worktree creation** (only if WORKTREE) — invoke `preparing-worktrees` skill, set `{worktree_dir}` to its return value.
+4. **Pre-flight baseline** — run verification commands in `{worktree_dir}` on the **unmodified tree** (= the HEAD commit of the worktree immediately after creation, before any devflow edit. For WORKTREE: HEAD of the new branch as checked out by `preparing-worktrees`. For IN_PLACE: current HEAD of the base repo, stashing any in-flight uncommitted changes before capture and restoring them after so baseline reflects committed state only), write `baseline.json`.
 
 Do not reorder; later steps assume `{worktree_dir}` is fixed before baseline capture.
 
@@ -235,13 +241,21 @@ Decide where the implementation loop runs. This sets `{worktree_dir}` for Step 4
 - **WORKTREE** (default for non-trivial work) when any of:
   - PLAN.md `## Steps` count ≥ 5, or touches multiple directories / packages
   - Long-running builds or tests (the user will want to keep the base branch usable in parallel)
-  - Base repo already has in-flight uncommitted changes (`git -C {base_repo} status --porcelain` non-empty)
+  - Base repo has in-flight uncommitted changes that **overlap** the prospective changed-file set from PLAN.md `## Steps` (compare `git -C {base_repo} status --porcelain` paths against the planned `files:` / `scope:`; any overlap → WORKTREE)
   - User explicitly asked for an isolated branch
 - **IN_PLACE** when all of:
   - ≤ 2 steps, single file or a tight cluster
   - Docs-only, config tweak, or a trivial fix
-  - Base repo is clean
+  - In-flight uncommitted changes (if any) are **disjoint** from the prospective changed-file set
   - User has not asked for isolation
+
+When `git status --porcelain` is non-empty but disjoint, choose IN_PLACE and record `ISOLATION_INFLIGHT_DISJOINT: {inflight_paths} ⊥ {planned_paths}` in WORKLOG so reviewers can audit the call. If overlap status is uncertain, default to WORKTREE.
+
+**Overlap computation**:
+1. Collect `{inflight_paths}` from `git -C {base_repo} status --porcelain` — both tracked-modified entries and untracked entries. Treat each entry as a **file path** when it points to a file; for an untracked directory entry (`?? dir/`), enumerate its contents recursively (`git ls-files -o --exclude-standard dir/`) and use those file paths. **Then subtract `{planned_paths}` from `{inflight_paths}`**: a path that appears as untracked precisely because the planned task is going to create or edit it (target file currently exists only as untracked, or the planned step *creates* a file at that path) is not "in-flight other work" — it is the work this devflow run is about. Drop those paths from `{inflight_paths}` before disjoint-checking. Record the dropped set in WORKLOG as `INFLIGHT_PLANNED_OVERLAP_DROPPED: {paths}` so reviewers can audit.
+2. Collect `{planned_paths}` from PLAN.md `## Steps`: union of every step's `files:` list and every `scope:` glob expanded via `git -C {base_repo} ls-files -- ':(glob){pattern}'`. **Example**: `scope: src/area/**` → run `git -C {base_repo} ls-files -- ':(glob)src/area/**'` and union the resulting paths into `{planned_paths}`. The `:(glob)` magic prefix is passed literally to git; do not pre-expand via shell.
+3. Disjoint = `{inflight_paths} ∩ {planned_paths} = ∅` after both sides are reduced to concrete file paths. **"Equality" here is path string equality after normalization** (collapse `./`, resolve trailing `/`, both relative to `{base_repo}`); not prefix match. Any overlap (even one path) → WORKTREE.
+4. If a `scope:` glob cannot be expanded (e.g., the prospective path does not exist yet because the step creates new files), treat that step's scope as **uncertain**. Default to WORKTREE for the whole plan **unless both** of these hold: (a) every other step is concretely disjoint, **and** (b) the new-file path is itself disjoint from `{inflight_paths}` by the same normalized-string equality as rule 3. Out-of-scope subtrees in `{inflight_paths}` (paths whose top-level directory does not appear anywhere in `{planned_paths}` directory components) may be excluded early to avoid redundant per-file comparison.
 
 Respect a user hint from Step 0 (e.g. "軽いので worktree なしで" / "lightweight, skip worktree", or "重いので worktree で" / "heavy, use worktree") when present — it overrides the heuristics.
 
@@ -280,9 +294,15 @@ Before dispatching the implementer-agent, run the project's verification command
 
 If every command passes, `baseline.json` has an empty `signatures` array — still create the file so later steps can read it unconditionally.
 
-### Dispatch
+### Dispatch (per-mode)
 
-Read and dispatch [prompts/implementer.md](prompts/implementer.md) (sonnet). See **Model Selection** at bottom.
+The Execution Mode set in the preamble drives dispatch shape:
+
+- **PER_PLAN** — single dispatch using [prompts/implementer.md](prompts/implementer.md) over the whole PLAN.
+- **PER_TASK** — one dispatch per `## Steps` entry using [prompts/implementer-per-task.md](prompts/implementer-per-task.md). Orchestrator curates step-scoped context (step body + handoff digest + relevant Constraints / DoD slice) and inlines it; implementers do not read PLAN.md.
+- **HYBRID** — foundation phase as PER_PLAN, then feature phase as PER_TASK.
+
+Per-mode dispatch contract, handoff digest format, per-step retry budget, and two-tier review live in [reference/execution-mode.md](reference/execution-mode.md). All dispatches run on **sonnet** (see **Model Selection** at bottom).
 
 ### Handle Status and Log
 
@@ -300,7 +320,9 @@ After each implementer-agent dispatch completes, **append the implementer-agent'
 
 Two-layer cap — agents self-report BLOCKED after one retry; the orchestrator enforces the same cap in case the agent keeps trying instead.
 
-Before re-dispatching after a non-DONE status, scan the two most recent implementer-agent / fix-agent entries in WORKLOG.md. If the same signature appears in both, do NOT re-dispatch:
+**Scope is mode-aware**: under PER_PLAN the budget covers the whole plan (existing behavior). Under PER_TASK / HYBRID feature, the budget is **per-step** — same signature twice in step N triggers ABORT for step N only. See [reference/execution-mode.md](reference/execution-mode.md) for downstream-step continuation rules.
+
+Before re-dispatching after a non-DONE status, scan the two most recent implementer-agent / fix-agent entries in WORKLOG.md (filtered to the current step under PER_TASK). If the same signature appears in both, do NOT re-dispatch:
 
 1. Append a WORKLOG entry tagged `ABORTED_RETRY_LOOP` with the repeated signature.
 2. Escalate to the user with the signature and both attempts — user decides (add to baseline / provide workaround / change approach / abandon step).
@@ -314,20 +336,28 @@ Before re-dispatching after a non-DONE status, scan the two most recent implemen
 
 Never retry the same model with no changes.
 
-## Step 5 — Spec Compliance Review (max 2 iterations)
+## Step 5 — Spec Compliance Review
+
+**Mode-aware behavior** (set in Step 4 preamble):
+- **PER_PLAN**: full-diff spec review, max 2 iterations.
+- **PER_TASK / HYBRID feature phase**: per-step spec review already ran during Step 4 (max 2 iter per step, scoped to step diff). Step 5 here is the **final cross-step review** with **max 1 iteration** — see [reference/execution-mode.md](reference/execution-mode.md).
 
 1. Dispatch [prompts/spec-reviewer.md](prompts/spec-reviewer.md)
 2. Parse `---SUMMARY---`: if MISSING + EXTRA + MISUNDERSTOOD = 0 → Step 6
-3. Otherwise: dispatch [prompts/fix.md](prompts/fix.md), loop back to 1
+3. Otherwise: dispatch [prompts/fix.md](prompts/fix.md), loop back to 1 (within mode-aware iteration cap)
 4. **Log**: after each iteration, append a WORKLOG entry using [templates/review-log-entry.md](templates/review-log-entry.md) (spec variant: MISSING/EXTRA/MISUNDERSTOOD counts)
 
 If issues remain after max iterations: report to user and stop.
 
-## Step 6 — Code Quality Review (max 3 iterations)
+## Step 6 — Code Quality Review
+
+**Mode-aware behavior**:
+- **PER_PLAN**: full-diff quality review, max 3 iterations.
+- **PER_TASK / HYBRID feature phase**: per-step quality review already ran during Step 4 (max 2 iter per step). Step 6 here is the **final cross-step review** with **max 1 iteration**.
 
 1. Dispatch [prompts/code-quality-reviewer.md](prompts/code-quality-reviewer.md)
 2. Parse `---SUMMARY---`: if CRITICAL + HIGH = 0 → Step 7. Medium/Low reported but don't block.
-3. Otherwise: dispatch [prompts/fix.md](prompts/fix.md) (Critical → High priority), loop back to 1
+3. Otherwise: dispatch [prompts/fix.md](prompts/fix.md) (Critical → High priority), loop back to 1 (within mode-aware iteration cap)
 4. **Log**: after each iteration, append a WORKLOG entry using [templates/review-log-entry.md](templates/review-log-entry.md) (quality variant: CRITICAL/HIGH/MEDIUM/LOW counts)
 
 If Critical/High remain after max iterations: report to user and stop.
@@ -362,6 +392,8 @@ If any devflow-caused failure remains: do NOT claim completion.
 
 Fill [templates/final-report.md](templates/final-report.md), present to the user, and append to WORKLOG.md.
 
+**Tuning log**: append one JSON line to `{base_repo}/.devflow/tuning.jsonl` (create if missing) recording this run's shape — schema and field meanings in [reference/execution-mode.md](reference/execution-mode.md). Retro-agent reads this file (read-only) to surface threshold-tweak proposals; it never auto-edits SKILL.md.
+
 When announcing devflow completion, include the expected retrospective output path so the user can locate it asynchronously even if the Step 9 background notification is missed (e.g., session ends before retro-agent finishes):
 
 ```
@@ -395,7 +427,7 @@ If the session ends before the notification arrives, the entry is lost. This is 
 
 The retro-agent runs on **opus** with `allowed-tools: Read, Write` only. It:
 
-- Reads `{devflow_dir}/PLAN.md` (required), `{devflow_dir}/WORKLOG.md` (required), and optional artifacts (`exploration.md`, `baseline.json`, `task-source.md`)
+- Reads `{devflow_dir}/PLAN.md` (required), `{devflow_dir}/WORKLOG.md` (required), and optional artifacts (`exploration.md`, `baseline.json`, `task-source.md`, `{base_repo}/.devflow/tuning.jsonl`)
 - Writes exactly one file: `{devflow_dir}/retrospective.md`
 - Never edits SKILL.md, prompts/, templates/, or source code (enforced by allowed-tools)
 - Runs a single pass — no re-reads, no `advisor()`, no codebase exploration
@@ -413,7 +445,8 @@ Execution-phase roles (driving and fixing code) run on **sonnet**; every review 
 | Spike-phase investigation | pre-execution | Explore | opus |
 | Spike implementation | execution | implementer-agent | sonnet |
 | Spike plan review | review | spike-plan-review-agent | opus |
-| Implementation | execution | implementer-agent | sonnet |
+| Implementation (PER_PLAN) | execution | implementer-agent (whole-plan) | sonnet |
+| Implementation (PER_TASK / HYBRID feature) | execution | implementer-agent (per-step) | sonnet |
 | Spec compliance review | review | spec-review-agent | opus |
 | Code quality review | review | review-agent | opus |
 | Fix | execution | fix-agent | sonnet |
@@ -436,6 +469,9 @@ Apply when writing or updating PLAN.md (Step 2 Plan-Refine, Step 3 Spike updates
 - **Spike code is disposable** — run in worktree, extract learnings, discard code
 - **Docs stay on the base repo** — PLAN.md, WORKLOG.md, exploration.md always live under `{devflow_dir}` (absolute path on `{base_repo}`), even when Step 4 runs in a worktree. Only source code edits and verification commands run in `{worktree_dir}`.
 - **Isolation gate decision is user-approved** — the Step 4 preamble must display `Isolation: {WORKTREE | IN_PLACE} — {reason}` and wait for confirmation; do not auto-create worktrees.
+- **Execution Mode is user-approved** — the Step 4 preamble must display `Execution mode: {PER_PLAN | PER_TASK | HYBRID} — {reason}` (HYBRID also lists phases) and wait for confirmation. Mode classification is in [reference/execution-mode.md](reference/execution-mode.md). Mid-task drift triggers `EXECUTION_MODE_DRIFT_DETECTED` and re-asks the user — never silently switch modes.
+- **PER_TASK implementers do not read PLAN.md** — orchestrator inlines the step body, files/scope, depends_on, handoff digest, and DoD slice. Asking the implementer to read PLAN.md defeats the per-task latency win.
+- **Tuning log is proposal-only** — `tuning.jsonl` records each run's shape; retro-agent may surface threshold-tweak proposals but never auto-edits SKILL.md or any other prompt/template. Threshold changes go through human review.
 - **Spike review is context-free** — reviewer sees only PLAN.md
 - **DRs are blockers only** — style/preference choices are made autonomously
 - **Spec compliance before code quality** — wrong thing built well is still wrong

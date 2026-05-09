@@ -27,6 +27,7 @@ Read the following from `{devflow_dir}` (absolute path). Required artifacts trig
 | `{devflow_dir}/exploration.md` | no | Pre-plan codebase context |
 | `{devflow_dir}/baseline.json` | no | Pre-existing failure signatures |
 | `{devflow_dir}/task-source.md` | no | Original task body |
+| `{base_repo}/.devflow/tuning.jsonl` | no | Cross-run shape log; recent ~10 entries inform Execution Mode threshold proposals |
 
 If `PLAN.md` or `WORKLOG.md` is missing or unreadable, return immediately:
 
@@ -43,13 +44,15 @@ Count or extract:
 - **Plan-Refine path**: `DIALOGUE` or `DIRECT` (look for the Step 2 entry)
 - **Spike**: `RUN` or `SKIP` and the reason
 - **Isolation**: `WORKTREE` or `IN_PLACE`
-- **Implementer dispatches**: count of implementer-agent entries
+- **Execution Mode**: `PER_PLAN` / `PER_TASK` / `HYBRID` (look for the `EXECUTION_MODE:` WORKLOG tag); for HYBRID also extract the foundation/feature step split
+- **Implementer dispatches**: count of implementer-agent entries (under PER_TASK this equals the per-step count)
 - **DRs raised**: count of `NEEDS_DECISION` entries
-- **ABORTED_RETRY_LOOP**: count of entries tagged `ABORTED_RETRY_LOOP`
-- **Spec review iterations**: count of spec-reviewer entries (capped at 2)
-- **Code quality iterations**: count of code-quality-reviewer entries (capped at 3)
+- **ABORTED_RETRY_LOOP**: count and which step (PER_TASK only)
+- **Per-step review iterations** (PER_TASK / HYBRID feature): sum across steps
+- **Spec/Quality final review iterations**: under PER_TASK = entries tagged `final_*`; under PER_PLAN = full counts (capped at 2 / 3)
 - **Baseline failures (pre-existing)**: from `baseline.json` `signatures` length, plus any `SKIPPED_PRE_EXISTING` in WORKLOG
 - **Verification**: PASS/FAIL/SKIP for Lint/Build/Test from the Step 7 entry
+- **Tuning trends**: read up to the last 10 entries of `tuning.jsonl` (if present) and note any pattern that contradicts the current Execution Mode classification rule (e.g., PER_TASK runs whose final review keeps escalating, or PER_PLAN runs whose `step_count >= 5` could have benefited from PER_TASK)
 
 ## Output
 

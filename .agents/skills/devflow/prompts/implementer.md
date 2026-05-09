@@ -2,11 +2,12 @@
 - subagent_type: implementer-agent
 - model: sonnet (default) | opus (design-heavy)
 - placeholders: {cwd}, {plan_md_path}, {worklog_md_path}, {baseline_json_path}
+- mode: PER_PLAN (this prompt) — for PER_TASK / HYBRID feature phase, use prompts/implementer-per-task.md instead
 -->
 
 ---
 
-Implement the task described in PLAN.md.
+Implement the task described in PLAN.md (whole-plan dispatch).
 
 Working directory: {cwd}
 
