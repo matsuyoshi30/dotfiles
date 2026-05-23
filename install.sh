@@ -197,6 +197,10 @@ main() {
   create_symlink "$SCRIPT_DIR/helix/config.toml" "$HOME/.config/helix/config.toml"
   echo
 
+  info "Installing mise configuration..."
+  create_symlink "$SCRIPT_DIR/mise/config.toml" "$HOME/.config/mise/config.toml"
+  echo
+
   info "Installing shared agent configuration..."
   create_symlink "$SCRIPT_DIR/.agents/skills" "$HOME/.agents/skills"
   echo

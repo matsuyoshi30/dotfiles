@@ -1,0 +1,3 @@
+[settings]
+# Require tool releases to be at least this old before install (supply chain hardening).
+minimum_release_age = "7d"
