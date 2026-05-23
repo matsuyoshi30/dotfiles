@@ -165,6 +165,10 @@ if command -v direnv &> /dev/null; then
   eval "$(direnv hook zsh)"
 fi
 
+if command -v mise &> /dev/null; then
+  eval "$(mise activate zsh)"
+fi
+
 [[ ! -r "$HOME/.opam/opam-init/init.zsh" ]] || source "$HOME/.opam/opam-init/init.zsh" > /dev/null 2> /dev/null
 
 [ -f "$HOME/.ghcup/env" ] && . "$HOME/.ghcup/env"
