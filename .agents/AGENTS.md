@@ -1,6 +1,8 @@
 ## Code Quality
 
 - Add clear comments explaining complicated business logic
+  - Only write comments for non-obvious things not expressed by the code itself, and keep them concise
+  - Avoid redundant comments that merely restate what the code already shows
 - Generate comprehensive documentation
   - Write WHY not WHAT
 - Create examples in documentation

@@ -229,6 +229,6 @@
   "awaySummaryEnabled": false,
   "autoMemoryEnabled": false,
   "skipDangerousModePermissionPrompt": true,
-  "theme": "dark-ansi",
+  "theme": "dark",
   "skipAutoPermissionPrompt": true
 }
