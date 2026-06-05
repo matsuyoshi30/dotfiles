@@ -1,7 +1,7 @@
 ---
 name: grasp-check
 description: Assess your own grasp of a topic through a structured dialogue, then output a learning roadmap. Runs in three stages — multiple-choice weakness mapping, Socratic deep-dive on weak areas, and a saved Markdown learning guide. Use when the user wants to check how well they understand a topic ("how well do I understand X?", "grill me on X", "self-assess my knowledge of X"), or when they want to objectify their grasp before / after self-study. Not for brainstorming ideas (use shaping-spec) or for stress-testing a plan (use grill-me-style design review).
-allowed-tools: Read, Write, Glob, Grep, Bash, Skill(gemini-search), WebSearch
+allowed-tools: Read, Write, Glob, Grep, Bash, WebSearch
 user-invocable: true
 ---
 
@@ -15,13 +15,11 @@ Help the user measure their understanding of a topic, locate the weak spots, and
 
 - **shaping-spec / shaping-screens** — organize your *ideas* (outward-facing). Use when you have a vague thought to turn into a spec.
 - **grasp-check (this skill)** — organize your *knowledge* (inward-facing). Use when you want to know what you don't know.
-- **gemini-search** — invoked from inside grasp-check to fetch concrete learning resources; not a substitute for this skill.
-
 ## Modes
 
 The skill operates in one of two modes, decided in Stage 0.
 
-- **B mode (default)**: any topic. Question generation and evaluation use the LLM's knowledge. Resource recommendation uses `gemini-search` (with `WebSearch` as fallback).
+- **B mode (default)**: any topic. Question generation and evaluation use the LLM's knowledge. Resource recommendation uses `WebSearch` (with LLM knowledge as fallback).
 - **C mode (repo-bound)**: the topic ties to the current repository. Questions may reference real code via Grep/Glob/Read, and the learning guide includes `file:line` references.
 
 C mode is triggered when the topic contains repo-bound signals:
@@ -121,21 +119,19 @@ When every `Ti` has been visited once, ask: "Anything else you want to dig into?
 
 Build the report by selecting a resource per weak topic:
 
-- **C-mode topic** → identify the relevant code with Grep/Glob/Read and cite it as `path:line`. `gemini-search` is **optional** here — call it only when a general-concept refresher would clearly help the user (the code alone doesn't teach the underlying principle). Pure code citations are a valid output.
-- **B-mode, concrete tech** (specific library / API / system) → call `gemini-search` for canonical docs and a high-quality article. Use real URLs returned by the search.
-- **B-mode, classical concept** (well-established CS / engineering topics) → cite from your own knowledge: canonical book title, official spec name, or a precise search keyword. Do not invent URLs. `gemini-search` is optional; skip it when the canonical sources are well-known to you.
+- **C-mode topic** → identify the relevant code with Grep/Glob/Read and cite it as `path:line`. Pure code citations are a valid output; call `WebSearch` only when a general-concept refresher would clearly help the user.
+- **B-mode, concrete tech** (specific library / API / system) → call `WebSearch` for canonical docs and a high-quality article. Use real URLs returned by the search.
+- **B-mode, classical concept** (well-established CS / engineering topics) → cite from your own knowledge: canonical book title, official spec name, or a precise search keyword. Do not invent URLs. `WebSearch` is optional; skip it when the canonical sources are well-known to you.
 
-**gemini-search usage rules**:
+**WebSearch usage rules**:
 
-- Invoke via the `Skill` tool (`Skill(gemini-search)`). The skill internally runs the `gemini` CLI via Bash — this is expected; do not separately invoke Bash yourself.
-- **Budget: at most 1 call per weak topic** and at most 3 calls per whole report. Latency is high (often 30s+); pacing matters.
-- If a `Skill(gemini-search)` call returns an error or instructs you to call Bash directly, treat that as a search failure for this topic and apply the fallback chain below.
+- If it's a deferred tool, load it via `ToolSearch` first (`select:WebSearch`), then call it.
+- **Budget: at most 1 call per weak topic** and at most 3 calls per whole report.
 
-**Fallback chain** when `gemini-search` cannot return real URLs:
+**Fallback chain** when `WebSearch` cannot return real URLs:
 
-1. Try `WebSearch` once. If it's a deferred tool, load it via `ToolSearch` first (`select:WebSearch`), then call it.
-2. If `WebSearch` also fails (tool-level error, no usable result, or unavailable in this environment), fall back to LLM knowledge: book titles, official spec names, precise search keywords — never invented URLs.
-3. On the LLM-knowledge fallback, add a note on the affected topic: "Resources generated from LLM knowledge only — verify before using." This note belongs on the topic where search failed, not as a blanket disclaimer.
+1. Fall back to LLM knowledge: book titles, official spec names, precise search keywords — never invented URLs.
+2. On the LLM-knowledge fallback, add a note on the affected topic: "Resources generated from LLM knowledge only — verify before using." This note belongs on the topic where search failed, not as a blanket disclaimer.
 
 Write the report to:
 
@@ -159,11 +155,11 @@ If all four locations fail to write, print the full Markdown report to the termi
 Before writing the report file, run through this checklist on the draft. Fix anything that fails, do not skip.
 
 - [ ] Every weak topic in "Weakness Breakdown" has at least one entry under "Next to learn".
-- [ ] Every entry under "Next to learn" is one of: a URL returned by `gemini-search` / `WebSearch` in this session, a real `path:line` reference verified via Read, a canonical book / spec name you are confident exists, or an explicit search keyword. **No invented URLs.** If you cannot back a URL with a recent tool call, replace it with a keyword or book title.
+- [ ] Every entry under "Next to learn" is one of: a URL returned by `WebSearch` in this session, a real `path:line` reference verified via Read, a canonical book / spec name you are confident exists, or an explicit search keyword. **No invented URLs.** If you cannot back a URL with a recent tool call, replace it with a keyword or book title.
 - [ ] Every C-mode `path:line` citation has been confirmed by reading the file in this session.
 - [ ] Every weak topic has a concrete "Self-check question" that maps to the observed misconception (not a generic "explain X" placeholder).
 - [ ] The "Summary" section names the single biggest gap in one sentence, not a vague restatement of the score.
-- [ ] If gemini-search / WebSearch failed for any topic, the report explicitly notes "Resources generated from LLM knowledge only — verify before using" on that topic.
+- [ ] If WebSearch failed for any topic, the report explicitly notes "Resources generated from LLM knowledge only — verify before using" on that topic.
 
 Only after the checklist passes, call Write.
 
@@ -213,7 +209,7 @@ After writing the file, print only a short summary to the screen — the scoreca
   - **Stage 1 abandon** (mid-questions, before scorecard): confirm "Pause grasp-check?" If yes, write a partial report with `_partial` appended to the slug.
   - **Stage 2 early stop** (user says "enough" / "no more topics" at any point during Stage 2, regardless of how many topics were actually deep-dived): treat as **normal completion**, not partial. Proceed to Stage 3 as usual. Any weak topic that does not meet the `deep-dived` rule above is marked `needs focused study` in the report (same handling as E2). Even if zero topics qualify as `deep-dived`, this is still normal completion — the scorecard from Stage 1 is the minimum useful output.
 - **E4. Topic is too broad** — Stage 0 sub-topic split applies; do not start Stage 1.
-- **E5. Both gemini-search and WebSearch fail** — the report is still produced; resources fall back to LLM knowledge and the report explicitly notes this.
+- **E5. WebSearch fails** — the report is still produced; resources fall back to LLM knowledge and the report explicitly notes this.
 - **E6. C mode selected but no relevant code found** — say "No matching code in this repo; switch to B mode or rephrase the topic?" and wait for the user.
 - **E7. All save locations fail** — print full Markdown to terminal as a last-resort fallback.
 - **E8. User asks a meta-question instead of answering** — explain the intent in 1–2 lines, do not change Stage 1 options (preserves scoring consistency), then ask the user to answer when ready.
@@ -231,5 +227,5 @@ After writing the file, print only a short summary to the screen — the scoreca
 - **Giving away the answer mid-Stage-1.** Stage 1 is mapping; immediate feedback contaminates the remaining questions in the same concept area.
 - **Random distractors.** Every wrong option in Stage 1 must reflect a specific common misconception, otherwise the weakness signal is noise.
 - **Looping forever on one weakness in Stage 2.** Hard cap at 3 questions per `Ti`; if unresolved, defer it to the learning guide.
-- **Hallucinating URLs.** If you cannot get a real URL from `gemini-search` / `WebSearch`, cite by title / keyword instead. Do not fabricate links.
+- **Hallucinating URLs.** If you cannot get a real URL from `WebSearch`, cite by title / keyword instead. Do not fabricate links.
 - **Producing only a screen summary.** The Markdown report is the deliverable; if you cannot save it, dump the full content so the user can save it manually.
