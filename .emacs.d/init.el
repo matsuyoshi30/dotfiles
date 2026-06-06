@@ -1151,6 +1151,23 @@
   :bind (:map markdown-mode-map
          ("C-c m" . mo-preview)))
 
+(setq auth-sources (list (expand-file-name "authinfo" user-emacs-directory)))
+
+(use-package clutch
+  :ensure t
+  :commands (clutch-query-console
+             clutch-query-sqlite-file
+             clutch-connect
+             clutch-switch-console)
+  :custom
+  (clutch-connect-timeout-seconds 10)
+  (clutch-read-idle-timeout-seconds 30)
+  (clutch-query-timeout-seconds 20)
+  :config
+  (let ((conns (expand-file-name "clutch-connections.el" user-emacs-directory)))
+    (when (file-readable-p conns)
+      (load conns nil 'nomessage))))
+
 ;; xwidget-webkit smart scroll (for modern SPA / mo preview)
 (with-eval-after-load 'xwidget
   ;; Return scroll step in pixels with compatibility fallbacks.
