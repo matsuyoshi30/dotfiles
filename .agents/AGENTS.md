@@ -32,4 +32,16 @@
   3. Tool's built-in memory directory
 - `.matsuyoshi` / `.matsuyoshi30` are globally gitignored
 
+## Code References
+
+- When writing code references (file:line) into notes, PR bodies, or Linear comments,
+  link them as GitHub permanent links:
+  `[path/file.kt:123](https://github.com/{owner}/{repo}/blob/{full SHA}/path/file.kt#L123)`
+  (line range: `#L10-L20`)
+- Resolve owner/repo from `git remote get-url origin` and the SHA from
+  `git rev-parse HEAD` (once per repo per session)
+- Keep plain `file:line` when the file is untracked, modified relative to HEAD
+  (`git diff HEAD -- <file>` non-empty; the permalink would point at stale lines),
+  or the remote is not GitHub
+
 @RTK.md
