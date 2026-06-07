@@ -23,6 +23,11 @@
 - YAGNI, KISS, DRY
 - No backward compatibility shims or fallback paths unless they come free without adding cyclomatic complexity
 
+## Notes Style
+
+- Avoid horizontal rules (`---`) and bold emphasis (`**`) in notes and memos
+- Use plain text and headings (`#`) for structure instead
+
 ## Notes Directory
 
 - Automatically save research, investigation, summary results, plans and progress tracking as markdown files
