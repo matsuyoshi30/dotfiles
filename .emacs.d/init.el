@@ -774,14 +774,16 @@
   (global-diff-hl-mode 1)
   (global-diff-hl-show-hunk-mouse-mode 1)
   :config
-  ;; Prevent async vc processes from diff-hl-dired from prompting on buffer kill
-  (advice-add 'diff-hl-dired-update :after
+  ;; Prevent "has a running process; kill it?" when pressing g rapidly in dired.
+  ;; The old callback fires kill-buffer on the reused process buffer after a new
+  ;; process has already started on it.  Disable the query flag before each
+  ;; update so Emacs never asks.
+  (advice-add 'diff-hl-dired-update :before
               (lambda ()
-                (dolist (buf (buffer-list))
-                  (when (string-match-p "\\*diff-hl-dired tmp status\\*" (buffer-name buf))
-                    (let ((proc (get-buffer-process buf)))
-                      (when proc
-                        (set-process-query-on-exit-flag proc nil))))))))
+                (when (buffer-live-p diff-hl-dired-process-buffer)
+                  (let ((proc (get-buffer-process diff-hl-dired-process-buffer)))
+                    (when proc
+                      (set-process-query-on-exit-flag proc nil)))))))
 
 (use-package difftastic
   :ensure t
