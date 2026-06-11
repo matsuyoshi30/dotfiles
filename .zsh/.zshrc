@@ -133,7 +133,15 @@ alias glon='git log --oneline --name-only'
 alias gco='git branch|fzf|xargs git checkout'
 alias gdl='git branch|fzf|xargs git branch -D'
 alias gdmb="git branch --merged | grep -vE '(master|main|develop)' | xargs -n1 git branch -D"
-alias gdmwt='git worktree list | while read -r path commit branch; do b=${branch#[}; b=${b%]}; if echo "$b" | grep -qvE "^(master|main|develop)$" && git branch --merged | grep -qw "$b"; then git worktree remove "$path"; fi; done'
+function gdmwt {
+  git worktree list | while read -r wt_path commit branch; do
+    local b=${branch#\[}
+    b=${b%\]}
+    if [[ ! "$b" =~ ^(master|main|develop)$ ]] && git branch --merged | /usr/bin/grep -qw "$b"; then
+      git worktree remove "$wt_path"
+    fi
+  done
+}
 
 alias ghb='gh browse'
 
