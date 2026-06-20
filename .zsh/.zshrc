@@ -14,12 +14,18 @@ autoload -Uz add-zsh-hook
 autoload -Uz vcs_info
 setopt prompt_subst
 
-zstyle ':vcs_info:*' formats '%F{green}(%s)-[%b] %m'
-zstyle ':vcs_info:*' actionformats '%F{red}(%s)-[%b|%a] %m'
-zstyle ':vcs_info:git+set-message:*' hooks git-config-user
+zstyle ':vcs_info:*' formats '%F{green}(%s)-[%b%F{green}] %m'
+zstyle ':vcs_info:*' actionformats '%F{red}(%s)-[%b%F{red}|%a] %m'
+zstyle ':vcs_info:git+set-message:*' hooks git-config-user git-dirty
 
 function git-config-user(){
   hook_com[misc]+=`git config user.email`
+}
+
+function +vi-git-dirty() {
+  if [[ -n "$(git status --porcelain 2>/dev/null | head -1)" ]]; then
+    hook_com[branch]="%F{yellow}${hook_com[branch]}"
+  fi
 }
 
 function shpwd() {
