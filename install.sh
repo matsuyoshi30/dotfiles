@@ -240,6 +240,13 @@ main() {
   create_symlink "$SCRIPT_DIR/cage/presets.yml" "${CAGE_CONFIG_DIR}/presets.yml"
   echo
 
+  info "Installing bin scripts..."
+  for script in "$SCRIPT_DIR"/bin/*; do
+    [[ -f "$script" ]] || continue
+    create_symlink "$script" "$HOME/bin/$(basename "$script")"
+  done
+  echo
+
   info "Installing VSCode configuration..."
   VSCODE_SETTING_DIR=~/Library/Application\ Support/Code/User
   create_symlink "$SCRIPT_DIR/vscode/settings.json" "${VSCODE_SETTING_DIR}/settings.json"

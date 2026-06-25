@@ -1,0 +1,185 @@
+#!/usr/bin/env bash
+#
+# wt-clean
+#
+# 指定ディレクトリ配下の git repo を再帰的に探し、各 repo の linked worktree
+# のうちリモートのデフォルトブランチ (develop/master/main) に取り込み済みの
+# ものを検出して削除する。ディスク逼迫時の掃除用。既定は dry-run。実削除は --apply。
+#
+# 検出は repo 単位のワーカーに分割し xargs -P で並列実行する。各ワーカーは
+# 自己完結した1行 (TSV) を stdout に出すだけなので、並列でも集約が安全。
+# ボトルネックは git fetch / gh pr list のネットワーク I/O なので並列化が効く。
+#
+# マージ判定 (2 段):
+#   tier1 reachable : `git branch --merged origin/<default>` に出る
+#                     = ローカル tip が default の祖先。通常/ff/rebase merge。安全。
+#   tier2 squash    : tier1 に出ないが merged PR があり かつ
+#                     ローカル tip == PR の headRefOid。
+#                     squash merge はコミットが祖先にならず tier1 で漏れるため。
+#                     SHA 一致を必須にし、PR マージ後に積んだ未 push コミットが
+#                     ある worktree を誤削除しない (mismatch は skip して手動確認)。
+#
+# 除外: primary worktree / 現在いる worktree / tracked 変更あり
+#       (modified/staged/deleted)。untracked のみ (.devflow/.advisor 等の
+#       ツール掃き溜め) は保護せず削除対象に含め、--apply 時に
+#       `git worktree remove --force` で破棄する (破棄量は UNTRACKED 列に表示)。
+#
+# Usage:
+#   wt-clean [ROOT_DIR]                # 配下を dry-run (既定: カレント)
+#   wt-clean ~/ghq                     # ~/ghq 配下を dry-run
+#   wt-clean ~/ghq --apply             # 実削除
+#   wt-clean ~/ghq --keep-branch       # worktree のみ削除しブランチは残す
+#   wt-clean ~/ghq --jobs 16           # 並列数 (既定 8)
+#
+set -uo pipefail
+
+if [[ -t 1 ]]; then
+  C_DIM=$'\e[2m'; C_GRN=$'\e[32m'; C_YEL=$'\e[33m'; C_RED=$'\e[31m'; C_RST=$'\e[0m'
+else C_DIM=""; C_GRN=""; C_YEL=""; C_RED=""; C_RST=""; fi
+
+# ───────────────────────── ワーカー: repo 1 つを検出 ─────────────────────────
+# 候補を「repo_root \t worktree \t branch \t tier \t size_kb」で stdout に出力。
+# skip 等の情報は stderr へ。stdout は機械可読・並列安全に保つ。
+worker() {
+  local REPO="$1"
+  local default_ref default_branch merged_reachable repo_url
+  default_ref="$(git -C "$REPO" symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null || true)"
+  [[ -z "$default_ref" ]] && { echo "${C_YEL}skip repo (origin/HEAD 不明): $REPO${C_RST}" >&2; return; }
+  default_branch="${default_ref#origin/}"
+  repo_url="$(git -C "$REPO" remote get-url origin 2>/dev/null)"
+
+  git -C "$REPO" fetch --quiet origin "$default_branch" 2>/dev/null \
+    || echo "${C_DIM}fetch 失敗、ローカル origin/$default_branch で判定: $REPO${C_RST}" >&2
+
+  merged_reachable=$'\n'"$(git -C "$REPO" branch --merged "origin/$default_branch" \
+                            --format='%(refname:short)' 2>/dev/null)"$'\n'
+
+  local wt="" br="" tier tip oid szk
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    case "$line" in
+      "worktree "*) wt="${line#worktree }" ;;
+      "branch "*)   br="${line#branch refs/heads/}" ;;
+      "")
+        [[ -z "$wt" ]] && { wt=""; br=""; continue; }
+        tier=""
+        if   [[ "$wt" == "$REPO" ]]; then :                                   # primary
+        elif [[ -z "$br" ]]; then echo "${C_DIM}skip detached: $wt${C_RST}" >&2
+        elif [[ "$br" == "$default_branch" ]]; then :                         # default 自身
+        elif [[ "$wt" == "$CUR_TOP" ]]; then echo "${C_DIM}skip current: $wt${C_RST}" >&2
+        elif [[ -n "$(git -C "$wt" status --porcelain --untracked-files=no 2>/dev/null)" ]]; then
+          # tracked 変更 (modified/staged/deleted) があるものだけ保護対象。
+          # untracked (.devflow/.advisor 等のツール掃き溜め) は削除対象に含める。
+          echo "${C_YEL}skip dirty (tracked変更): ${REPO##*/}:$br${C_RST}" >&2
+        elif [[ "$merged_reachable" == *$'\n'"$br"$'\n'* ]]; then
+          tier="reachable"
+        else
+          # tier2: squash merge は default の祖先にならないので branch 単位で
+          # merged PR を引く (--limit 方式だと古い PR が窓から漏れるため per-branch)。
+          oid="$(gh pr list --repo "$repo_url" --head "$br" --state merged \
+                   --json headRefOid -q '.[0].headRefOid' 2>/dev/null)"
+          if [[ -n "$oid" ]]; then
+            tip="$(git -C "$wt" rev-parse HEAD 2>/dev/null)"
+            if [[ "$oid" == "$tip" ]]; then tier="squash"
+            else echo "${C_YEL}skip (tip≠merged SHA, 未push?): ${REPO##*/}:$br${C_RST}" >&2; fi
+          fi
+        fi
+        if [[ -n "$tier" ]]; then
+          szk="$(du -sk "$wt" 2>/dev/null | cut -f1)"
+          # untracked サイズ (--force で破棄される分)。可視化のため算出。
+          untk=0; local u uk
+          while IFS= read -r u; do
+            [[ -z "$u" ]] && continue
+            uk="$(du -sk "$wt/$u" 2>/dev/null | cut -f1)"; untk=$((untk + ${uk:-0}))
+          done < <(git -C "$wt" ls-files --others --exclude-standard --directory 2>/dev/null)
+          printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$REPO" "$wt" "$br" "$tier" "${szk:-0}" "$untk"
+        fi
+        wt=""; br="" ;;
+    esac
+  done < <(git -C "$REPO" worktree list --porcelain; echo "")
+}
+
+# ワーカー呼び出し (xargs から再帰起動される内部モード)
+if [[ "${1:-}" == "--worker" ]]; then
+  CUR_TOP="${CLEANUP_CUR_TOP:-}"
+  worker "$2"
+  exit 0
+fi
+
+# ───────────────────────────── メイン ─────────────────────────────
+APPLY=0; KEEP_BRANCH=0; JOBS=8; ROOT=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --apply)       APPLY=1 ;;
+    --keep-branch) KEEP_BRANCH=1 ;;
+    --jobs)        JOBS="$2"; shift ;;
+    -h|--help)     sed -n '2,33p' "${BASH_SOURCE[0]}"; exit 0 ;;
+    -*)            echo "unknown option: $1" >&2; exit 2 ;;
+    *)             [[ -n "$ROOT" ]] && { echo "ROOT_DIR は1つだけ: $1" >&2; exit 2; }; ROOT="$1" ;;
+  esac
+  shift
+done
+ROOT="${ROOT:-$PWD}"; ROOT="${ROOT/#\~/$HOME}"
+ROOT="$(cd "$ROOT" 2>/dev/null && pwd)" || { echo "ディレクトリが無い: $ROOT" >&2; exit 2; }
+
+# ROOT 配下の primary repo を列挙 (primary は .git が dir、linked worktree は file)
+echo "scan: $ROOT ..." >&2
+declare -a REPO_ROOTS=()
+while IFS= read -r gitdir; do
+  REPO_ROOTS+=("$(dirname "$gitdir")")
+done < <(find "$ROOT" \( -name node_modules -o -name .wt -o -name vendor \) -prune -o \
+            -type d -name .git -print 2>/dev/null | sort)
+[[ ${#REPO_ROOTS[@]} -eq 0 ]] && { echo "git repo が無い: $ROOT" >&2; exit 0; }
+echo "found ${#REPO_ROOTS[@]} repos, detecting with -P $JOBS ..." >&2
+
+# 並列検出: 各 repo をワーカーに投げ、候補行を集約 (stdout は temp、stderr は端末へ)。
+# ワーカーの stdout は「パイプ」経由で単一リーダー(sort)に渡す。パイプへの
+# PIPE_BUF 以下の write は POSIX でアトミックなので、並列でも行が壊れ/欠落しない。
+# (ファイルへ直接 > すると共有 fd の非アトミック書き込みで行を取りこぼす)
+export CLEANUP_CUR_TOP; CLEANUP_CUR_TOP="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+TMP="$(mktemp)"; trap 'rm -f "$TMP"' EXIT
+printf '%s\n' "${REPO_ROOTS[@]}" \
+  | xargs -P "$JOBS" -I{} bash "${BASH_SOURCE[0]}" --worker "{}" \
+  | sort > "$TMP"
+
+declare -a D_ROOT=() D_PATH=() D_BR=() D_TIER=() D_KB=() D_UNT=()
+while IFS=$'\t' read -r repo wt br tier szk untk; do
+  [[ -z "$repo" ]] && continue
+  D_ROOT+=("$repo"); D_PATH+=("$wt"); D_BR+=("$br"); D_TIER+=("$tier")
+  D_KB+=("$szk"); D_UNT+=("${untk:-0}")
+done < "$TMP"
+
+echo
+if [[ ${#D_PATH[@]} -eq 0 ]]; then echo "${C_GRN}削除候補なし。${C_RST}"; exit 0; fi
+
+fmtsize() { awk -v k="$1" 'BEGIN{ if (k+0==0){print "-"} else {printf "%.1fG", k/1024/1024} }'; }
+
+printf '\n%s候補一覧%s  (UNTRACKED列 = --force で破棄される untracked 分)\n' "$C_GRN" "$C_RST"
+printf '%-40s %-10s %-8s %-9s %s\n' REPO TIER SIZE UNTRACKED BRANCH
+total_kb=0
+for i in "${!D_PATH[@]}"; do
+  total_kb=$((total_kb + ${D_KB[$i]}))
+  name="${D_ROOT[$i]#"$ROOT"/}"; [[ "$name" == "${D_ROOT[$i]}" ]] && name="$(basename "${D_ROOT[$i]}")"
+  printf '%-40s %-10s %-8s %-9s %s\n' "$name" "${D_TIER[$i]}" \
+    "$(fmtsize "${D_KB[$i]}")" "$(fmtsize "${D_UNT[$i]}")" "${D_BR[$i]}"
+done
+printf '%s合計 %s 解放見込み (%d worktree)%s\n' "$C_GRN" \
+  "$(awk -v k="$total_kb" 'BEGIN{printf "%.1fG", k/1024/1024}')" "${#D_PATH[@]}" "$C_RST"
+
+if [[ $APPLY -eq 0 ]]; then
+  echo; echo "${C_DIM}dry-run。実削除するには --apply を付けてください。${C_RST}"; exit 0
+fi
+
+echo; echo "${C_RED}--apply: 削除します${C_RST}"
+for i in "${!D_PATH[@]}"; do
+  echo "rm worktree: ${D_PATH[$i]}"
+  # --force: 候補は「マージ済み かつ tracked クリーン」検証済み。untracked
+  # スクラッチがあると無印 remove は必ず失敗するため force で破棄する。
+  if git -C "${D_ROOT[$i]}" worktree remove --force "${D_PATH[$i]}"; then
+    if [[ $KEEP_BRANCH -eq 0 ]]; then
+      git -C "${D_ROOT[$i]}" branch -D "${D_BR[$i]}" 2>/dev/null \
+        && echo "   deleted branch ${D_BR[$i]}"
+    fi
+  else
+    echo "   ${C_YEL}remove 失敗 (dirty?) skip${C_RST}"
+  fi
+done
