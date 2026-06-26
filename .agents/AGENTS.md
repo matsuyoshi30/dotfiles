@@ -28,6 +28,17 @@
 - Avoid horizontal rules (`---`) and bold emphasis (`**`) in notes and memos
 - Use plain text and headings (`#`) for structure instead
 
+## Japanese Writing Style
+
+- 日本語で説明するときは、英単語を生のまま文中に混ぜない
+  - 自然な日本語訳や定着したカタカナ語がある語は、そちらで書く
+    - 例: `bounded retry` → 回数制限付きの再試行 / 上限付きリトライ、`resolve` → 解決 / 確定、`fresh な request` → 新しいリクエスト、`合流元 read` → 合流元の読み取り
+  - 英単語を助詞や活用に直接つなぐ書き方(「resolve する」「fresh な」「read が返る」「bounded retry します」)をしない
+- 英語のまま残してよいのは次の場合に限る
+  - 固有名詞・API 名・関数名・型名・ライブラリ名・ファイルパスなど、訳すと指示対象がぶれるもの(例: `ProgressNote`, `utils/refetchUntil`)
+  - 業界で定着しており日本語化するとかえって読みにくい語(例: API, URL, commit, merge, CLI)
+- カタカナにすべきか漢字熟語にすべきかは読みやすさで判断し、過度なカタカナ連結も避ける
+
 ## Notes Directory
 
 - Automatically save research, investigation, summary results, plans and progress tracking as markdown files
