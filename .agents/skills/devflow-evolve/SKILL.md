@@ -35,7 +35,7 @@ auto-apply. Edit only files under the live devflow skill directory.
    shasum -a 256 {file} | cut -c1-12
    ```
 4. Read each file and parse the section whose heading starts with `## Improvements` (the retrospective template heading is `## Improvements (proposals only — no auto-apply)`, so match the prefix, not the exact line). For each `### {proposal_title}` block, extract the bold-bulleted fields `- **Target**:`, `- **Problem**:`, `- **Proposed change**:` (capture the text after each label). Skip a file whose Improvements body is `特になし` or empty (but still record a `seen` row in Step 5).
-5. Record per proposal: `{run_dir, source_repo, date, proposal_title, target, problem, proposed_change, file_hash}`. `run_dir` = absolute path of the directory containing the retrospective.md. `source_repo` = the repo root that sits above the `.devflow/` segment in that path. `date` = the `Date:` line inside the retrospective, falling back to the timestamp embedded in the run_dir name.
+5. Record per proposal: `{run_dir, source_repo, date, proposal_title, target, problem, proposed_change, file_hash}`. `run_dir` = absolute path of the directory containing the retrospective.md, with **no trailing slash** (the plain `dirname` form). This exact string is the dedup key used in Step 2 and written in Step 5 — never add or strip a trailing slash when matching or recording, or already-decided proposals will silently resurface. `source_repo` = the repo root that sits above the `.devflow/` segment in that path. `date` = the `Date:` line inside the retrospective, falling back to the timestamp embedded in the run_dir name.
 
 ### Step 2: Exclude against ledger
 
@@ -48,7 +48,7 @@ auto-apply. Edit only files under the live devflow skill directory.
 
 ### Step 3: Aggregate
 
-1. Drop any proposal whose `target` does not resolve under `{devflow_skill_dir}` (see "Target resolution"). Note dropped ones to report at the end.
+1. Drop any proposal whose `target` does not resolve under `{devflow_skill_dir}` (see "Target resolution"). Also drop any proposal whose resolved target is a **protected file** — the retro-agent prompt (`prompts/retrospective.md`) or the retrospective template (`templates/retrospective.md`) — even though it resolves in-scope, since the Rules forbid editing them; this skill must not rewrite its own input. Note both kinds of dropped proposals (out-of-scope / protected) to report at the end.
 2. Group surviving proposals by resolved target file.
 3. Within each group, count how many distinct runs proposed it — this is the priority hint.
 4. Order groups by descending run-count (most-proposed targets first). Do NOT auto-merge similar proposals; the human dedupes.
@@ -75,8 +75,8 @@ Apply edits one proposal at a time. If two proposals touch the same lines, apply
 ### Step 5: Record and report
 
 1. Append to the ledger. Create the directory first if missing (`mkdir -p "$HOME/.devflow"`), then append each row with Bash redirection (`printf '%s\n' '{...}' >> "$HOME/.devflow/evolve-ledger.jsonl"`). Never use the Write tool for the ledger — Write replaces the whole file and would erase all prior "already reviewed" memory.
-   - one `seen` row per run_dir **that was actually scanned this pass** (first-seen or hash-changed runs only; do not re-append a `seen` row for runs Step 2 skipped as already-seen): `{"type":"seen","run_dir":...,"hash":...,"proposal_count":N,"seen_at":ISO8601}`
-   - one `decision` row per reviewed proposal: `{"type":"decision","run_dir":...,"proposal_title":...,"decision":"applied|rejected|deferred","decided_at":ISO8601,"summary":...}`
+   - one `seen` row per run_dir whose ledger has **no matching-hash `seen` row yet** — i.e. first-seen runs plus runs whose retrospective hash differs from its last `seen` row. Do NOT re-append a `seen` row for a run that already has a `seen` row with a matching hash, even when it was reviewed this pass because a deferred proposal resurfaced (a matching hash means the row is already current). `proposal_count` = the number of proposals parsed from this retrospective's `## Improvements` section, counted before scope filtering (`特になし`/empty = 0). Row: `{"type":"seen","run_dir":...,"hash":...,"proposal_count":N,"seen_at":ISO8601}`
+   - one `decision` row per reviewed proposal. `summary` = for `applied`, a one-line description of the actual edit made; for `deferred`/`rejected`, a one-line reason (may be terse). Row: `{"type":"decision","run_dir":...,"proposal_title":...,"decision":"applied|rejected|deferred","decided_at":ISO8601,"summary":...}`
 2. Report a summary: applied / deferred / rejected counts, list of edited files, and any proposals dropped for out-of-scope targets.
 3. Do NOT commit. Tell the user to review `git diff` under `{devflow_skill_dir}` and, if they want behavioral validation of a changed prompt, suggest the empirical-prompt-using skill (do not run it).
 
@@ -92,8 +92,8 @@ A target that matches none of the prefixes above is dropped as out-of-scope. Aft
 ## Ledger schema
 
 ```jsonl
-{"type":"seen","run_dir":"/abs/.../.devflow/2026-06-27T..._foo/","hash":"ab12cd34ef56","proposal_count":3,"seen_at":"2026-06-28T10:00:00Z"}
-{"type":"decision","run_dir":"/abs/.../.devflow/2026-06-27T..._foo/","proposal_title":"inline DoD slice","decision":"applied","decided_at":"2026-06-28T10:01:00Z","summary":"..."}
+{"type":"seen","run_dir":"/abs/.../.devflow/2026-06-27T..._foo","hash":"ab12cd34ef56","proposal_count":3,"seen_at":"2026-06-28T10:00:00Z"}
+{"type":"decision","run_dir":"/abs/.../.devflow/2026-06-27T..._foo","proposal_title":"inline DoD slice","decision":"applied","decided_at":"2026-06-28T10:01:00Z","summary":"..."}
 ```
 
 Identity: a retrospective is keyed by its `run_dir` absolute path (timestamped,
