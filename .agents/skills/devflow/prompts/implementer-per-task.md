@@ -53,9 +53,9 @@ You are **not expected to read PLAN.md**. The orchestrator inlined what you need
 
 ## Your Job
 
-Implement this step using TDD / Tidy First. Verify via the verify-completion skill, commit, and self-review.
+Implement this step using TDD / Tidy First. Verify via the verify-completion skill, commit, and self-review. Completion verification must include **typecheck** (and lint/format) over the changed code, not just a green test run — even on a test-writing step. Do not exclude test files from the typechecker.
 
-**Stay inside the allowed scope.** Editing files outside `{step_files_or_scope}` is a contract violation — return `NEEDS_DECISION` instead, describing why scope expansion seems necessary.
+**Stay inside the allowed scope.** Editing files outside `{step_files_or_scope}` is a contract violation — return `NEEDS_DECISION` instead, describing why scope expansion seems necessary. This holds **even when the out-of-scope code has a genuine bug**: do not fix it inline; list the concrete fix options in the DR so the choice is made before any edit lands.
 
 If the step's DoD slice is fully satisfied by an earlier step's commit (your check finds the work already done), return `DONE` with `What was done: already satisfied by {step}` and skip implementation.
 

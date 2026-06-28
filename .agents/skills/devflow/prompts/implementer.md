@@ -28,6 +28,14 @@ Working directory: {cwd}
 
 Implement exactly what PLAN.md specifies. Follow your standard TDD / Tidy First process, verify via the verify-completion skill, commit, and self-review before reporting.
 
+### Scope discipline
+
+PLAN.md is the boundary. If you find a bug, missing edge case, or cleanup opportunity in a file **not** listed in the plan's scope, do **not** fix it inline — even when it is a genuine bug. Silent out-of-plan behavioral changes have caused contract violations and second-order regressions. Instead, return `NEEDS_DECISION` describing the issue and **list the concrete fix options** (e.g. "exclude uuid from equals" vs "keep and document") so the orchestrator/user can choose before any edit lands.
+
+### Completion verification includes typecheck
+
+A green test run is not sufficient for DONE. Completion verification must include **typecheck** (and lint/format) over the changed code — even on a step whose stated job is "write tests". Do not exclude test files from the typechecker; hidden type errors in test code are a false-confidence trap. If the project's typecheck config excludes `**/*.test.*` (or equivalent) from `tsc`, note it as a concern in the report.
+
 ### Phase-end commit discipline (large refactors)
 
 When PLAN.md has multiple phases / many-file scope (≥ 30 files touched, multiple modules, or rename/import-rewrite heavy), **commit at the end of each phase**. Do not try to land all phases in one dispatch. The orchestrator can reconstruct progress from durable commits even if you stop early; uncommitted work in a single 100+ tool-use dispatch is fragile.
@@ -44,6 +52,8 @@ Keep the final report **minimal**. The orchestrator already has WORKLOG, baselin
 - Status (DONE / DR / etc.)
 
 **Do not** paste full diffs, full file listings, or long prose into the report. If "Prompt is too long" is approaching, prefer "commit + minimal status" over "comprehensive report" — durable progress beats a verbose final message.
+
+**Hard contract: commit before composing the final report.** Never generate the report out of an uncommitted tree. If the dispatch overflows while writing the report, committed work lets the orchestrator recover; an uncommitted tree plus a lost report cannot be reconstructed.
 
 ## Handling Failures During Implementation
 

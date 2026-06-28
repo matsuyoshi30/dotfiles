@@ -152,6 +152,7 @@ Dispatch [prompts/explorer.md](prompts/explorer.md). The **explorer-agent** (son
 
 - Pass the resolved `{task_summary}` (≤ 1500 chars per Step 0) and `{task_source}` (URL or path to the full ticket/spec), plus `{devflow_dir}/exploration.md` as the target path.
 - `exploration.md` is a reference document for Step 2, not a gate — do not block on completeness.
+- **Split into parallel explorer dispatches by default for precedent-heavy / migration tasks.** A single explorer over a broad migration (port-from-legacy, mass-resolver/DAO work) reliably overflows. When the survey spans clearly separable axes — e.g. legacy source / target-area current state / precedent implementation / test patterns — dispatch one explorer per axis in parallel and have each write a distinct section, rather than recovering after a first dispatch overflows. Each agent writes to a section of `exploration.md` (or its own file the orchestrator concatenates).
 
 ## Step 2 — Plan-Refine
 
@@ -315,6 +316,13 @@ After each implementer-agent dispatch completes, **append the implementer-agent'
 | NEEDS_DECISION | Append to WORKLOG.md → Handle DR (below) → re-dispatch |
 | NEEDS_CONTEXT | Append to WORKLOG.md → provide info → re-dispatch |
 | BLOCKED | Append to WORKLOG.md → escalate (context / stronger model / decompose / ask user) |
+
+**Post-dispatch git-state check (before adopting any report).** Implementers overflow ("Prompt is too long") and stop early often enough that the report alone is not trustworthy. Immediately after a dispatch returns — especially on a non-DONE status or a suspiciously short report — run `git status` and `git log --oneline` (add `git reflog` / a worktree-snapshot check on cross-repo or shared-artifact runs) before moving to Step 5:
+
+- Uncommitted changes present and the report claims DONE → the agent likely overflowed before committing. Preserve the working tree, verify it yourself, and commit on the agent's behalf (record `ORCHESTRATOR_RECOVERY` in WORKLOG with the resulting sha) rather than re-dispatching from scratch.
+- Detached HEAD, unexpected `UU`/unmerged paths, or a shared snapshot (e.g. mavenLocal) mutated by a sub-agent → **halt and resolve before adoption**; do not feed a corrupted tree into review.
+
+This converts the implicit "operator notices the agent stopped" recovery into a logged, repeatable gate.
 
 ### Retry Budget
 

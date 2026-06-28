@@ -26,6 +26,10 @@ Inspect PLAN.md `## Steps` metadata (format defined in `templates/plan.md`):
    - Fan-out from a foundation step (1 is shared, 2/3/4 each depend only on 1) → HYBRID-shaped.
    - All independent (no `depends_on`) → PER_TASK-shaped.
 4. **Tight coupling override**: if any step would mutate signatures used by other steps, or all steps touch the same handful of files, classify as `PER_PLAN` regardless of step count.
+5. **Dispatch budget**: estimate whether a single dispatch can finish before context overflow, from PLAN size — total `## Steps` body length and per-step file counts, not just step count. A large PLAN (rough heuristic: detailed Steps body well over ~6k chars, or any step touching many files / generated code) run as one `PER_PLAN` dispatch repeatedly overflows before the final commit/report. When the budget looks tight, prefer splitting — `PER_TASK`, or `HYBRID` with phase-end commits — over one giant `PER_PLAN` dispatch, even if the coupling signals alone would suggest `PER_PLAN`. Record the budget call in the gate reason.
+6. **TDD pre/post-observation override**: if the plan requires observing a test fail *before* a fix and pass *after*, inside the same plan (red→green in one flow), prefer `PER_PLAN` regardless of step count so the pre-fix and post-fix observations stay in a single agent's context. Splitting them across fresh per-step dispatches loses the "Case-A-fails-pre-fix → Case-A-passes-post-fix" evidence.
+
+Signals 4–6 can conflict (e.g. a large TDD-coupled plan). When they do, the budget signal wins for safety: split with phase-end commits and keep the coupled red→green pair within a single phase/dispatch.
 
 ## Step 4 preamble — Execution Mode gate
 
