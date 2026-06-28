@@ -98,7 +98,7 @@ Stages 1-4 (setup) and 8-11 (shaping) are mechanical — one line each below; th
 
 Generate three to five personas that reflect role differences, not personality fiction (more only if the domain demands it). Capture for each: role, responsibilities, success conditions, constraints, context, target hypotheses, confidence level.
 
-Personas are a source of questions and hypotheses, never a source of evidence (see Red flags). Use them to expose what to ask and where the risky unknowns are, not to manufacture answers.
+Personas are a source of questions and hypotheses, never a source of evidence (see Red flags). Use them to expose what to ask and where the risky unknowns are, not to manufacture answers. Personas cover org-role perspectives; for general-domain background expertise (industry standards, regulations, common practice), dispatch the `domain-expert-agent` instead — see stage 6.
 
 ### 6. Collect from real sources, then extract evidence
 
@@ -116,7 +116,7 @@ There are distinct modes. Keep them separate:
 
 - Simulated persona dry-run: have a persona answer to surface candidate flows, expected pain, and the exact questions a real source must confirm. Record these as hypotheses and open questions. Never write them to the evidence log.
 - Real source (real document, real stakeholder conversation, or observation): the only thing that produces evidence. For each, register the source at first use, extract evidence fragments, and classify each as fact, inference, or request.
-- Web and literature search: gather real sources for general-domain background yourself instead of waiting for the user. Register each with its URL, the search query, and the access date, and verify the URL resolves before logging it (drop or re-find any that 404 or are unreachable); rate reliability by the source's authority. Treat a finding as a hypothesis unless it comes from an authoritative named source, and never let it stand in for this organization's specific operations — those still need a real stakeholder.
+- Web and literature search: gather real sources for general-domain background yourself instead of waiting for the user. Register each with its URL, the search query, and the access date, and verify the URL resolves before logging it (drop or re-find any that 404 or are unreachable); rate reliability by the source's authority. Treat a finding as a hypothesis unless it comes from an authoritative named source, and never let it stand in for this organization's specific operations — those still need a real stakeholder. You may delegate this general-domain research to the `domain-expert-agent` (it writes a briefing to a path you give); its output enters as hypotheses, promotable to general-domain evidence only when grounded in an authoritative named source, and never as org-specific evidence.
 
 After each real-source answer:
 
