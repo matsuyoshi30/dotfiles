@@ -121,7 +121,7 @@ Create TodoWrite todos for each step at start, then mark done as you progress:
 - [ ] Step 5: Spec compliance review — PER_PLAN: full-diff loop until MISSING+EXTRA+MISUNDERSTOOD = 0 (max 2). PER_TASK/HYBRID feature: per-step (during Step 4) + final cross-step (max 1).
 - [ ] Step 6: Code quality review — PER_PLAN: full-diff loop until CRITICAL+HIGH = 0 (max 3). PER_TASK/HYBRID feature: per-step (during Step 4) + final cross-step (max 1).
 - [ ] Step 7: Completion verification — format / lint / build / test
-- [ ] Step 8: Final report — present verdict, append to WORKLOG.md (devflow user-visible completion point)
+- [ ] Step 8: Final report — present verdict, append to WORKLOG.md (devflow user-visible completion point); print the evolve nudge when ≥ 3 current-repo retrospectives are unprocessed in the evolve ledger
 - [ ] Step 9: Retrospective — dispatch retro-agent in background, do not wait; on completion notification append `RETRO_DONE`/`RETRO_FAILED` to WORKLOG and notify user with one line
 ```
 
@@ -400,6 +400,22 @@ When announcing devflow completion, include the expected retrospective output pa
 Retrospective will be written to: {devflow_dir}/retrospective.md
 ```
 
+### Evolve nudge
+
+After the report, count current-repo retrospectives not yet recorded in the evolve ledger:
+
+- Candidates: `{base_repo}/.devflow/*/retrospective.md`
+- A retrospective is "unprocessed" when its `run_dir` absolute path has no `seen` row in `$HOME/.devflow/evolve-ledger.jsonl`.
+
+If the unprocessed count is ≥ 3, print one line:
+
+```
+未処理の改善提案が {n} 件あります。/devflow-evolve で振り返りを反映できます。
+```
+
+Scope the count to the current repo only (cheap). The cross-repo aggregation
+happens inside devflow-evolve itself. Skip this nudge if the ledger or the
+glob is unreadable — it is best-effort and never blocks completion.
 
 ## Step 9 — Retrospective (background)
 
