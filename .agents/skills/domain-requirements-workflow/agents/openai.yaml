@@ -1,0 +1,4 @@
+interface:
+  display_name: "Domain Requirements"
+  short_description: "Evidence-traced domain understanding and requirements workflow"
+  default_prompt: "Use $domain-requirements-workflow to explore the domain, collect traceable evidence, and produce a requirements document."
