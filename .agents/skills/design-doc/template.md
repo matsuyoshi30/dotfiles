@@ -75,6 +75,15 @@
 
 ### Interfaces
 > 〈When you need it〉 The contact points with people or other systems are central. UI (rough sketches are fine) / API · CLI / file format.
+> For changed endpoints, note backward compatibility and error handling.
+
+### Data model / migration
+> 〈When you need it〉 You change a schema, storage layout, or persisted data.
+> Focus on what's hard to reverse — backfill, rollback, and whether it ships without downtime.
+- Schema / data changes:
+- Backfill:
+- Rollback:
+- Downtime (can it ship without downtime?):
 
 ### Dependencies / infrastructure
 > 〈When you need it〉 You're choosing language, libraries, storage, or runtime.
