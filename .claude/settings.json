@@ -155,8 +155,6 @@
       "Bash(true)",
       "Bash(yarn fix:*)",
       "Bash(yarn lint:*)",
-      "Bash(yarn lint:eslint)",
-      "Bash(yarn lint:tsc)",
       "Bash(yarn prettier:*)",
       "WebFetch"
     ],

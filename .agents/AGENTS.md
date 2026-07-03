@@ -2,10 +2,7 @@
 
 - Add clear comments explaining complicated business logic
   - Only write comments for non-obvious things not expressed by the code itself, and keep them concise
-  - Avoid redundant comments that merely restate what the code already shows
-- Generate comprehensive documentation
-  - Write WHY not WHAT
-- Create examples in documentation
+- Generate documentation that explains WHY not WHAT, with examples
 - Auto-fix all linting/formatting issues
 - Write tests for new features and bug fixes
   - Don't test trivial functions like just call other utilities
@@ -67,5 +64,3 @@
 - Keep plain `file:line` when the file is untracked, modified relative to HEAD
   (`git diff HEAD -- <file>` non-empty; the permalink would point at stale lines),
   or the remote is not GitHub
-
-@RTK.md
