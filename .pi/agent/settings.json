@@ -1,6 +1,11 @@
 {
-  "defaultProvider": "gemma4-local",
-  "defaultModel": "gemma-4-26B-A4B-it-UD-Q4_K_XL.gguf",
+  "defaultProvider": "openai-codex",
+  "defaultModel": "gpt-5.5",
   "defaultThinkingLevel": "minimal",
-  "lastChangelogVersion": "0.74.2"
+  "lastChangelogVersion": "0.80.3",
+  "packages": [
+    "npm:pi-subagents@0.33.1",
+    "npm:pi-observational-memory@3.0.3"
+  ],
+  "theme": "dark"
 }

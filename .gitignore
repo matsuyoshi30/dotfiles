@@ -2,9 +2,8 @@
 .agents/skills/.system/
 .zsh/.zcompdump*
 
-# pi: never commit credentials or session logs (may contain customer PII).
-# models.json is tracked; API keys in it must use pi's "$ENV_VAR" / "!command"
-# value resolution, never literals.
 .pi/agent/auth.json
 .pi/agent/trust.json
 .pi/agent/sessions/
+.pi/agent/extensions/node_modules/
+.pi/agent/extensions/package-lock.json
