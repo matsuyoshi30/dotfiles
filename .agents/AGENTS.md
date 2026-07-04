@@ -20,6 +20,18 @@
 - YAGNI, KISS, DRY
 - No backward compatibility shims or fallback paths unless they come free without adding cyclomatic complexity
 
+## Working Principles
+
+- Write for the reader in anything shared with others (PRs, error messages, docs, comments)
+  - Don't write vague messages that assume the reader will dig through the codebase; make the text understandable on its own
+  - But "writing everything is kinder" is an illusion. Cut details that don't change the reader's understanding or next action. Self-contained is not the same as exhaustive
+- Don't put things in checklists that automation can handle
+  - Push anything mechanically verifiable (lint, tests, CI, hooks) into automation; keep only items requiring human judgment in checklists
+- Prefer "structurally impossible" over "be careful"
+  - Don't rely on vigilance to prevent mistakes; make invalid states unrepresentable via types, schemas, permissions, and automated checks
+- Review in a structurally independent context
+  - A review that inherits the implementation context reproduces the implementer's assumptions. Hand only the diff and the spec to a party without that context, such as a separate session or subagent
+
 ## Notes Style
 
 - Avoid horizontal rules (`---`) and bold emphasis (`**`) in notes and memos

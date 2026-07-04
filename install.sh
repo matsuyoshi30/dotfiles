@@ -227,6 +227,18 @@ main() {
   create_symlink "$SCRIPT_DIR/.agents/skills" "$HOME/.codex/skills"
   echo
 
+  info "Installing pi configuration..."
+  create_symlink "$SCRIPT_DIR/.pi/agent/settings.json" "$HOME/.pi/agent/settings.json"
+  create_symlink "$SCRIPT_DIR/.pi/agent/models.json" "$HOME/.pi/agent/models.json"
+  create_symlink "$SCRIPT_DIR/.pi/agent/prompts" "$HOME/.pi/agent/prompts"
+  create_symlink "$SCRIPT_DIR/.pi/agent/extensions" "$HOME/.pi/agent/extensions"
+  create_symlink "$SCRIPT_DIR/.agents/AGENTS.md" "$HOME/.pi/agent/AGENTS.md"
+  echo
+
+  info "Installing herdr configuration..."
+  create_symlink "$SCRIPT_DIR/herdr/config.toml" "$HOME/.config/herdr/config.toml"
+  echo
+
   info "Installing tig configuration..."
   create_symlink "$SCRIPT_DIR/tig/.tigrc" "$HOME/.tigrc"
   echo

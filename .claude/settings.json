@@ -1,8 +1,8 @@
 {
   "env": {
+    "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "50",
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
-    "CLAUDE_CODE_NO_FLICKER": "1",
-    "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "50"
+    "CLAUDE_CODE_NO_FLICKER": "1"
   },
   "permissions": {
     "allow": [
@@ -164,13 +164,72 @@
     "defaultMode": "auto"
   },
   "hooks": {
-    "Stop": [
+    "PermissionRequest": [
       {
-        "matcher": "",
+        "matcher": "*",
         "hooks": [
           {
             "type": "command",
-            "command": "afplay /System/Library/Sounds/Submarine.aiff"
+            "command": "bash '/Users/matsuyoshi30/.claude/hooks/herdr-agent-state.sh' blocked",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash '/Users/matsuyoshi30/.claude/hooks/herdr-agent-state.sh' working",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash '/Users/matsuyoshi30/.claude/hooks/herdr-agent-state.sh' working",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreCompact\",\"additionalContext\":\"Auto-fire memory-manager skill (persist phase): Before compaction, save current state to ~/.matsuyoshi30/memory/short-term/current.md per the short-term template. If a distinct task is in progress, also save to ~/.matsuyoshi30/memory/mid-term/{task-id}/state.md per the mid-term template. Include paths, URLs, and resumption context needed to continue after compaction.\"}}'"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash '/Users/matsuyoshi30/.claude/hooks/herdr-agent-state.sh' working",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash '/Users/matsuyoshi30/.claude/hooks/herdr-agent-state.sh' release",
+            "timeout": 10
           }
         ]
       }
@@ -185,6 +244,39 @@
         ]
       }
     ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "afplay /System/Library/Sounds/Submarine.aiff"
+          }
+        ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash '/Users/matsuyoshi30/.claude/hooks/herdr-agent-state.sh' idle",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash '/Users/matsuyoshi30/.claude/hooks/herdr-agent-state.sh' working",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
     "UserPromptSubmit": [
       {
         "hooks": [
@@ -194,14 +286,14 @@
             "once": true
           }
         ]
-      }
-    ],
-    "PreCompact": [
+      },
       {
+        "matcher": "*",
         "hooks": [
           {
             "type": "command",
-            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreCompact\",\"additionalContext\":\"Auto-fire memory-manager skill (persist phase): Before compaction, save current state to ~/.matsuyoshi30/memory/short-term/current.md per the short-term template. If a distinct task is in progress, also save to ~/.matsuyoshi30/memory/mid-term/{task-id}/state.md per the mid-term template. Include paths, URLs, and resumption context needed to continue after compaction.\"}}'"
+            "command": "bash '/Users/matsuyoshi30/.claude/hooks/herdr-agent-state.sh' working",
+            "timeout": 10
           }
         ]
       }

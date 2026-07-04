@@ -1,0 +1,6 @@
+{
+  "defaultProvider": "gemma4-local",
+  "defaultModel": "gemma-4-26B-A4B-it-UD-Q4_K_XL.gguf",
+  "defaultThinkingLevel": "minimal",
+  "lastChangelogVersion": "0.74.2"
+}
