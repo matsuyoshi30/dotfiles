@@ -9,4 +9,8 @@ manifest_check = true
 name = "kanagawa"
 
 [ui.toast]
-delivery = "terminal"
+delivery = "system"
+
+[ui]
+agent_panel_sort = "priority"
+show_agent_labels_on_pane_borders = true
