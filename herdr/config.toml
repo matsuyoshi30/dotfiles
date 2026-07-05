@@ -14,3 +14,9 @@ delivery = "system"
 [ui]
 agent_panel_sort = "priority"
 show_agent_labels_on_pane_borders = true
+
+[[keys.command]]
+key = "f5"
+type = "shell"
+command = "herdr server reload-config"
+description = "reload config"
