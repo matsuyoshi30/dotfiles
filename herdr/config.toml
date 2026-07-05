@@ -15,6 +15,9 @@ delivery = "system"
 agent_panel_sort = "priority"
 show_agent_labels_on_pane_borders = true
 
+[keys]
+prefix = "f12"
+
 [[keys.command]]
 key = "f5"
 type = "shell"
