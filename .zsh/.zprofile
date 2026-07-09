@@ -33,3 +33,5 @@ fi
 
 # Added by swiftly
 [ -s "$HOME/.swiftly/env.sh" ] && . "$HOME/.swiftly/env.sh"
+
+export PATH="$HOME/.elan/bin:$PATH"

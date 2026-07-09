@@ -3,3 +3,5 @@ if [ -f ~/.bashrc ]; then
 fi
 export PATH="/usr/local/bin:$HOME/bin:$PATH:$HOME/.cargo/bin"
 export RUST_SRC_PATH="$HOME/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src"
+
+export PATH="$HOME/.elan/bin:$PATH"
