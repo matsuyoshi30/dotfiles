@@ -1,0 +1,175 @@
+#!/usr/bin/env bash
+#
+# proc-clean
+#
+# Detect leftover development processes (duplicate tsc --watch, old next-server,
+# orphaned tsserver, etc.) and list them. Dry-run by default; --apply sends
+# SIGTERM. macOS attributes terminal-launched processes to the terminal app as
+# the "responsible process", which makes this kind of leak hard to notice.
+# Meant to be run by launchd every morning with --notify.
+#
+# Detection (3 signals, reported with a reason; own-user processes only):
+#   duplicate   : multiple dev-pattern processes whose command lines match
+#                 exactly (including args) -> keep the newest, flag the rest
+#                 (only those older than 1 hour). Shells and MCP servers
+#                 legitimately run one instance per session, so duplicate
+#                 detection is limited to dev patterns.
+#   stale-dev   : dev-pattern process older than N days (default 2, --days).
+#   swapped-out : CLI runtime (node/java/...) with (resident+compressed) over
+#                 1GB and compression ratio >= 70% = pages untouched for a long
+#                 time. Also limited to older than N days to avoid flagging
+#                 servers that are actively in use.
+#
+# Always excluded: this process and its ancestors / GUI apps (.app bundles)
+#
+# Usage:
+#   proc-clean              # dry-run, list candidates
+#   proc-clean --apply      # SIGTERM the candidates
+#   proc-clean --days 5     # stale threshold in days
+#   proc-clean --notify     # for launchd: silent when clean, macOS notification otherwise
+#
+set -uo pipefail
+
+APPLY=false
+NOTIFY=false
+DAYS=2
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --apply) APPLY=true; shift ;;
+    --notify) NOTIFY=true; shift ;;
+    --days) DAYS="${2:?--days requires a number}"; shift 2 ;;
+    -h|--help) sed -n '2,30p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *) echo "unknown option: $1" >&2; exit 1 ;;
+  esac
+done
+
+if [[ -t 1 ]]; then
+  C_DIM=$'\e[2m'; C_YEL=$'\e[33m'; C_RED=$'\e[31m'; C_RST=$'\e[0m'
+else C_DIM=""; C_YEL=""; C_RED=""; C_RST=""; fi
+
+# Ancestor PIDs of this process (never flag our own shell/terminal chain)
+self_chain="$$"
+p=$$
+for _ in 1 2 3 4 5 6 7 8 9 10; do
+  p=$(ps -o ppid= -p "$p" 2>/dev/null | tr -d ' ') || break
+  [[ -z "$p" || "$p" -le 1 ]] && break
+  self_chain="$self_chain $p"
+done
+
+tmp_ps=$(mktemp) tmp_top=$(mktemp)
+trap 'rm -f "$tmp_ps" "$tmp_top"' EXIT
+
+# -x: all own-user processes. macOS ps has no etimes(seconds), so etime is
+# parsed in awk. The env vars are a test seam: swap in fabricated inputs to
+# verify the detection logic without depending on real processes.
+if [[ -n "${PROC_CLEAN_PS_FILE:-}" ]]; then cat "$PROC_CLEAN_PS_FILE" > "$tmp_ps"
+else ps -xo pid=,etime=,command= > "$tmp_ps"; fi
+# mem/cmprs are not available from ps, so take them from top
+# (values carry a unit suffix: 512K / 9274M / 1G / 0B)
+if [[ -n "${PROC_CLEAN_TOP_FILE:-}" ]]; then cat "$PROC_CLEAN_TOP_FILE" > "$tmp_top"
+else top -l 1 -stats pid,mem,cmprs 2>/dev/null > "$tmp_top"; fi
+
+candidates=$(awk -v days="$DAYS" -v self="$self_chain" '
+function to_mb(s,   n) {
+  sub(/[+-]$/, "", s); n = s + 0
+  if (s ~ /G/) return n * 1024
+  if (s ~ /M/) return n
+  if (s ~ /K/) return n / 1024
+  return n / 1024 / 1024
+}
+# etime ([[dd-]hh:]mm:ss) -> seconds
+function etime_sec(s,   d, rest, a, n, sec) {
+  d = 0; rest = s
+  if (split(s, a, "-") == 2) { d = a[1]; rest = a[2] }
+  n = split(rest, a, ":")
+  sec = 0
+  for (i = 1; i <= n; i++) sec = sec * 60 + a[i]
+  return d * 86400 + sec
+}
+function fmt_age(sec) {
+  if (sec >= 86400) return sprintf("%.1fd", sec / 86400)
+  return sprintf("%.1fh", sec / 3600)
+}
+function is_dev(cmd) {
+  return cmd ~ /tsc[^ ]* .*--watch|--watch .*tsc|next-server|tsserver\.js|[\/ ](vite|vitest)([ ]|$)|nodemon|webpack.*watch|esbuild.*watch/
+}
+function is_runtime(cmd,   base) {
+  base = cmd; sub(/ .*/, "", base); sub(/.*\//, "", base)
+  return base ~ /^(node|java|deno|bun|python[0-9.]*|ruby)$/ || cmd ~ /^next-server/
+}
+function emit(pid, reason, mem, age, cmd) {
+  if (pid in emitted) return
+  emitted[pid] = 1
+  gsub(/\t/, " ", cmd)
+  printf "%s\t%s\t%.0f\t%s\t%s\n", pid, reason, mem, fmt_age(age), substr(cmd, 1, 120)
+}
+NR == FNR {
+  # top output: only rows starting with a numeric PID. Columns: PID MEM CMPRS
+  if ($1 ~ /^[0-9]+$/ && NF >= 3) { mem[$1] = to_mb($2); cmprs[$1] = to_mb($3) }
+  next
+}
+{
+  pid = $1; et = $2
+  cmd = ""
+  for (i = 3; i <= NF; i++) cmd = cmd (i > 3 ? " " : "") $i
+  if (" " self " " ~ " " pid " ") next
+  if (cmd ~ /\.app\/Contents\//) next          # skip GUI apps
+  age = etime_sec(et)
+  total = mem[pid] + cmprs[pid]
+
+  if (is_dev(cmd)) {
+    dup_n[cmd]++
+    dup_pid[cmd, dup_n[cmd]] = pid; dup_age[cmd, dup_n[cmd]] = age
+    dup_mem[cmd, dup_n[cmd]] = total
+    if (age > days * 86400) emit(pid, "stale-dev", total, age, cmd)
+  }
+  if (is_runtime(cmd) && age > days * 86400 && total > 1024 && cmprs[pid] / total >= 0.7)
+    emit(pid, "swapped-out", total, age, cmd)
+  next
+}
+END {
+  # duplicate: same command line more than once -> keep only the newest
+  for (c in dup_n) {
+    if (dup_n[c] < 2) continue
+    newest = 1
+    for (i = 2; i <= dup_n[c]; i++) if (dup_age[c, i] < dup_age[c, newest]) newest = i
+    for (i = 1; i <= dup_n[c]; i++) {
+      if (i == newest || dup_age[c, i] < 3600) continue
+      emit(dup_pid[c, i], "duplicate", dup_mem[c, i], dup_age[c, i], c)
+    }
+  }
+}' "$tmp_top" "$tmp_ps")
+
+count=$(printf '%s' "$candidates" | grep -c . || true)
+
+if [[ "$count" -eq 0 ]]; then
+  $NOTIFY || echo "no leftover processes found"
+  exit 0
+fi
+
+total_mb=$(printf '%s\n' "$candidates" | awk -F'\t' '{s += $3} END {print s}')
+
+if $NOTIFY; then
+  total_disp=$(awk -v m="$total_mb" 'BEGIN {printf (m >= 1024 ? "%.1fGB" : "%.0fMB"), (m >= 1024 ? m / 1024 : m)}')
+  /usr/bin/osascript -e "display notification \"${count} leftover processes, ${total_disp} total. Run proc-clean to review\" with title \"proc-clean\"" >/dev/null
+  printf '%s\n' "$candidates"
+  exit 0
+fi
+
+printf "%s%-7s %-12s %8s %7s  %s%s\n" "$C_DIM" "PID" "REASON" "MEM(MB)" "AGE" "COMMAND" "$C_RST"
+printf '%s\n' "$candidates" | while IFS=$'\t' read -r pid reason memv age cmd; do
+  col="$C_YEL"; [[ "$reason" == "swapped-out" ]] && col="$C_RED"
+  printf "%-7s ${col}%-12s${C_RST} %8s %7s  %s%s%s\n" "$pid" "$reason" "$memv" "$age" "$C_DIM" "$cmd" "$C_RST"
+done
+echo
+
+if $APPLY; then
+  printf '%s\n' "$candidates" | cut -f1 | while read -r pid; do
+    if kill -TERM "$pid" 2>/dev/null; then echo "killed: $pid"
+    else echo "kill failed (already gone?): $pid"; fi
+  done
+else
+  awk -v m="$total_mb" -v n="$count" 'BEGIN {
+    printf "%d candidates / %.1fGB total. To kill them: proc-clean --apply\n", n, m / 1024}'
+fi
