@@ -1,8 +1,169 @@
 {
+  "advisorModel": "opus",
+  "autoMemoryEnabled": false,
+  "awaySummaryEnabled": false,
+  "effortLevel": "high",
+  "enabledPlugins": {
+    "dig@kuu-marketplace": true,
+    "discord@claude-plugins-official": true,
+    "frontend-design@claude-plugins-official": true,
+    "kotlin-lsp@claude-plugins-official": true,
+    "playwright-skill@playwright-skill": true,
+    "rust-analyzer-lsp@claude-plugins-official": true,
+    "superpowers@claude-plugins-official": true,
+    "swift-lsp@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true
+  },
   "env": {
     "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "50",
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
     "CLAUDE_CODE_NO_FLICKER": "1"
+  },
+  "hooks": {
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "command": "bash \"$HOME/.claude/hooks/herdr-agent-state.sh\" blocked",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "bash \"$HOME/.claude/hooks/herdr-agent-state.sh\" working",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "hooks": [
+          {
+            "command": "bash \"$HOME/.claude/hooks/herdr-agent-state.sh\" working",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreCompact\",\"additionalContext\":\"Auto-fire memory-manager skill (persist phase): Before compaction, save current state to ~/.matsuyoshi30/memory/short-term/current.md per the short-term template. If a distinct task is in progress, also save to ~/.matsuyoshi30/memory/mid-term/{task-id}/state.md per the mid-term template. Include paths, URLs, and resumption context needed to continue after compaction.\"}}'",
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "bash \"$HOME/.claude/hooks/herdr-agent-state.sh\" working",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "command": "bash \"$HOME/.claude/hooks/herdr-agent-state.sh\" release",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"Auto-fire memory-manager skill (restore phase): Read ~/.matsuyoshi30/memory/short-term/current.md if it exists to restore prior session state. Do NOT read index.md, long-term, or mid-term files yet — wait for the user first prompt to filter by relevance.\"}}'",
+            "type": "command"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "command": "bash \"$HOME/.claude/hooks/herdr-agent-state.sh\" session",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "command": "afplay /System/Library/Sounds/Submarine.aiff",
+            "type": "command"
+          }
+        ],
+        "matcher": ""
+      },
+      {
+        "hooks": [
+          {
+            "command": "bash \"$HOME/.claude/hooks/herdr-agent-state.sh\" idle",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "command": "bash \"$HOME/.claude/hooks/herdr-agent-state.sh\" working",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"UserPromptSubmit\",\"additionalContext\":\"Auto-fire memory-manager skill (context-aware restore, first prompt only): Read ~/.matsuyoshi30/memory/index.md. Based on the user prompt, current branch name, and CWD, selectively read only the relevant ~/.matsuyoshi30/memory/long-term/*.md files and the matching ~/.matsuyoshi30/memory/mid-term/{task-id}/state.md if one exists. Skip entries that are not relevant to the current task.\"}}'",
+            "once": true,
+            "type": "command"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "command": "bash \"$HOME/.claude/hooks/herdr-agent-state.sh\" working",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ]
   },
   "permissions": {
     "allow": [
@@ -158,167 +319,16 @@
       "Bash(yarn prettier:*)",
       "WebFetch"
     ],
+    "defaultMode": "auto",
     "deny": [
       "Bash(rm:*)"
-    ],
-    "defaultMode": "auto"
-  },
-  "hooks": {
-    "PermissionRequest": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash '/Users/matsuyoshi30/.claude/hooks/herdr-agent-state.sh' blocked",
-            "timeout": 10
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash '/Users/matsuyoshi30/.claude/hooks/herdr-agent-state.sh' working",
-            "timeout": 10
-          }
-        ]
-      }
-    ],
-    "PostToolUseFailure": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash '/Users/matsuyoshi30/.claude/hooks/herdr-agent-state.sh' working",
-            "timeout": 10
-          }
-        ]
-      }
-    ],
-    "PreCompact": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreCompact\",\"additionalContext\":\"Auto-fire memory-manager skill (persist phase): Before compaction, save current state to ~/.matsuyoshi30/memory/short-term/current.md per the short-term template. If a distinct task is in progress, also save to ~/.matsuyoshi30/memory/mid-term/{task-id}/state.md per the mid-term template. Include paths, URLs, and resumption context needed to continue after compaction.\"}}'"
-          }
-        ]
-      }
-    ],
-    "PreToolUse": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash '/Users/matsuyoshi30/.claude/hooks/herdr-agent-state.sh' working",
-            "timeout": 10
-          }
-        ]
-      }
-    ],
-    "SessionEnd": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash '/Users/matsuyoshi30/.claude/hooks/herdr-agent-state.sh' release",
-            "timeout": 10
-          }
-        ]
-      }
-    ],
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"Auto-fire memory-manager skill (restore phase): Read ~/.matsuyoshi30/memory/short-term/current.md if it exists to restore prior session state. Do NOT read index.md, long-term, or mid-term files yet — wait for the user first prompt to filter by relevance.\"}}'"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "afplay /System/Library/Sounds/Submarine.aiff"
-          }
-        ]
-      },
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash '/Users/matsuyoshi30/.claude/hooks/herdr-agent-state.sh' idle",
-            "timeout": 10
-          }
-        ]
-      }
-    ],
-    "SubagentStop": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash '/Users/matsuyoshi30/.claude/hooks/herdr-agent-state.sh' working",
-            "timeout": 10
-          }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"UserPromptSubmit\",\"additionalContext\":\"Auto-fire memory-manager skill (context-aware restore, first prompt only): Read ~/.matsuyoshi30/memory/index.md. Based on the user prompt, current branch name, and CWD, selectively read only the relevant ~/.matsuyoshi30/memory/long-term/*.md files and the matching ~/.matsuyoshi30/memory/mid-term/{task-id}/state.md if one exists. Skip entries that are not relevant to the current task.\"}}'",
-            "once": true
-          }
-        ]
-      },
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash '/Users/matsuyoshi30/.claude/hooks/herdr-agent-state.sh' working",
-            "timeout": 10
-          }
-        ]
-      }
     ]
   },
-  "statusLine": {
-    "type": "command",
-    "command": "~/.claude/statusline.py"
-  },
-  "enabledPlugins": {
-    "typescript-lsp@claude-plugins-official": true,
-    "playwright-skill@playwright-skill": true,
-    "dig@kuu-marketplace": true,
-    "rust-analyzer-lsp@claude-plugins-official": true,
-    "swift-lsp@claude-plugins-official": true,
-    "kotlin-lsp@claude-plugins-official": true,
-    "frontend-design@claude-plugins-official": true,
-    "superpowers@claude-plugins-official": true,
-    "discord@claude-plugins-official": true
-  },
-  "effortLevel": "high",
-  "advisorModel": "opus",
-  "awaySummaryEnabled": false,
-  "autoMemoryEnabled": false,
+  "skipAutoPermissionPrompt": true,
   "skipDangerousModePermissionPrompt": true,
-  "theme": "dark",
-  "skipAutoPermissionPrompt": true
+  "statusLine": {
+    "command": "$HOME/.claude/statusline.py",
+    "type": "command"
+  },
+  "theme": "dark"
 }
