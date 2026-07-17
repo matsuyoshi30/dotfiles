@@ -3,7 +3,8 @@
 - Add clear comments explaining complicated business logic
   - Only write comments for non-obvious things not expressed by the code itself, and keep them concise
 - Generate documentation that explains WHY not WHAT, with examples
-- Auto-fix all linting/formatting issues
+- Auto-fix linting/formatting issues in files you touched; don't commit formatting-only
+  changes that auto-formatters apply to unrelated files
 - Write tests for new features and bug fixes
   - Don't test trivial functions like just call other utilities
 
@@ -37,6 +38,21 @@
 - Avoid horizontal rules (`---`) and bold emphasis (`**`) in notes and memos
 - Use plain text and headings (`#`) for structure instead
 
+## Work Records in Notes
+
+- When research involves hands-on measurement, experiments, or inspecting artifacts,
+  add an appendix section ("Appendix: Work Record") to the note, separate from the conclusions
+  - When it applies: you created throwaway resources (scratch DB, test data, generated scripts)
+    to take measurements, operated a live system or external service to verify something,
+    or inspected actual artifacts (jars, binaries) — any case where the evidence exists
+    only in your local work
+  - Include: environment (versions, connection targets), setup steps, the exact commands/SQL
+    used for measurement, raw measured values, known limitations/biases of the method,
+    and cleanup of temporary resources
+  - Exclude: the full trial-and-error log. Drop intermediate steps that don't support a conclusion
+  - Write it right after taking the measurements, not at the end of the research;
+    reproduction details are lost once the session ends
+
 ## Japanese Writing Style
 
 - 日本語で説明するときは、英単語を生のまま文中に混ぜない
@@ -52,7 +68,9 @@
 - 英語のまま残してよいのは次の場合に限る
   - 固有名詞・API 名・関数名・型名・ライブラリ名・ファイルパスなど、訳すと指示対象がぶれるもの(例: `utils/refetchUntil`)
   - 一語の訳語に置き換えると意味がぼやける複合概念・定型句(例: YAGNI, pathological correctness, human-in-the-loop)
-  - 業界で定着しており日本語化するとかえって読みにくい語(例: API, URL, commit, merge, CLI)
+  - 業界で定着しており日本語化するとかえって読みにくい語(例: API, URL, commit, merge, CLI)。
+    ただし助詞がかたまりの外側に付く名詞用法に限る(「commit 3件を」は可)。
+    活用や助詞と直接結合するときは貼り付きテストどおりカタカナで書く(「commit する」→「コミットする」)
 - 日本語の回答を出す直前に、文中の英単語を一語ずつ洗い出し、貼り付きテストで残してよい側に該当しない語をすべて訳してから出力する
 - カタカナにすべきか漢字熟語にすべきかは読みやすさで判断し、過度なカタカナ連結も避ける
 
@@ -71,8 +89,10 @@
   link them as GitHub permanent links:
   `[path/file.kt:123](https://github.com/{owner}/{repo}/blob/{full SHA}/path/file.kt#L123)`
   (line range: `#L10-L20`)
-- Resolve owner/repo from `git remote get-url origin` and the SHA from
-  `git rev-parse HEAD` (once per repo per session)
+- Resolve owner/repo from `git remote get-url origin` (once per repo per session);
+  resolve the SHA with `git rev-parse HEAD` at link-writing time — a session-cached SHA
+  silently goes stale once a commit lands mid-session
 - Keep plain `file:line` when the file is untracked, modified relative to HEAD
   (`git diff HEAD -- <file>` non-empty; the permalink would point at stale lines),
-  or the remote is not GitHub
+  the HEAD commit is not on any remote branch (`git branch -r --contains HEAD` empty;
+  the permalink would 404), or the remote is not GitHub
