@@ -1394,7 +1394,7 @@
   :ensure (:host github :repo "manzaltu/claude-code-ide.el")
   :bind ("C-c C-'" . claude-code-ide-menu)
   :custom
-  (claude-code-ide-cli-path "~/.claude/local/claude")
+  (claude-code-ide-cli-path "~/.local/bin/claude")
   (claude-code-ide-window-width 120)
   :config
   (claude-code-ide-emacs-tools-setup))
