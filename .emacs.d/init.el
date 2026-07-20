@@ -1509,6 +1509,8 @@ bypassing `browse-url-browser-function'."
   (setq org-appear-autolinks t)
   (setq org-blank-before-new-entry '((heading . always) (plain-list-item . nil)))
   (setq org-cycle-separator-lines 1)
+  ;; org-babel: enable JS code block execution (ob-js runs via node)
+  (org-babel-do-load-languages 'org-babel-load-languages '((js . t)))
   (setq org-default-notes-file (concat (getenv "ORGSYNCROOT") "/org/journal.org"))
   (setq org-agenda-files (list (concat (getenv "ORGSYNCROOT") "/org/")))
   ;; ox (org-export) settings — must be evaluated after org is loaded
