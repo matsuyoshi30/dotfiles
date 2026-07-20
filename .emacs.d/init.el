@@ -761,7 +761,17 @@
 
 (use-package forge
   :ensure t
-  :after magit)
+  :after magit
+  :bind (:map forge-topic-mode-map
+         ("W" . forge-topic-open-link-in-webkit))
+  :config
+  (defun forge-topic-open-link-in-webkit ()
+    "Open the Markdown link at point with `xwidget-webkit-browse-url',
+bypassing `browse-url-browser-function'."
+    (interactive)
+    (unless (markdown-link-p)
+      (user-error "Point is not at a Markdown link or URL"))
+    (xwidget-webkit-browse-url (markdown-link-url))))
 
 (use-package magit-delta
   :ensure t
