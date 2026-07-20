@@ -759,6 +759,10 @@
   :init
   (setq-default magit-auto-revert-mode nil))
 
+(use-package forge
+  :ensure t
+  :after magit)
+
 (use-package magit-delta
   :ensure t
   :after magit
@@ -1153,7 +1157,7 @@
   :bind (:map markdown-mode-map
          ("C-c m" . mo-preview)))
 
-(setq auth-sources (list (expand-file-name "authinfo" user-emacs-directory)))
+(add-to-list 'auth-sources (expand-file-name "authinfo" user-emacs-directory) t)
 
 (use-package clutch
   :ensure t
