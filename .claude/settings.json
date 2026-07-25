@@ -76,6 +76,16 @@
           }
         ],
         "matcher": "*"
+      },
+      {
+        "hooks": [
+          {
+            "command": "bash \"$HOME/.claude/hooks/pr-conventions.sh\"",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": "Bash"
       }
     ],
     "SessionEnd": [
