@@ -10,6 +10,11 @@ RISK_ORDER = {"attention": 0, "low": 1, "safe": 2}
 # render() mid-flight and leave a header-only "0 findings" screen that looks
 # like a clean review. Validate here and warn (stderr is the skill's gate).
 REQUIRED_FINDING_KEYS = ("id", "severity", "summary", "location", "detail")
+# A finding's `anchor` ("h003:+124" / "h003:-45" / "h003:ctx120") names the exact
+# annotated-diff line it is about. Validating it here is what stops the reviewer's
+# most common error: describing unchanged context code as introduced by the diff.
+ANCHOR_RE = re.compile(r"^(h\d+):(\+|-|ctx)(\d+)$")
+MARKER_TYPE = {"+": "add", "-": "del", "ctx": "context"}
 # Replace the template's `= /*__REVIEW_DATA__*/ null;` with `= {json};`.
 # Including the trailing ` null` in the token means no stray ` null` is left
 # after substitution. The un-substituted template alone still opens as valid JS
@@ -36,6 +41,41 @@ def load_json_lenient(f):
     return json.loads(text)
 
 
+def check_anchor(f, gid, by_id):
+    """Warnings for one finding's `anchor`. Empty list = the anchor checks out.
+
+    Findings added by the plan cross-check are exempt: plan-crosscheck.md tells it
+    to point `location` at where a *missing* change belongs, so by construction
+    there is no changed line to anchor to.
+    """
+    if f.get("source") == "plan_crosscheck":
+        return []
+    where = f"group {gid!r} finding {f.get('id')!r}"
+    anchor = f.get("anchor")
+    if not isinstance(anchor, str) or not ANCHOR_RE.match(anchor):
+        return [f"{where}: missing/malformed anchor {anchor!r} "
+                f"(expected \"<hunk_id>:<+|-|ctx><line>\", e.g. \"h003:+124\")"]
+    hid, marker, no = ANCHOR_RE.match(anchor).groups()
+    # Re-pad "h1" to "h001". Without this an unpadded id reports as "unknown hunk",
+    # sending the fixer after a hunk that does not exist instead of adding zeros —
+    # and every false warning costs a full re-render round trip.
+    hid = f"h{int(hid[1:]):03d}"
+    hunk = by_id.get(hid)
+    if hunk is None:
+        return [f"{where}: anchor {anchor!r} references unknown hunk {hid}"]
+    want = MARKER_TYPE[marker]
+    if not any(l.get("type") == want and l.get("no") == int(no) for l in hunk["lines"]):
+        return [f"{where}: anchor {anchor!r} does not exist in {hid} "
+                f"(no {want} line numbered {no})"]
+    # The finding is about a line this diff did not touch. That is allowed, but it
+    # must be declared, so the human is not told existing code is a new change.
+    if want == "context" and f.get("pre_existing") is not True:
+        return [f"{where}: anchor {anchor!r} is an unchanged context line but "
+                f"pre_existing is not true — either re-anchor to a +/- line or "
+                f"set pre_existing and word it as an observation about existing code"]
+    return []
+
+
 def build_review_data(hunks_doc, review_doc):
     by_id = {h["id"]: h for h in hunks_doc["hunks"]}
     groups = []
@@ -60,6 +100,7 @@ def build_review_data(hunks_doc, review_doc):
             if bad:
                 warnings.append(
                     f"group {gid!r} finding {f.get('id')!r}: missing/non-string keys: {', '.join(bad)}")
+            warnings.extend(check_anchor(f, gid, by_id))
         resolved = []
         for hid in g.get("hunk_ids", []):
             if hid in by_id:

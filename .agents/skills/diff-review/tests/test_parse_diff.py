@@ -45,6 +45,62 @@ class TestParseDiff(unittest.TestCase):
         self.assertIn("[h001] src/foo.ts", self.annotated)
         self.assertIn("[h002] src/bar.ts", self.annotated)
 
+    def test_context_lines_are_marked_ctx_not_a_bare_space(self):
+        # The reported bug: with -U15 a hunk is mostly context, and the unified
+        # format's bare leading space is too weak a signal — the reviewer read
+        # unchanged code as part of the change. Context must be visibly "ctx".
+        self.assertRegex(self.annotated, r"(?m)^ctx\d+\s*\| ")
+        self.assertRegex(self.annotated, r"(?m)^\+\d+\s*\| ")
+        self.assertRegex(self.annotated, r"(?m)^-\d+\s*\| ")
+
+    def test_line_numbers_track_both_sides_independently(self):
+        # A del line carries its OLD-side number, add/context carry the NEW-side
+        # one. A single counter passes on simple hunks and drifts as soon as adds
+        # and dels interleave, silently mis-numbering every later line.
+        diff_text = (
+            "diff --git a/app.py b/app.py\n"
+            "index 1111111..2222222 100644\n"
+            "--- a/app.py\n"
+            "+++ b/app.py\n"
+            "@@ -10,5 +20,6 @@\n"
+            " keep_a\n"
+            "-drop_a\n"
+            "+add_a\n"
+            "+add_b\n"
+            " keep_b\n"
+            "-drop_b\n"
+            " keep_c\n"
+        )
+        data, annotated = run_parser(diff_text)
+        got = [(l["type"], l["no"]) for l in data["hunks"][0]["lines"]]
+        self.assertEqual(got, [
+            ("context", 20),  # old 10 / new 20
+            ("del", 11),      # old side only
+            ("add", 21),      # new side only
+            ("add", 22),
+            ("context", 23),  # old 12 / new 23
+            ("del", 13),
+            ("context", 24),  # old 14 / new 24
+        ])
+        # The header summary must agree with the body, or it becomes a second
+        # source of truth the reviewer can be misled by.
+        self.assertIn("added(new): 21-22 | deleted(old): 11,13", annotated)
+
+    def test_header_summary_says_none_when_a_side_is_empty(self):
+        # An add-only hunk must say "deleted(old): none" rather than printing an
+        # empty field the reviewer could read as a truncated list.
+        diff_text = (
+            "diff --git a/a.py b/a.py\n"
+            "index 1111111..2222222 100644\n"
+            "--- a/a.py\n"
+            "+++ b/a.py\n"
+            "@@ -1,1 +1,2 @@\n"
+            " keep\n"
+            "+added\n"
+        )
+        _, annotated = run_parser(diff_text)
+        self.assertIn("added(new): 2 | deleted(old): none", annotated)
+
     def test_dash_prefixed_content_not_treated_as_metadata(self):
         # Bug 1 regression: a deleted "-- comment" line gets a "-" del prefix
         # and becomes "--- comment", colliding with the "--- " metadata check.

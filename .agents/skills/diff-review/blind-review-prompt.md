@@ -12,7 +12,13 @@ sessions, or external services.
 
 Working directory: {cwd}
 
-Annotated diff (each hunk is prefixed with its id like `[h001]`):
+Annotated diff. Each hunk starts with a `### [h001] <file>` header that also lists
+the line numbers this hunk actually changed. Every body line is `<marker><line>| <code>`:
+
+- `+124| ...` — a line this diff ADDED (124 is its line number in the file now)
+- `-45| ...` — a line this diff DELETED (45 is its line number in the old file)
+- `ctx120| ...` — UNCHANGED surrounding code, shown only as context. This diff did
+  not touch it. Most of what follows is `ctx`, because context is deliberately wide.
 
 {annotated_diff}
 
@@ -37,9 +43,28 @@ Do the following:
      security or data integrity.
 3. Write a short `intent` sentence per group describing what the change does.
 4. For each concern, add a finding with `severity` (`info`/`warning`/`critical`),
-   a one-line `summary`, a `location` (`file:line`), and a `detail`. Prioritise
-   findings only defensible by reading existing code (e.g. misuse of an existing
-   function).
+   a one-line `summary`, a `location` (`file:line`), a `detail`, and an `anchor`.
+   Prioritise findings only defensible by reading existing code (e.g. misuse of an
+   existing function).
+
+   `anchor` is the single annotated-diff line the finding is about, copied verbatim
+   as `<hunk_id>:<marker><line>` — `"h003:+124"`, `"h003:-45"`, `"h003:ctx120"`.
+   Before writing it, look back at that exact line and confirm the marker.
+
+   Attribution rule — this is the one error to avoid. Reading the surrounding `ctx`
+   code is encouraged and is the main reason you have repo access, but a `ctx` line
+   is code that already existed. If your concern is about code that appears only on
+   `ctx` lines, you may NOT describe it as added, changed, introduced, removed, or
+   broken by this diff. Either:
+   - re-anchor to the `+`/`-` line that genuinely causes the problem (e.g. the new
+     call site is wrong, even though the function it calls is unchanged), or
+   - keep it as an observation about pre-existing code: set `"pre_existing": true`,
+     anchor at the `ctx` line, and word `summary`/`detail` as "the existing X does
+     Y", never "this change does Y".
+
+   `pre_existing` is optional and omitted above because that example concerns an
+   added line. Write `"pre_existing": true` on any finding whose defect lives in
+   unchanged code, even when you anchor it to a `+`/`-` line; omit the key otherwise.
 
 Output exactly one JSON object in a ```json fenced block, matching this schema:
 
@@ -58,6 +83,7 @@ Output exactly one JSON object in a ```json fenced block, matching this schema:
           "severity": "warning",
           "summary": "...",
           "location": "src/foo.ts:109",
+          "anchor": "h001:+109",
           "detail": "..."
         }
       ]
@@ -69,3 +95,6 @@ Output exactly one JSON object in a ```json fenced block, matching this schema:
 List groups highest-risk first. Every hunk id in the annotated diff must appear
 in exactly one group. Every group must carry a `findings` array — write `[]`
 when a group has no findings, never omit the key.
+
+A group's `risk` describes what this diff changed. A `pre_existing` finding does
+not raise it: unchanged code being imperfect is not a risk the diff introduced.

@@ -113,6 +113,9 @@ function renderFinding(f, g, gi, fi) {
   // Findings added later by plan cross-check have a different confidence basis
   // (not from the blind review), so flag them.
   if (f.source === "plan_crosscheck") box.append(el("span", { class: "badge" }, "added by plan cross-check"));
+  // Without this the human reads a finding about untouched surrounding code as a
+  // defect the diff introduced, and "fixes" something the diff never changed.
+  if (f.pre_existing === true) box.append(el("span", { class: "badge" }, "pre-existing code"));
   box.append(el("span", { html: " <strong>" + escapeHtml(f.summary) + "</strong>" }));
   box.append(el("div", {}, f.location + " — " + f.detail));
   if (f.plan_note) box.append(el("div", { class: "plan-note" }, "plan note: " + f.plan_note));
@@ -160,6 +163,9 @@ function generateFeedback() {
     // they read as adopted, and the next session might redo already-rejected work.
     if (st.verdict === "rejected") lines.push("- Verdict: rejected");
     lines.push(`- Location: ${f.location}`);
+    // Carry the scope into the feedback too: the next session acts on this text
+    // alone and would otherwise treat it as a regression it just introduced.
+    if (f.pre_existing === true) lines.push("- Scope: pre-existing code, not introduced by this diff");
     lines.push(`- Intent: ${st.group.intent}`);
     lines.push(`- Finding: ${f.detail}`);
     if (f.plan_note) lines.push(`- Note: ${f.plan_note}`);

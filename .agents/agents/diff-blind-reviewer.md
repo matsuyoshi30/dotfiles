@@ -21,5 +21,11 @@ search quotes matching lines from plan files without "reading" them; if a
 forbidden-path result appears, discard it unused. Work alone: do not consult
 other agents, sessions, or external services.
 
+The diff you are given marks unchanged context lines with a `ctx` prefix. Reading
+them is expected; attributing them to the diff is the error to avoid. Never
+describe `ctx` code as added, changed, or broken by this diff — anchor the finding
+to the `+`/`-` line that actually causes the problem, or declare it
+`"pre_existing": true` and word it as an observation about existing code.
+
 Follow the output schema and instructions in the dispatch prompt verbatim.
 Emit exactly one JSON object in a ```json fenced block. No prose outside it.

@@ -70,6 +70,8 @@ def parse(diff_text):
     section_path = None
     section_had_hunk = False
     combined = False
+    new_no = 0  # only meaningful inside a hunk body; reset by each "@@" header
+    old_no = 0
 
     def close():
         if current is not None:
@@ -122,6 +124,11 @@ def parse(diff_text):
                 "new_start": int(m.group(2)),
                 "lines": [],
             }
+            # Two independent counters: the new side advances on add+context, the
+            # old side on del+context. A single counter drifts as soon as adds and
+            # dels interleave, and every reported line number after that is wrong.
+            new_no = current["new_start"]
+            old_no = current["old_start"]
             continue
         if current is None:
             # Only interpret metadata lines while outside a hunk body.
@@ -136,13 +143,22 @@ def parse(diff_text):
         # Inside a hunk body, only a leading "+"/"-" marks add/del; nothing else
         # is read as text. This keeps a deleted "-- comment" line (which becomes
         # "--- comment") from being mistaken for a "--- " metadata line.
+        # "no" is the line number shown to the reviewer: the new-side number for
+        # add/context (what the file on disk has now) and the old-side number for
+        # del (which has no new-side number at all).
         if line.startswith("+"):
-            current["lines"].append({"type": "add", "content": line[1:]})
+            current["lines"].append({"type": "add", "no": new_no, "content": line[1:]})
+            new_no += 1
         elif line.startswith("-"):
-            current["lines"].append({"type": "del", "content": line[1:]})
+            current["lines"].append({"type": "del", "no": old_no, "content": line[1:]})
+            old_no += 1
         else:
             # Context line: strip one leading space (blank lines stay "").
-            current["lines"].append({"type": "context", "content": line[1:] if line.startswith(" ") else line})
+            current["lines"].append(
+                {"type": "context", "no": new_no,
+                 "content": line[1:] if line.startswith(" ") else line})
+            new_no += 1
+            old_no += 1
     close()
     close_section()
 
@@ -162,14 +178,46 @@ def parse(diff_text):
     }, combined
 
 
+# Marker printed in the annotated diff. Context gets a spelled-out "ctx" rather
+# than the unified format's bare leading space: with -U15 a hunk is mostly
+# context, and a one-space difference is too weak a signal — reviewers read
+# unchanged code as part of the change and report it as introduced by the diff.
+# "+"/"-" stay conventional (models pattern-match those reliably).
+MARKER = {"add": "+", "del": "-", "context": "ctx"}
+
+
+def compress(numbers):
+    """[3,4,5,9] -> "3-5,9". Used for the per-hunk changed-line summary."""
+    if not numbers:
+        return "none"
+    parts = []
+    start = prev = numbers[0]
+    for n in numbers[1:]:
+        if n == prev + 1:
+            prev = n
+            continue
+        parts.append(str(start) if start == prev else f"{start}-{prev}")
+        start = prev = n
+    parts.append(str(start) if start == prev else f"{start}-{prev}")
+    return ",".join(parts)
+
+
 def annotate(data):
     blocks = []
     for h in data["hunks"]:
         body = []
         for l in h["lines"]:
-            prefix = {"add": "+", "del": "-", "context": " "}[l["type"]]
-            body.append(prefix + l["content"])
-        blocks.append(f"### [{h['id']}] {h['file']}\n{h['header']}\n" + "\n".join(body))
+            # Anchor form "+124" / "-45" / "ctx120" — the reviewer copies this
+            # verbatim into a finding's `anchor`, so it must match render.py's
+            # parser exactly.
+            body.append(f"{MARKER[l['type']] + str(l['no']):<8}| {l['content']}")
+        added = compress([l["no"] for l in h["lines"] if l["type"] == "add"])
+        deleted = compress([l["no"] for l in h["lines"] if l["type"] == "del"])
+        # Ground truth the reviewer can self-check against without re-scanning
+        # ~30 context lines per hunk.
+        head = (f"### [{h['id']}] {h['file']} | "
+                f"added(new): {added} | deleted(old): {deleted}")
+        blocks.append(f"{head}\n{h['header']}\n" + "\n".join(body))
     return "\n\n".join(blocks)
 
 

@@ -8,10 +8,18 @@ there is no plan, skip this step entirely, set `plan_checked: false` /
 The blind wording is immutable: never edit an existing finding's `summary`,
 `detail`, `location`, or its group during the cross-check. The cross-check may
 only (a) change `severity` as the classifications allow, (b) add a `plan_note`,
-(c) drop a finding under the resolved rule, or (d) add a new finding tagged
-`source: "plan_crosscheck"`. The HTML renders summary/detail separately from
+(c) drop a finding under the resolved rule, (d) add a new finding tagged
+`source: "plan_crosscheck"`, or (e) correct `anchor` / set `pre_existing`
+(Step 5's rule below). The HTML renders summary/detail separately from
 plan_note precisely so the human can tell what a plan-blind reader concluded
 from what the plan added; rewriting blind wording destroys that separation.
+
+A finding you add here needs no `anchor`: the classification below deliberately
+points `location` at where a *missing* change belongs, which is not a line the
+diff contains. render.py exempts `source: "plan_crosscheck"` findings from the
+anchor check for exactly this reason. If your new finding does concern a line the
+diff actually changed, give the `anchor` anyway — it costs nothing and keeps the
+location verifiable.
 
 Only some findings end up with a `plan_note` (unrelated ones get none) — the
 per-finding key optionality in review.json is intended.
@@ -49,6 +57,10 @@ The five classifications:
 After the cross-check (new findings AND severity raises alike), re-derive each
 affected group's `risk`. The blind stage derives risk from the changes; findings
 map into that same scale as: a group carrying any `critical` or `warning`
-finding is at least `attention`; `info`-only findings do not raise risk.
+finding is at least `attention`; `info`-only findings do not raise risk. Neither
+do `pre_existing` findings at any severity — risk describes what this diff
+changed, and the blind stage already scored the group that way, so re-deriving
+from a pre-existing finding would make the same group's risk depend on whether a
+plan happened to exist.
 
 Finally add `plan_checked: true` and `plan_path` to review.json.

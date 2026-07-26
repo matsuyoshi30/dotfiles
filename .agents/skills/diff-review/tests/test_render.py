@@ -13,10 +13,12 @@ HUNKS = {
     "hunks": [
         {"id": "h001", "file": "src/foo.ts", "header": "@@ -1,2 +1,3 @@",
          "old_start": 1, "new_start": 1,
-         "lines": [{"type": "del", "content": "old"}, {"type": "add", "content": "new"}]},
+         "lines": [{"type": "del", "no": 1, "content": "old"},
+                   {"type": "add", "no": 1, "content": "new"},
+                   {"type": "context", "no": 2, "content": "untouched"}]},
         {"id": "h002", "file": "src/foo.ts", "header": "@@ -9,1 +9,2 @@",
          "old_start": 9, "new_start": 9,
-         "lines": [{"type": "add", "content": "extra"}]},
+         "lines": [{"type": "add", "no": 9, "content": "extra"}]},
     ],
 }
 REVIEW = {
@@ -143,6 +145,64 @@ class TestRender(unittest.TestCase):
         self.assertIn("findings[] missing", proc.stderr)
         self.assertIn("missing/non-string keys: summary", proc.stderr)
         self.assertIn("window.REVIEW_DATA", html)  # still renders; gate catches it
+
+    def blind_finding(self, **over):
+        """REVIEW with g2's finding turned into a blind (non-crosscheck) one."""
+        review = json.loads(json.dumps(REVIEW))
+        f = review["groups"][1]["findings"][0]
+        del f["source"]
+        f.update(over)
+        return review
+
+    def test_no_warning_on_anchor_pointing_at_a_changed_line(self):
+        proc, _ = run(HUNKS, self.blind_finding(anchor="h001:+1"))
+        self.assertEqual(proc.stderr, "")
+
+    def test_warns_when_anchor_is_a_context_line_without_pre_existing(self):
+        # The reported bug: a finding about untouched surrounding code presented
+        # as something the diff introduced.
+        proc, _ = run(HUNKS, self.blind_finding(anchor="h001:ctx2"))
+        self.assertEqual(proc.returncode, 0)
+        self.assertIn("unchanged context line", proc.stderr)
+
+    def test_context_anchor_allowed_once_declared_pre_existing(self):
+        proc, html = run(HUNKS, self.blind_finding(anchor="h001:ctx2", pre_existing=True))
+        self.assertEqual(proc.stderr, "")
+        # Assert on the embedded payload, not on the "pre-existing code" badge
+        # text: that string is an unconditional template literal, so matching it
+        # in the HTML would pass even when no finding carries the flag.
+        payload = html[html.index("window.REVIEW_DATA"):html.index("</script>", html.index("window.REVIEW_DATA"))]
+        self.assertIn('"pre_existing": true', payload)
+
+    def test_warns_on_missing_and_malformed_anchor(self):
+        for over in ({}, {"anchor": "src/foo.ts:1"}, {"anchor": "h001:1"}):
+            with self.subTest(over=over):
+                proc, _ = run(HUNKS, self.blind_finding(**over))
+                self.assertIn("missing/malformed anchor", proc.stderr)
+
+    def test_warns_on_anchor_to_unknown_hunk_or_nonexistent_line(self):
+        proc, _ = run(HUNKS, self.blind_finding(anchor="h099:+1"))
+        self.assertIn("unknown hunk h099", proc.stderr)
+        # h001 has an add at line 1, but not at 77.
+        proc, _ = run(HUNKS, self.blind_finding(anchor="h001:+77"))
+        self.assertIn("does not exist in h001", proc.stderr)
+        # h001 line 1 exists as both del and add — the marker must still be checked.
+        proc, _ = run(HUNKS, self.blind_finding(anchor="h002:-9"))
+        self.assertIn("no del line numbered 9", proc.stderr)
+
+    def test_unpadded_hunk_id_in_anchor_still_resolves(self):
+        # "h1" instead of "h001" would report as "unknown hunk", sending the fixer
+        # after a hunk that does not exist. Every false warning trips the skill's
+        # "never open on warnings" gate and costs a re-render round trip.
+        proc, _ = run(HUNKS, self.blind_finding(anchor="h1:+1"))
+        self.assertEqual(proc.stderr, "")
+
+    def test_plan_crosscheck_finding_is_exempt_from_the_anchor_check(self):
+        # plan-crosscheck.md points `location` at where a MISSING change belongs,
+        # so there is no changed line to anchor to. Warning here would trip the
+        # skill's "never open on warnings" gate and hide the whole review.
+        proc, _ = run(HUNKS, REVIEW)  # REVIEW's finding has source: plan_crosscheck
+        self.assertEqual(proc.stderr, "")
 
     def test_warns_on_uncovered_hunk(self):
         # Leaving h002 out of every group emits a stderr warning about the gap.

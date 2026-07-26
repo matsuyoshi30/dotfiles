@@ -174,12 +174,31 @@ cat /tmp/dr-render-stderr.txt   # must be empty — see validation loop below
 ```
 
 Validation loop: render.py prints a `warning:` line on stderr when a hunk is in
-no group or a group references an unknown hunk id (captured in
-/tmp/dr-render-stderr.txt above so "no warnings" is verifiable, not eyeballed).
-If either warning appears, fix
+no group, a group references an unknown hunk id, or a finding's `anchor` does not
+check out (captured in /tmp/dr-render-stderr.txt above so "no warnings" is
+verifiable, not eyeballed). If a warning appears, fix
 `/tmp/dr-review.json` (assign the missing hunks to a group / correct the ids) and
 re-run render.py. Only open the HTML once render.py runs warning-free — a warning
 means the human would finish the review without seeing part of the diff.
+
+Anchor warnings are the one case where you must re-read the diff rather than just
+edit the ids. `anchor` names the annotated-diff line a finding is about
+(`h003:+124` / `h003:-45` / `h003:ctx120`); a `ctx` anchor means the blind reviewer
+is concerned about code this diff never touched. Look at /tmp/dr-annotated.txt and
+decide:
+
+- The concern really is caused by a changed line (the reviewer just cited the wrong
+  one) -> correct `anchor` to that `+`/`-` line.
+- The defect lives in unchanged code -> set `"pre_existing": true`. It then renders
+  with a "pre-existing code" badge so the human is not told existing code is a new
+  regression.
+
+Blind wording stays immutable either way (see `plan-crosscheck.md`) — you are
+correcting a checkable fact about the diff, not softening the finding. If a
+finding's `summary`/`detail` asserts the diff introduced something and no changed
+line supports that, keep the finding, set `pre_existing`, and say in your summary
+to the user how many findings you re-scoped this way.
+
 A Python traceback in the stderr file is a different failure: render.py itself
 died (non-zero exit), so suspect the structure of review.json rather than hunk
 assignments, and do not open the partially written HTML.
