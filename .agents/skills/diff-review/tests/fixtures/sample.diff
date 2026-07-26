@@ -1,0 +1,19 @@
+diff --git a/src/foo.ts b/src/foo.ts
+index 1111111..2222222 100644
+--- a/src/foo.ts
++++ b/src/foo.ts
+@@ -1,4 +1,5 @@ export function foo
+ import x from 'y';
+-const a = 1;
++const a = 2;
++const b = 3;
+ return a;
+diff --git a/src/bar.ts b/src/bar.ts
+index 3333333..4444444 100644
+--- a/src/bar.ts
++++ b/src/bar.ts
+@@ -10,3 +10,3 @@ class Bar
+ method() {
+-  return old();
++  return neu();
+ }

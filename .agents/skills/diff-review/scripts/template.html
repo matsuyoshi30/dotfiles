@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diff Review</title>
+<style>
+:root { color-scheme: light dark; }
+body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 0; padding: 24px; line-height: 1.6; }
+header.top { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; border-bottom: 2px solid currentColor; padding-bottom: 12px; }
+header.top .brand { font-weight: 700; letter-spacing: .1em; font-size: 13px; opacity: .6; }
+header.top .stats { font-variant-numeric: tabular-nums; opacity: .8; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+.risk-attention { background: #fde2e1; color: #9b2c2c; }
+.risk-low { background: #e2ecfd; color: #2c4c9b; }
+.risk-safe { background: #e3f4e2; color: #2c7a2c; }
+.sev-critical { background: #9b2c2c; color: #fff; }
+.sev-warning { background: #fde2e1; color: #9b2c2c; }
+.sev-info { background: #eee; color: #555; }
+.group { border: 1px solid #ccc; border-radius: 10px; margin: 16px 0; overflow: hidden; }
+.group > summary { list-style: none; cursor: pointer; padding: 14px 16px; display: flex; gap: 12px; align-items: center; }
+.group > summary::-webkit-details-marker { display: none; }
+.group .title { font-weight: 700; font-size: 16px; }
+.group .intent { opacity: .75; font-size: 14px; }
+.group .body { padding: 0 16px 16px; }
+.hunk { margin: 12px 0; border: 1px solid #ddd; border-radius: 8px; overflow-x: auto; }
+.hunk .hheader { padding: 6px 10px; font: 12px ui-monospace, monospace; opacity: .7; border-bottom: 1px solid #ddd; }
+pre.diff { margin: 0; padding: 8px 10px; font: 13px/1.5 ui-monospace, monospace; white-space: pre; }
+pre.diff .add { background: rgba(46,160,67,.15); display: block; }
+pre.diff .del { background: rgba(248,81,73,.15); display: block; }
+pre.diff .context { display: block; }
+.finding { border-left: 3px solid #9b2c2c; padding: 8px 12px; margin: 10px 0; background: rgba(155,44,44,.05); }
+.finding .plan-note { font-size: 13px; opacity: .8; margin-top: 4px; }
+.finding textarea { width: 100%; box-sizing: border-box; margin-top: 6px; }
+footer.bar { position: sticky; bottom: 0; border-top: 2px solid currentColor; padding: 12px 0; margin-top: 24px; background: Canvas; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+button { font: inherit; padding: 6px 14px; border-radius: 8px; border: 1px solid #888; cursor: pointer; }
+textarea#feedback { width: 100%; min-height: 200px; font: 13px ui-monospace, monospace; margin-top: 12px; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<footer class="bar">
+  <span id="counts"></span>
+  <button id="gen">Generate feedback</button>
+  <button id="copy">Copy to clipboard</button>
+</footer>
+<textarea id="feedback" placeholder="Output appears here after Generate feedback"></textarea>
+<script>
+window.REVIEW_DATA = /*__REVIEW_DATA__*/ null;
+const RISK_LABEL = { attention: "Attention", low: "Low risk", safe: "Safe" };
+function el(tag, attrs = {}, children = []) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") n.className = v; else if (k === "html") n.innerHTML = v; else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(children)) n.append(c);
+  return n;
+}
+function renderDiff(hunk) {
+  const pre = el("pre", { class: "diff" });
+  for (const l of hunk.lines) {
+    const prefix = l.type === "add" ? "+" : l.type === "del" ? "-" : " ";
+    pre.append(el("span", { class: l.type }, prefix + l.content));
+  }
+  const box = el("div", { class: "hunk" });
+  box.append(el("div", { class: "hheader" }, hunk.header + "  " + hunk.file));
+  box.append(pre);
+  return box;
+}
+function render() {
+  const data = window.REVIEW_DATA;
+  const app = document.getElementById("app");
+  const s = data.meta.stats;
+  const planText = data.meta.plan_checked ? ("plan cross-check: " + data.meta.plan_path) : "plan cross-check: not run";
+  app.append(el("header", { class: "top" }, [
+    el("span", { class: "brand" }, "DIFF REVIEW"),
+    el("span", { class: "stats" }, `${s.files} files / ${s.hunks} hunks +${s.added} -${s.removed}`),
+    el("span", { class: "badge" }, planText),
+  ]));
+  for (const g of data.groups) {
+    const det = el("details", { class: "group" });
+    det.append(el("summary", {}, [
+      el("span", { class: "badge risk-" + g.risk }, RISK_LABEL[g.risk] || g.risk),
+      el("span", { class: "title" }, g.title),
+      el("span", { class: "intent" }, g.intent),
+      el("span", { class: "badge" }, `${g.findings.length} findings`),
+    ]));
+    const body = el("div", { class: "body" });
+    for (const h of g.hunks) body.append(renderDiff(h));
+    for (const f of g.findings) body.append(renderFinding(f, g));
+    det.append(body);
+    app.append(det);
+  }
+  updateCounts();
+}
+const STATE = {}; // "<group.id>/<finding.id>" -> { verdict: "adopted"|"rejected"|null, comment: "", finding, group }
+function renderFinding(f, g) {
+  // finding.id is only assumed unique within a group (a reviewer may restart at
+  // f1 per group). Namespace by group id to avoid STATE overwrites and radio
+  // name collisions.
+  const key = g.id + "/" + f.id;
+  STATE[key] = { verdict: null, comment: "", finding: f, group: g };
+  const box = el("div", { class: "finding" });
+  box.append(el("span", { class: "badge sev-" + f.severity }, f.severity));
+  // Findings added later by plan cross-check have a different confidence basis
+  // (not from the blind review), so flag them.
+  if (f.source === "plan_crosscheck") box.append(el("span", { class: "badge" }, "added by plan cross-check"));
+  box.append(el("span", { html: " <strong>" + escapeHtml(f.summary) + "</strong>" }));
+  box.append(el("div", {}, f.location + " — " + f.detail));
+  if (f.plan_note) box.append(el("div", { class: "plan-note" }, "plan note: " + f.plan_note));
+  const controls = el("div");
+  for (const v of ["adopted", "rejected"]) {
+    const label = el("label", {}, [
+      (() => { const r = el("input", { type: "radio", name: "v-" + key });
+               r.addEventListener("change", () => { STATE[key].verdict = v; updateCounts(); }); return r; })(),
+      v === "adopted" ? " Adopt" : " Reject",
+    ]);
+    controls.append(label);
+  }
+  box.append(controls);
+  const ta = el("textarea", { rows: "2", placeholder: "Comment (optional)" });
+  ta.addEventListener("input", () => { STATE[key].comment = ta.value; updateCounts(); });
+  box.append(ta);
+  return box;
+}
+function escapeHtml(s) {
+  return s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+}
+function updateCounts() {
+  let adopted = 0, rejected = 0, pending = 0, comments = 0;
+  for (const st of Object.values(STATE)) {
+    if (st.verdict === "adopted") adopted++;
+    else if (st.verdict === "rejected") rejected++;
+    else pending++;
+    if (st.comment.trim()) comments++;
+  }
+  document.getElementById("counts").textContent =
+    `Adopted ${adopted} / Rejected ${rejected} / Pending ${pending} / Comments ${comments}`;
+}
+function generateFeedback() {
+  const items = Object.values(STATE).filter(st => st.verdict === "adopted" || st.comment.trim());
+  const lines = ["# Review feedback", "", "## Request",
+    "- Please assess whether each finding below is valid.",
+    "- If any resolution is unclear, confirm before implementing.", ""];
+  items.forEach((st, i) => {
+    const f = st.finding;
+    lines.push(`### ${i + 1}. [${f.severity}] ${f.summary}`);
+    // Rejected-with-comment findings are included too. Without an explicit verdict
+    // they read as adopted, and the next session might redo already-rejected work.
+    if (st.verdict === "rejected") lines.push("- Verdict: rejected");
+    lines.push(`- Location: ${f.location}`);
+    lines.push(`- Intent: ${st.group.intent}`);
+    lines.push(`- Finding: ${f.detail}`);
+    if (f.plan_note) lines.push(`- Note: ${f.plan_note}`);
+    if (st.comment.trim()) lines.push(`- Human comment: ${st.comment.trim()}`);
+    lines.push("");
+  });
+  return lines.join("\n");
+}
+document.getElementById("gen").addEventListener("click", () => {
+  document.getElementById("feedback").value = generateFeedback();
+});
+document.getElementById("copy").addEventListener("click", async () => {
+  await navigator.clipboard.writeText(document.getElementById("feedback").value);
+});
+render();
+</script>
+</body>
+</html>
