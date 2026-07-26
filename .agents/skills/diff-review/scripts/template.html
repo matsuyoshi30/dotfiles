@@ -72,12 +72,20 @@ function render() {
   const app = document.getElementById("app");
   const s = data.meta.stats;
   const planText = data.meta.plan_checked ? ("plan cross-check: " + data.meta.plan_path) : "plan cross-check: not run";
-  app.append(el("header", { class: "top" }, [
+  const headerParts = [
     el("span", { class: "brand" }, "DIFF REVIEW"),
     el("span", { class: "stats" }, `${s.files} files / ${s.hunks} hunks +${s.added} -${s.removed}`),
     el("span", { class: "badge" }, planText),
-  ]));
-  for (const g of data.groups) {
+  ];
+  // Pure renames / mode changes / binary files produce no hunks and would
+  // otherwise be invisible; surface them so the screen isn't mistaken for
+  // the whole change.
+  if (s.no_hunk_files && s.no_hunk_files.length) {
+    headerParts.push(el("span", { class: "badge", title: s.no_hunk_files.join("\n") },
+      `+${s.no_hunk_files.length} change(s) with no hunks (hover to list)`));
+  }
+  app.append(el("header", { class: "top" }, headerParts));
+  data.groups.forEach((g, gi) => {
     const det = el("details", { class: "group" });
     det.append(el("summary", {}, [
       el("span", { class: "badge risk-" + g.risk }, RISK_LABEL[g.risk] || g.risk),
@@ -87,18 +95,18 @@ function render() {
     ]));
     const body = el("div", { class: "body" });
     for (const h of g.hunks) body.append(renderDiff(h));
-    for (const f of g.findings) body.append(renderFinding(f, g));
+    g.findings.forEach((f, fi) => body.append(renderFinding(f, g, gi, fi)));
     det.append(body);
     app.append(det);
-  }
+  });
   updateCounts();
 }
-const STATE = {}; // "<group.id>/<finding.id>" -> { verdict: "adopted"|"rejected"|null, comment: "", finding, group }
-function renderFinding(f, g) {
-  // finding.id is only assumed unique within a group (a reviewer may restart at
-  // f1 per group). Namespace by group id to avoid STATE overwrites and radio
-  // name collisions.
-  const key = g.id + "/" + f.id;
+const STATE = {}; // "<groupIndex>/<findingIndex>" -> { verdict: "adopted"|"rejected"|null, comment: "", finding, group }
+function renderFinding(f, g, gi, fi) {
+  // Key by array position, not by ids: reviewer-supplied ids can collide
+  // (duplicate group ids happened in practice), and colliding keys silently
+  // merge radio groups and drop adopted findings from the feedback.
+  const key = gi + "/" + fi;
   STATE[key] = { verdict: null, comment: "", finding: f, group: g };
   const box = el("div", { class: "finding" });
   box.append(el("span", { class: "badge sev-" + f.severity }, f.severity));
@@ -124,7 +132,7 @@ function renderFinding(f, g) {
   return box;
 }
 function escapeHtml(s) {
-  return s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  return String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 }
 function updateCounts() {
   let adopted = 0, rejected = 0, pending = 0, comments = 0;
@@ -139,9 +147,12 @@ function updateCounts() {
 }
 function generateFeedback() {
   const items = Object.values(STATE).filter(st => st.verdict === "adopted" || st.comment.trim());
+  const pending = Object.values(STATE).filter(st => !st.verdict).length;
   const lines = ["# Review feedback", "", "## Request",
     "- Please assess whether each finding below is valid.",
     "- If any resolution is unclear, confirm before implementing.", ""];
+  // A mid-review export must say so, or unreviewed findings silently vanish.
+  if (pending > 0) lines.splice(2, 0, `Note: ${pending} finding(s) still pending (not reviewed).`, "");
   items.forEach((st, i) => {
     const f = st.finding;
     lines.push(`### ${i + 1}. [${f.severity}] ${f.summary}`);
@@ -161,7 +172,15 @@ document.getElementById("gen").addEventListener("click", () => {
   document.getElementById("feedback").value = generateFeedback();
 });
 document.getElementById("copy").addEventListener("click", async () => {
-  await navigator.clipboard.writeText(document.getElementById("feedback").value);
+  const ta = document.getElementById("feedback");
+  try {
+    await navigator.clipboard.writeText(ta.value);
+  } catch (e) {
+    // clipboard API can be denied on file:// — leave the text selected so a
+    // manual Cmd/Ctrl+C still works instead of failing silently.
+    ta.focus();
+    ta.select();
+  }
 });
 render();
 </script>

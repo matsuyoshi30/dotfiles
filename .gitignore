@@ -1,6 +1,7 @@
 .DS_Store
 .agents/skills/.system/
 .zsh/.zcompdump*
+__pycache__/
 
 .pi/agent/auth.json
 .pi/agent/trust.json

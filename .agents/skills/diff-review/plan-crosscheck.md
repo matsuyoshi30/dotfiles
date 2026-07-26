@@ -5,6 +5,17 @@ apply one of the classifications below, and add a `plan_note` to the finding. If
 there is no plan, skip this step entirely, set `plan_checked: false` /
 `plan_path: null`, and pass findings through unchanged.
 
+The blind wording is immutable: never edit an existing finding's `summary`,
+`detail`, `location`, or its group during the cross-check. The cross-check may
+only (a) change `severity` as the classifications allow, (b) add a `plan_note`,
+(c) drop a finding under the resolved rule, or (d) add a new finding tagged
+`source: "plan_crosscheck"`. The HTML renders summary/detail separately from
+plan_note precisely so the human can tell what a plan-blind reader concluded
+from what the plan added; rewriting blind wording destroys that separation.
+
+Only some findings end up with a `plan_note` (unrelated ones get none) — the
+per-finding key optionality in review.json is intended.
+
 `severity` has three levels, `critical` > `warning` > `info` (`info` is the floor).
 The five classifications:
 
@@ -29,6 +40,15 @@ The five classifications:
   finding, tag it `source: "plan_crosscheck"`, and place it inside some group's
   `findings[]`. Set `severity` by the real harm of the discrepancy (a failure to
   meet a plan MUST / required behavior is `critical`~`warning`; a minor deviation is
-  `info`)
+  `info`). Write the plan's supporting basis in `plan_note`, like the other
+  classifications. When the finding has no corresponding hunk (missing implementation),
+  place it in the group whose intent is closest to where the change should have
+  landed (same file / feature); set `location` to the file:line where the change
+  belongs
+
+After the cross-check (new findings AND severity raises alike), re-derive each
+affected group's `risk`. The blind stage derives risk from the changes; findings
+map into that same scale as: a group carrying any `critical` or `warning`
+finding is at least `attention`; `info`-only findings do not raise risk.
 
 Finally add `plan_checked: true` and `plan_path` to review.json.

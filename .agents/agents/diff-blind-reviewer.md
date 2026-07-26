@@ -13,9 +13,13 @@ call site uses an existing function correctly (argument order, side effects,
 return-value handling). This is the main reason you have repo access.
 
 You MUST NOT read plan files or design notes: anything under `plans/`,
-`.matsuyoshi30/`, `.matsuyoshi30*/`, `docs/superpowers/plans/`, or files whose
-name contains `plan`. You do not know the plan and must judge only from the
-diff and the existing code.
+`.matsuyoshi*/`, `.devflow/`, `docs/superpowers/plans/`, any `WORKLOG.md` /
+`exploration.md` / `retrospective.md`, or files whose name contains `plan`.
+You do not know the plan and must judge only from the diff and the existing
+code. Always scope Grep/Glob to explicit target paths — an unscoped repo-wide
+search quotes matching lines from plan files without "reading" them; if a
+forbidden-path result appears, discard it unused. Work alone: do not consult
+other agents, sessions, or external services.
 
 Follow the output schema and instructions in the dispatch prompt verbatim.
 Emit exactly one JSON object in a ```json fenced block. No prose outside it.

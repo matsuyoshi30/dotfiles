@@ -1,8 +1,14 @@
 You are reviewing the following diff. You do NOT know the plan behind it. Do not
-read plan files or design notes: anything under `plans/`, `.matsuyoshi30/`,
-`.matsuyoshi30*/`, `docs/superpowers/plans/`, or files whose name contains `plan`.
+read plan files or design notes: anything under `plans/`, `.matsuyoshi*/`,
+`.devflow/`, `docs/superpowers/plans/`, any `WORKLOG.md` / `exploration.md` /
+`retrospective.md`, or files whose name contains `plan`.
 You MAY read other existing repository files to check how the changed code uses
-unchanged code.
+unchanged code. When you use Grep or Glob, always scope them to explicit target
+paths — never run a repo-wide unscoped search: search results quote matching
+lines, so an unscoped Grep hands you the plan's content without "reading" it.
+If a result from a forbidden path ever appears, discard it unused. Work alone,
+from the diff and the repository files only: do not consult other agents,
+sessions, or external services.
 
 Working directory: {cwd}
 
@@ -61,4 +67,5 @@ Output exactly one JSON object in a ```json fenced block, matching this schema:
 ```
 
 List groups highest-risk first. Every hunk id in the annotated diff must appear
-in exactly one group.
+in exactly one group. Every group must carry a `findings` array — write `[]`
+when a group has no findings, never omit the key.

@@ -33,11 +33,11 @@ REVIEW = {
 }
 
 
-def run(hunks_doc, review_doc):
+def run(hunks_doc, review_doc, review_text=None):
     with tempfile.TemporaryDirectory() as d:
         hp, rp, op = Path(d) / "h.json", Path(d) / "r.json", Path(d) / "o.html"
         hp.write_text(json.dumps(hunks_doc))
-        rp.write_text(json.dumps(review_doc))
+        rp.write_text(review_text if review_text is not None else json.dumps(review_doc))
         proc = subprocess.run(
             ["python3", str(SCRIPT), "--hunks", str(hp), "--review", str(rp),
              "--template", str(TEMPLATE), "--out", str(op)],
@@ -81,6 +81,68 @@ class TestRender(unittest.TestCase):
     def test_source_badge_label_present(self):
         # A source: plan_crosscheck finding gets its badge label embedded.
         self.assertIn("added by plan cross-check", self.html)
+
+    def test_accepts_fenced_review_json(self):
+        # A review.json saved with the LLM's ```json fence markers still loads.
+        fenced = "```json\n" + json.dumps(REVIEW) + "\n```\n"
+        proc, html = run(HUNKS, None, review_text=fenced)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertIn("Attention-worthy core change", html)
+
+    def test_prefers_parseable_fence_over_earlier_prose_fence(self):
+        # An LLM reply may hold a prose example fence before the real review;
+        # the loader must not blindly grab the first fence.
+        text = ("Notes first:\n```\njust prose, not json\n```\n"
+                "The review:\n```json\n" + json.dumps(REVIEW) + "\n```\n")
+        proc, html = run(HUNKS, None, review_text=text)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertIn("Attention-worthy core change", html)
+
+    def test_all_angle_brackets_escaped_in_payload(self):
+        # An unpaired "<!--" or "<script" in diff/finding text puts the HTML
+        # parser into (double-)escaped script state and the page renders blank.
+        # Every "<" in the embedded JSON must be escaped, not just "</".
+        hunks = json.loads(json.dumps(HUNKS))
+        hunks["hunks"][0]["lines"][0]["content"] = "<!-- opening comment <script"
+        review = json.loads(json.dumps(REVIEW))
+        review["groups"][1]["findings"][0]["detail"] = "the `<!--` here is never closed"
+        proc, html = run(hunks, review)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        start = html.index("window.REVIEW_DATA")
+        end = html.index("</script>", start)
+        payload = html[start:end]
+        self.assertNotIn("<!--", payload)
+        self.assertNotIn("<script", payload)
+        self.assertIn("\\u003c!--", payload)
+
+    def test_warns_on_duplicate_hunk_assignment(self):
+        review = json.loads(json.dumps(REVIEW))
+        review["groups"][0]["hunk_ids"] = ["h001", "h002"]  # h001 also in g2
+        proc, _ = run(HUNKS, review)
+        self.assertEqual(proc.returncode, 0)
+        self.assertIn("more than one group", proc.stderr)
+
+    def test_warns_on_unknown_risk_and_duplicate_group_id(self):
+        review = json.loads(json.dumps(REVIEW))
+        review["groups"][0]["risk"] = "atention"  # typo
+        review["groups"][1]["id"] = review["groups"][0]["id"]
+        proc, _ = run(HUNKS, review)
+        self.assertEqual(proc.returncode, 0)
+        self.assertIn("unknown risk", proc.stderr)
+        self.assertIn("duplicate group id", proc.stderr)
+
+    def test_warns_on_missing_findings_and_finding_keys(self):
+        # A group without findings[] (or a finding missing summary) used to
+        # abort render() client-side, leaving a header-only page that looks
+        # like a clean "no findings" review — with exit 0 and empty stderr.
+        review = json.loads(json.dumps(REVIEW))
+        del review["groups"][0]["findings"]
+        del review["groups"][1]["findings"][0]["summary"]
+        proc, html = run(HUNKS, review)
+        self.assertEqual(proc.returncode, 0)
+        self.assertIn("findings[] missing", proc.stderr)
+        self.assertIn("missing/non-string keys: summary", proc.stderr)
+        self.assertIn("window.REVIEW_DATA", html)  # still renders; gate catches it
 
     def test_warns_on_uncovered_hunk(self):
         # Leaving h002 out of every group emits a stderr warning about the gap.
