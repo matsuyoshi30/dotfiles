@@ -23,3 +23,9 @@ key = "f5"
 type = "shell"
 command = "herdr server reload-config"
 description = "reload config"
+
+[[keys.command]]
+key = "f6"
+type = "shell"
+command = "herdr-switch"
+description = "focus next blocked/done agent"

@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+#
+# herdr-switch
+#
+# 注意が必要な herdr の agent ペインへフォーカスを飛ばす。blocked (agent が
+# 入力待ちで止まっている) を done (完了したがまだ見ていない) より優先し、
+# 同じ状態のペインが複数あるときは連打で順番に回る。
+#
+# agent_status は herdr 側の 5 値 (idle / working / blocked / done / unknown)。
+# done は「idle かつ未読」なので、フォーカスして目を通した時点で idle に落ちて
+# 候補から消える。つまり連打していけば注意キューが自然に空になる。
+#
+# 出力は herdr notification 経由。config.toml の type = "shell" は
+# /bin/sh -lc でバックグラウンド実行されるため、echo は誰にも届かない。
+set -euo pipefail
+
+AGENTS_JSON=$(herdr agent list)
+
+# blocked が1つでもあれば done は候補にしない (優先度つきの注意キュー)。
+PANE_IDS=()
+for status in blocked done; do
+  while IFS= read -r line; do
+    [ -n "$line" ] && PANE_IDS+=("$line")
+  done < <(printf '%s' "$AGENTS_JSON" |
+    jq -r --arg status "$status" '.result.agents[] | select(.agent_status == $status) | .pane_id')
+  if [ "${#PANE_IDS[@]}" -gt 0 ]; then
+    break
+  fi
+done
+
+if [ "${#PANE_IDS[@]}" -eq 0 ]; then
+  herdr notification show "herdr-switch" --body "blocked / done の agent はいません" --sound none >/dev/null
+  exit 0
+fi
+
+# focused はセッション全体で高々1つ。agent 以外のペイン (素のシェル等) に
+# フォーカスがあるときは空になるので、その場合は候補の先頭へ飛ぶ。
+CURRENT=$(printf '%s' "$AGENTS_JSON" | jq -r '.result.agents[] | select(.focused == true) | .pane_id')
+
+NEXT_INDEX=0
+for i in "${!PANE_IDS[@]}"; do
+  if [ "${PANE_IDS[$i]}" = "$CURRENT" ]; then
+    NEXT_INDEX=$(((i + 1) % ${#PANE_IDS[@]}))
+    break
+  fi
+done
+
+herdr agent focus "${PANE_IDS[$NEXT_INDEX]}" >/dev/null
