@@ -76,12 +76,45 @@ def check_anchor(f, gid, by_id):
     return []
 
 
+def number_lines(hunk):
+    """Add `old_no`/`new_no` to every line of one hunk. Returns warnings.
+
+    hunks.json carries a single `no` per line — the new-side number for
+    add/context, the old-side number for del — because the annotated diff the
+    reviewer reads shows one number per line. The HTML gutter shows both sides,
+    and they diverge as soon as adds and dels are unbalanced, so re-derive them
+    here from the hunk's own start offsets. This only appends keys: `no` and
+    `type` are what `check_anchor` matches findings against and must not move.
+    """
+    old_no, new_no = hunk["old_start"], hunk["new_start"]
+    warnings = []
+    for l in hunk["lines"]:
+        if l["type"] == "add":
+            l["old_no"], l["new_no"] = None, new_no
+            own, new_no = new_no, new_no + 1
+        elif l["type"] == "del":
+            l["old_no"], l["new_no"] = old_no, None
+            own, old_no = old_no, old_no + 1
+        else:
+            l["old_no"], l["new_no"] = old_no, new_no
+            own = new_no
+            old_no, new_no = old_no + 1, new_no + 1
+        # The derived number for a line's own side must reproduce `no`. A
+        # mismatch means hunks.json is internally inconsistent, which would put
+        # wrong line numbers in both the gutter and every anchor check.
+        if l.get("no") != own:
+            warnings.append(f"hunk {hunk['id']}: {l['type']} line carries no={l.get('no')!r} "
+                            f"but the hunk's own counters give {own}")
+    return warnings
+
+
 def build_review_data(hunks_doc, review_doc):
     by_id = {h["id"]: h for h in hunks_doc["hunks"]}
+    numbering_warnings = [w for h in hunks_doc["hunks"] for w in number_lines(h)]
     groups = []
     covered = set()
     unknown = []
-    warnings = []
+    warnings = list(numbering_warnings)
     seen_gids = set()
     for g in review_doc.get("groups", []):
         gid = g.get("id")

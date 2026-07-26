@@ -5,36 +5,93 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Diff Review</title>
 <style>
-:root { color-scheme: light dark; }
-body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 0; padding: 24px; line-height: 1.6; }
-header.top { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; border-bottom: 2px solid currentColor; padding-bottom: 12px; }
+/* Every colour goes through light-dark() so the theme toggle only has to flip
+   `color-scheme` on <html>. The bare :root keeps `light dark`, which is the
+   "follow the OS" state. */
+:root {
+  color-scheme: light dark;
+  --border: light-dark(#d8dee4, #30363d);
+  --muted: light-dark(#57606a, #9198a1);
+  --surface: light-dark(#f6f8fa, #161b22);
+  --add-bg: light-dark(#e6ffec, #12261e);
+  --add-gutter: light-dark(#ccffd8, #1b4721);
+  --add-word: light-dark(#abf2bc, #2ea04366);
+  --del-bg: light-dark(#ffebe9, #25171c);
+  --del-gutter: light-dark(#ffd7d5, #542527);
+  --del-word: light-dark(#ffc9c6, #f8514966);
+  --absent: light-dark(#fafbfc, #0d1117);
+}
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
+body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 0; padding: 24px; line-height: 1.6; background: Canvas; color: CanvasText; }
+/* Sticky so the view/theme toggles stay reachable in a long review. The negative
+   margin cancels body's padding so nothing scrolls through the gap above it. */
+header.top { position: sticky; top: 0; z-index: 5; background: Canvas; margin: -24px -24px 0; padding: 24px 24px 12px; display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; border-bottom: 2px solid currentColor; }
 header.top .brand { font-weight: 700; letter-spacing: .1em; font-size: 13px; opacity: .6; }
 header.top .stats { font-variant-numeric: tabular-nums; opacity: .8; }
+header.top .tools { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; border-radius: 0; padding: 5px 12px; background: transparent; color: inherit; }
+.seg button + button { border-left: 1px solid var(--border); }
+.seg button[aria-pressed="true"] { background: var(--surface); font-weight: 700; }
 .badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; }
-.risk-attention { background: #fde2e1; color: #9b2c2c; }
-.risk-low { background: #e2ecfd; color: #2c4c9b; }
-.risk-safe { background: #e3f4e2; color: #2c7a2c; }
-.sev-critical { background: #9b2c2c; color: #fff; }
-.sev-warning { background: #fde2e1; color: #9b2c2c; }
-.sev-info { background: #eee; color: #555; }
-.group { border: 1px solid #ccc; border-radius: 10px; margin: 16px 0; overflow: hidden; }
+.risk-attention { background: light-dark(#fde2e1, #4b1f1e); color: light-dark(#9b2c2c, #ffb4ab); }
+.risk-low { background: light-dark(#e2ecfd, #1c2b4a); color: light-dark(#2c4c9b, #a8c7ff); }
+.risk-safe { background: light-dark(#e3f4e2, #1b3a1f); color: light-dark(#2c7a2c, #8fd694); }
+.sev-critical { background: light-dark(#9b2c2c, #b3352f); color: #fff; }
+.sev-warning { background: light-dark(#fde2e1, #4b1f1e); color: light-dark(#9b2c2c, #ffb4ab); }
+.sev-info { background: light-dark(#eee, #2a2f37); color: light-dark(#555, #c2c8d0); }
+.group { border: 1px solid var(--border); border-radius: 10px; margin: 16px 0; overflow: hidden; }
 .group > summary { list-style: none; cursor: pointer; padding: 14px 16px; display: flex; gap: 12px; align-items: center; }
 .group > summary::-webkit-details-marker { display: none; }
 .group .title { font-weight: 700; font-size: 16px; }
 .group .intent { opacity: .75; font-size: 14px; }
 .group .body { padding: 0 16px 16px; }
-.hunk { margin: 12px 0; border: 1px solid #ddd; border-radius: 8px; overflow-x: auto; }
-.hunk .hheader { padding: 6px 10px; font: 12px ui-monospace, monospace; opacity: .7; border-bottom: 1px solid #ddd; }
-pre.diff { margin: 0; padding: 8px 10px; font: 13px/1.5 ui-monospace, monospace; white-space: pre; }
-pre.diff .add { background: rgba(46,160,67,.15); display: block; }
-pre.diff .del { background: rgba(248,81,73,.15); display: block; }
-pre.diff .context { display: block; }
-.finding { border-left: 3px solid #9b2c2c; padding: 8px 12px; margin: 10px 0; background: rgba(155,44,44,.05); }
+
+.hunk { margin: 12px 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.hunk .hheader { padding: 6px 12px; font: 12px/1.6 ui-monospace, monospace; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; gap: 10px; flex-wrap: wrap; }
+.hunk .hheader .hid { color: var(--muted); }
+.hunk .hheader .hfile { font-weight: 700; }
+.hunk .hheader .hrange { color: var(--muted); }
+.hunk .scroll { overflow-x: auto; }
+table.diff { border-collapse: collapse; width: 100%; font: 12.5px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; }
+/* No padding reset here: `table.diff td` outranks the `td.ln`/`td.mk`/`td.code`
+   rules below, so one would silently flatten all of their padding. */
+table.diff td { vertical-align: top; }
+td.ln { width: 1%; min-width: 3em; padding: 0 8px; text-align: right; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; user-select: none; }
+td.mk { width: 1%; padding: 0 6px; text-align: center; color: var(--muted); user-select: none; border-right: 1px solid var(--border); }
+td.code { padding: 0 12px 0 10px; white-space: pre-wrap; overflow-wrap: anywhere; }
+/* A blank source line has no text node at all, so its row would collapse to zero
+   height and every gutter number below it would look off by one. */
+td.code:empty::after { content: "\200b"; }
+td.s-add { background: var(--add-bg); }
+td.s-del { background: var(--del-bg); }
+td.ln.s-add { background: var(--add-gutter); }
+td.ln.s-del { background: var(--del-gutter); }
+td.s-absent { background: var(--absent); }
+td.s-add .wd { background: var(--add-word); border-radius: 2px; }
+td.s-del .wd { background: var(--del-word); border-radius: 2px; }
+/* Split panes are pinned to half the container each. Letting the columns size
+   themselves pushes the new side off-screen entirely on a hunk with long lines,
+   and gives every hunk a different pane width. Both cells of a row share its
+   height, so the gutter stays aligned when a line wraps. */
+table.split { table-layout: fixed; }
+table.split col.c-ln { width: 4em; }
+table.split col.c-mk { width: 1.8em; }
+table.split td.gap { border-left: 1px solid var(--border); }
+/* Wrap off. Fixed halves cannot hold unwrapped lines — they would spill over the
+   neighbouring column — so split falls back to content-sized columns and the
+   whole table scrolls, which is the cost of turning wrapping off. */
+:root[data-wrap="off"] td.code { white-space: pre; overflow-wrap: normal; }
+:root[data-wrap="off"] table.split { table-layout: auto; }
+:root[data-wrap="off"] table.split td.code { width: 50%; }
+
+.finding { border-left: 3px solid #9b2c2c; padding: 8px 12px; margin: 10px 0; background: rgba(155,44,44,.06); }
 .finding .plan-note { font-size: 13px; opacity: .8; margin-top: 4px; }
 .finding textarea { width: 100%; box-sizing: border-box; margin-top: 6px; }
 footer.bar { position: sticky; bottom: 0; border-top: 2px solid currentColor; padding: 12px 0; margin-top: 24px; background: Canvas; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
-button { font: inherit; padding: 6px 14px; border-radius: 8px; border: 1px solid #888; cursor: pointer; }
-textarea#feedback { width: 100%; min-height: 200px; font: 13px ui-monospace, monospace; margin-top: 12px; }
+button { font: inherit; padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: inherit; cursor: pointer; }
+textarea#feedback { width: 100%; min-height: 200px; font: 13px ui-monospace, monospace; margin-top: 12px; background: Canvas; color: CanvasText; border: 1px solid var(--border); border-radius: 8px; }
 </style>
 </head>
 <body>
@@ -48,6 +105,11 @@ textarea#feedback { width: 100%; min-height: 200px; font: 13px ui-monospace, mon
 <script>
 window.REVIEW_DATA = /*__REVIEW_DATA__*/ null;
 const RISK_LABEL = { attention: "Attention", low: "Low risk", safe: "Safe" };
+const THEMES = [
+  { value: "", label: "◐ Auto" },
+  { value: "light", label: "☀ Light" },
+  { value: "dark", label: "☾ Dark" },
+];
 function el(tag, attrs = {}, children = []) {
   const n = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs)) {
@@ -56,16 +118,187 @@ function el(tag, attrs = {}, children = []) {
   for (const c of [].concat(children)) n.append(c);
   return n;
 }
-function renderDiff(hunk) {
-  const pre = el("pre", { class: "diff" });
-  for (const l of hunk.lines) {
-    const prefix = l.type === "add" ? "+" : l.type === "del" ? "-" : " ";
-    pre.append(el("span", { class: l.type }, prefix + l.content));
+
+// --- preferences -----------------------------------------------------------
+// localStorage can throw outright on file:// depending on the browser, so every
+// access is guarded and the toggles simply become session-only when it fails.
+function readPref(key, fallback) {
+  try { const v = localStorage.getItem(key); return v === null ? fallback : v; } catch (e) { return fallback; }
+}
+function writePref(key, value) {
+  try { localStorage.setItem(key, value); } catch (e) { /* session-only */ }
+}
+let VIEW_MODE = readPref("dr:view", "inline") === "split" ? "split" : "inline";
+let WRAP = readPref("dr:wrap", "on") !== "off";
+let THEME = THEMES.some(t => t.value === readPref("dr:theme", "")) ? readPref("dr:theme", "") : "";
+
+// --- diff model ------------------------------------------------------------
+// Split view needs old/new lines paired into rows; inline view needs the same
+// pairing to know which two lines a word-level highlight should compare.
+function pairRows(lines) {
+  const rows = [];
+  let i = 0;
+  while (i < lines.length) {
+    if (lines[i].type === "context") { rows.push({ left: lines[i], right: lines[i] }); i++; continue; }
+    const dels = [], adds = [];
+    while (i < lines.length && lines[i].type === "del") dels.push(lines[i++]);
+    while (i < lines.length && lines[i].type === "add") adds.push(lines[i++]);
+    if (!dels.length && !adds.length) { i++; continue; } // unreachable guard against an infinite loop
+    for (let k = 0; k < Math.max(dels.length, adds.length); k++) {
+      rows.push({ left: dels[k] || null, right: adds[k] || null });
+    }
   }
+  return rows;
+}
+function tokenize(s) { return s.match(/\s+|[A-Za-z0-9_$]+|[^\sA-Za-z0-9_$]/g) || []; }
+// Common-prefix / common-suffix on tokens. Deliberately not a real diff: on a
+// pair that only shares its edges the "changed middle" swallows the whole line,
+// which is worse than no highlight at all, so that case is dropped.
+function wordSegments(a, b) {
+  const A = tokenize(a), B = tokenize(b);
+  let p = 0;
+  while (p < A.length && p < B.length && A[p] === B[p]) p++;
+  let s = 0;
+  while (s < A.length - p && s < B.length - p && A[A.length - 1 - s] === B[B.length - 1 - s]) s++;
+  const cut = (t, from, to) => t.slice(from, to).join("");
+  const midA = cut(A, p, A.length - s), midB = cut(B, p, B.length - s);
+  if (!midA && !midB) return null;
+  if (midA.length > (a.length || 1) / 2 || midB.length > (b.length || 1) / 2) return null;
+  return [
+    { pre: cut(A, 0, p), mid: midA, post: cut(A, A.length - s, A.length) },
+    { pre: cut(B, 0, p), mid: midB, post: cut(B, B.length - s, B.length) },
+  ];
+}
+function hunkModel(hunk) {
+  const rows = pairRows(hunk.lines);
+  const words = new Map(); // line object -> { pre, mid, post }
+  for (const r of rows) {
+    if (!r.left || !r.right || r.left === r.right) continue;
+    const segs = wordSegments(r.left.content, r.right.content);
+    if (segs) { words.set(r.left, segs[0]); words.set(r.right, segs[1]); }
+  }
+  return { rows, words };
+}
+
+// --- diff rendering --------------------------------------------------------
+const SIDE = { add: "s-add", del: "s-del", context: "s-ctx" };
+const MARK = { add: "+", del: "−", context: "" };
+function codeCell(line, words, extra = "") {
+  const side = line ? SIDE[line.type] : "s-absent";
+  const td = el("td", { class: "code " + side + (extra ? " " + extra : "") });
+  if (!line || line.content === "") return td;
+  const seg = words.get(line);
+  // An empty middle means this side only lost or gained nothing at that spot
+  // (the counterpart carries the whole change) — no span, or it would be a
+  // zero-width highlight in the markup for nothing.
+  if (!seg || !seg.mid) { td.append(document.createTextNode(line.content)); return td; }
+  if (seg.pre) td.append(document.createTextNode(seg.pre));
+  td.append(el("span", { class: "wd" }, seg.mid));
+  if (seg.post) td.append(document.createTextNode(seg.post));
+  return td;
+}
+function numCell(line, which, extra = "") {
+  const side = line ? SIDE[line.type] : "s-absent";
+  const n = line ? line[which] : null;
+  return el("td", { class: "ln " + side + (extra ? " " + extra : "") }, n == null ? "" : String(n));
+}
+function markCell(line) {
+  return el("td", { class: "mk " + (line ? SIDE[line.type] : "s-absent") }, line ? MARK[line.type] : "");
+}
+function inlineTable(model, lines) {
+  const tb = el("tbody");
+  for (const l of lines) {
+    tb.append(el("tr", {}, [
+      numCell(l, "old_no"), numCell(l, "new_no"), markCell(l), codeCell(l, model.words),
+    ]));
+  }
+  return el("table", { class: "diff inline" }, tb);
+}
+function splitTable(model) {
+  const tb = el("tbody");
+  for (const r of model.rows) {
+    tb.append(el("tr", {}, [
+      numCell(r.left, "old_no"), markCell(r.left), codeCell(r.left, model.words),
+      numCell(r.right, "new_no", "gap"), markCell(r.right), codeCell(r.right, model.words),
+    ]));
+  }
+  // table-layout: fixed takes its column widths from here, so the two code
+  // columns (no width) split whatever the gutters leave, evenly.
+  const cols = el("colgroup", {}, ["c-ln", "c-mk", "", "c-ln", "c-mk", ""].map(
+    c => el("col", c ? { class: c } : {})));
+  return el("table", { class: "diff split" }, [cols, tb]);
+}
+function renderHunk(hunk, mode) {
+  const model = hunkModel(hunk);
   const box = el("div", { class: "hunk" });
-  box.append(el("div", { class: "hheader" }, hunk.header + "  " + hunk.file));
-  box.append(pre);
+  // The hunk id is what ties a finding's anchor (e.g. "h079:+124") back to a
+  // line on screen, so it belongs in the header next to the path.
+  box.append(el("div", { class: "hheader" }, [
+    el("span", { class: "hid" }, hunk.id),
+    el("span", { class: "hfile" }, hunk.file),
+    el("span", { class: "hrange" }, hunk.header),
+  ]));
+  const scroll = el("div", { class: "scroll" });
+  scroll.append(mode === "split" ? splitTable(model) : inlineTable(model, hunk.lines));
+  box.append(scroll);
   return box;
+}
+
+// --- page ------------------------------------------------------------------
+const STATE = {}; // "<groupIndex>/<findingIndex>" -> { verdict: "adopted"|"rejected"|null, comment: "", finding, group }
+// Hunk bodies are built on first open and thrown away when the view mode
+// changes: a -U15 diff of a few hundred hunks is tens of thousands of cells,
+// and rendering every group up front (or twice, once per mode) makes the page
+// crawl on load and on every toggle.
+const GROUPS = []; // { details, host, hunks, renderedMode }
+function paintGroup(v) {
+  v.host.textContent = "";
+  for (const h of v.hunks) v.host.append(renderHunk(h, VIEW_MODE));
+  v.renderedMode = VIEW_MODE;
+}
+function setViewMode(mode) {
+  VIEW_MODE = mode;
+  writePref("dr:view", mode);
+  // [data-mode] matters: the Wrap button shares the .seg styling and would
+  // otherwise have its own pressed state reset on every mode change.
+  for (const b of document.querySelectorAll(".seg button[data-mode]")) {
+    b.setAttribute("aria-pressed", String(b.dataset.mode === mode));
+  }
+  for (const v of GROUPS) {
+    if (v.details.open) paintGroup(v);
+    else { v.host.textContent = ""; v.renderedMode = null; }
+  }
+}
+// Purely a CSS switch — no re-render, so it stays instant on a large diff.
+function setWrap(on) {
+  WRAP = on;
+  writePref("dr:wrap", on ? "on" : "off");
+  if (on) document.documentElement.removeAttribute("data-wrap");
+  else document.documentElement.setAttribute("data-wrap", "off");
+  document.getElementById("wrap").setAttribute("aria-pressed", String(on));
+}
+function setTheme(value) {
+  THEME = value;
+  writePref("dr:theme", value);
+  if (value) document.documentElement.setAttribute("data-theme", value);
+  else document.documentElement.removeAttribute("data-theme");
+  document.getElementById("theme").textContent = THEMES.find(t => t.value === value).label;
+}
+function buildToolbar() {
+  const seg = el("div", { class: "seg", role: "group", "aria-label": "Diff view mode" });
+  for (const mode of ["inline", "split"]) {
+    const b = el("button", { "data-mode": mode }, mode === "inline" ? "Inline" : "Split");
+    b.addEventListener("click", () => setViewMode(mode));
+    seg.append(b);
+  }
+  const wrap = el("button", { id: "wrap", title: "Wrap long lines instead of scrolling" }, "Wrap");
+  wrap.addEventListener("click", () => setWrap(!WRAP));
+  const theme = el("button", { id: "theme", title: "Cycle theme: auto / light / dark" });
+  theme.addEventListener("click", () => {
+    const i = THEMES.findIndex(t => t.value === THEME);
+    setTheme(THEMES[(i + 1) % THEMES.length].value);
+  });
+  return el("div", { class: "tools" }, [seg, el("div", { class: "seg" }, wrap), theme]);
 }
 function render() {
   const data = window.REVIEW_DATA;
@@ -84,6 +317,7 @@ function render() {
     headerParts.push(el("span", { class: "badge", title: s.no_hunk_files.join("\n") },
       `+${s.no_hunk_files.length} change(s) with no hunks (hover to list)`));
   }
+  headerParts.push(buildToolbar());
   app.append(el("header", { class: "top" }, headerParts));
   data.groups.forEach((g, gi) => {
     const det = el("details", { class: "group" });
@@ -94,14 +328,22 @@ function render() {
       el("span", { class: "badge" }, `${g.findings.length} findings`),
     ]));
     const body = el("div", { class: "body" });
-    for (const h of g.hunks) body.append(renderDiff(h));
+    const host = el("div", { class: "hunks" });
+    body.append(host);
+    const view = { details: det, host, hunks: g.hunks, renderedMode: null };
+    GROUPS.push(view);
+    det.addEventListener("toggle", () => {
+      if (det.open && view.renderedMode !== VIEW_MODE) paintGroup(view);
+    });
     g.findings.forEach((f, fi) => body.append(renderFinding(f, g, gi, fi)));
     det.append(body);
     app.append(det);
   });
+  setTheme(THEME);
+  setWrap(WRAP);
+  setViewMode(VIEW_MODE);
   updateCounts();
 }
-const STATE = {}; // "<groupIndex>/<findingIndex>" -> { verdict: "adopted"|"rejected"|null, comment: "", finding, group }
 function renderFinding(f, g, gi, fi) {
   // Key by array position, not by ids: reviewer-supplied ids can collide
   // (duplicate group ids happened in practice), and colliding keys silently

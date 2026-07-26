@@ -54,6 +54,12 @@ def render():
     return html
 
 
+def payload(html):
+    """The REVIEW_DATA object the template renders from, back as Python."""
+    line = next(l for l in html.splitlines() if l.startswith("window.REVIEW_DATA = "))
+    return json.loads(line[len("window.REVIEW_DATA = "):].rstrip(";"))
+
+
 class TestRender(unittest.TestCase):
     def setUp(self):
         self.html = render()
@@ -203,6 +209,37 @@ class TestRender(unittest.TestCase):
         # skill's "never open on warnings" gate and hide the whole review.
         proc, _ = run(HUNKS, REVIEW)  # REVIEW's finding has source: plan_crosscheck
         self.assertEqual(proc.stderr, "")
+
+    def test_both_gutter_numbers_are_derived_for_every_line(self):
+        # The dual gutter needs an old-side AND a new-side number per line, but
+        # hunks.json only carries the line's own side. Once adds and dels are
+        # unbalanced the two sides diverge, so reusing `no` for both would print
+        # a wrong old-side number for every context line below the imbalance.
+        hunk = {"id": "h001", "file": "src/foo.ts", "header": "@@ -1,5 +1,4 @@",
+                "old_start": 1, "new_start": 1,
+                "lines": [{"type": "context", "no": 1, "content": "keep"},
+                          {"type": "add", "no": 2, "content": "added"},
+                          {"type": "context", "no": 3, "content": "keep2"},
+                          {"type": "del", "no": 3, "content": "gone"},
+                          {"type": "del", "no": 4, "content": "gone2"},
+                          {"type": "context", "no": 4, "content": "keep3"}]}
+        hunks = {"stats": HUNKS["stats"], "hunks": [hunk]}
+        review = {"plan_checked": False, "plan_path": None, "groups": [
+            {"id": "g1", "title": "t", "intent": "i", "risk": "safe",
+             "hunk_ids": ["h001"], "findings": []}]}
+        proc, html = run(hunks, review)
+        self.assertEqual(proc.stderr, "")
+        lines = payload(html)["groups"][0]["hunks"][0]["lines"]
+        self.assertEqual([(l["old_no"], l["new_no"]) for l in lines],
+                         [(1, 1), (None, 2), (2, 3), (3, None), (4, None), (5, 4)])
+        # `no` is what a finding's anchor is matched against — it must not move.
+        self.assertEqual([l["no"] for l in lines], [1, 2, 3, 3, 4, 4])
+
+    def test_warns_when_a_line_number_contradicts_the_hunk_offsets(self):
+        hunks = json.loads(json.dumps(HUNKS))
+        hunks["hunks"][0]["lines"][2]["no"] = 99  # context line, should be 2
+        proc, _ = run(hunks, REVIEW)
+        self.assertIn("but the hunk's own counters give 2", proc.stderr)
 
     def test_warns_on_uncovered_hunk(self):
         # Leaving h002 out of every group emits a stderr warning about the gap.

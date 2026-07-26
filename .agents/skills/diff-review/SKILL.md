@@ -212,6 +212,15 @@ the screen for the whole change.
 
 ## Steps 6-7: Human judgement and feedback
 
+The screen shows each hunk with an old/new line-number gutter, a `+`/`-` marker
+column, and word-level highlighting on lines that were edited rather than
+wholly replaced. Three toggles sit in the header and are remembered across renders:
+Inline/Split (GitHub-style side-by-side), Wrap, and the theme (auto / light /
+dark). Wrap is on by default; turning it off restores unwrapped lines and a
+horizontal scrollbar, which in Split also means the new side can sit off-screen
+on a hunk with long lines. Hunk bodies are built when a group is expanded, so
+the first click on a large group takes a moment.
+
 In the screen, enter adopt/reject and comments, click "Generate feedback" ->
 "Copy to clipboard". Paste the copied markdown back into the original
 implementation session to request fixes. The skill ends here. It has no auto-fix
