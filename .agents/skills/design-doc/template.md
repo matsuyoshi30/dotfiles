@@ -16,6 +16,7 @@
 ### Metadata
 - **Author**: (name / email)
 - **Status**: Draft / In review / Approved
+- **Approvers**: (name — YYYY-MM-DD; fill in when Status becomes Approved)
 - **Created**: YYYY-MM-DD
 - **URL**: (canonical link or shortlink, if any)
 
