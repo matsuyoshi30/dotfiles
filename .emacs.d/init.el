@@ -1413,6 +1413,26 @@ bypassing `browse-url-browser-function'."
   :config
   (claude-code-ide-emacs-tools-setup))
 
+(use-package agent-shell
+  :ensure t
+  :commands
+  (agent-shell
+   agent-shell-anthropic-start-claude-code
+   agent-shell-openai-start-codex)
+  :bind
+  (("C-c C-a a" . agent-shell)
+   ("C-c C-a c" . agent-shell-anthropic-start-claude-code)
+   ("C-c C-a x" . agent-shell-openai-start-codex))
+  :config
+  (setq agent-shell-anthropic-authentication
+        (agent-shell-anthropic-make-authentication :login t))
+  (setq agent-shell-openai-authentication
+        (agent-shell-openai-make-authentication :login t))
+  (setq agent-shell-agent-configs
+        (list
+         #'agent-shell-anthropic-make-claude-code-config
+         #'agent-shell-openai-make-codex-config)))
+
 ;; editorconfig
 
 (use-package editorconfig
