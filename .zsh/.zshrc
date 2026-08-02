@@ -129,7 +129,7 @@ alias cp="cp -i"
 alias mv="mv -i"
 
 alias gst='git status'
-alias gd='git diff'
+alias gd='git dft'
 alias ga='git add -p'
 alias gpu='git push'
 alias glst='git log --stat'

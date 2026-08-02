@@ -24,7 +24,6 @@
   colorMoved = plain
   mnemonicPrefix = true
   renames = true
-  external = difft
   indentHeuristic = true
   compactionHeuristic = true
 [merge]
@@ -58,3 +57,5 @@
 	helper = !/opt/homebrew/bin/gh auth git-credential
 [github]
 	user = matsuyoshi30
+[alias]
+  dft = -c diff.external=difft diff
