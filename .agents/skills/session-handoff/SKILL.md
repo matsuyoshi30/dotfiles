@@ -1,6 +1,6 @@
 ---
 name: session-handoff
-description: Create a handoff so work can be continued in a new session. Use when the user wants to hand off to another session, wants a handoff prompt, or wants to start a new session and continue.
+description: Create a handoff so work can be continued in a new session. Use when the user wants to hand off to another session, wants a handoff prompt, or wants to start a new session and continue. Also auto-fires via a Stop hook once the context window passes 85% used.
 user-invocable: true
 allowed-tools: Read, Write, Grep, Glob, Bash
 ---
