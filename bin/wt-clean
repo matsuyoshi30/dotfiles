@@ -10,19 +10,29 @@
 # 自己完結した1行 (TSV) を stdout に出すだけなので、並列でも集約が安全。
 # ボトルネックは git fetch / gh pr list のネットワーク I/O なので並列化が効く。
 #
-# マージ判定 (2 段):
+# マージ判定 (3 段):
 #   tier1 reachable : `git branch --merged origin/<default>` に出る
 #                     = ローカル tip が default の祖先。通常/ff/rebase merge。安全。
 #   tier2 squash    : tier1 に出ないが merged PR があり かつ
 #                     ローカル tip == PR の headRefOid。
 #                     squash merge はコミットが祖先にならず tier1 で漏れるため。
-#                     SHA 一致を必須にし、PR マージ後に積んだ未 push コミットが
-#                     ある worktree を誤削除しない (mismatch は skip して手動確認)。
+#   tier3 landed-pr : tip が headRefOid と一致しないが、headRefOid 自体が
+#                     origin/<default> から到達可能。PR の中身が取り込まれたことは
+#                     確実だが、ローカル tip はそこに到達しないので、tip 側のコミットが
+#                     取り込み済みの重複なのか後から積んだ作業なのかを git では
+#                     判別できない (両者は別の base に乗っており、中身の比較は
+#                     default 側の後続変更で必ず汚れる)。
+#                     よって削除はせず「要確認」として本数・容量つきで報告する。
+#                     PR が入ったあとに積み直したブランチはこの型に落ちる。
 #
 # 除外: primary worktree / 現在いる worktree / tracked 変更あり
 #       (modified/staged/deleted)。untracked のみ (.devflow/.advisor 等の
 #       ツール掃き溜め) は保護せず削除対象に含め、--apply 時に
 #       `git worktree remove --force` で破棄する (破棄量は UNTRACKED 列に表示)。
+#
+# .wt 配下に .git をどこにも持たないディレクトリは、中断した worktree remove の
+# 残骸として報告する。git worktree list に出ないため放置され続けるが、git から
+# 中身を検証できないので削除はしない。
 #
 # Usage:
 #   wt-clean [ROOT_DIR]                # 配下を dry-run (既定: カレント)
@@ -37,8 +47,21 @@ if [[ -t 1 ]]; then
   C_DIM=$'\e[2m'; C_GRN=$'\e[32m'; C_YEL=$'\e[33m'; C_RED=$'\e[31m'; C_RST=$'\e[0m'
 else C_DIM=""; C_GRN=""; C_YEL=""; C_RED=""; C_RST=""; fi
 
+# .wt 配下で .git をどこにも持たないディレクトリ = 中断した worktree remove の残骸。
+# 名前空間ディレクトリ (.wt/<user>/) と区別するため、配下に .git があれば降りる。
+scan_orphans() {
+  local d="$1" c
+  [[ -e "$d/.git" ]] && return 0
+  if [[ -n "$(find "$d" -maxdepth 3 -name .git -print -quit 2>/dev/null)" ]]; then
+    for c in "$d"/*/; do [[ -d "$c" ]] && scan_orphans "${c%/}"; done
+    return 0
+  fi
+  printf 'orphan\t%s\t%s\n' "$d" "$(du -sk "$d" 2>/dev/null | cut -f1)"
+}
+
 # ───────────────────────── ワーカー: repo 1 つを検出 ─────────────────────────
-# 候補を「repo_root \t worktree \t branch \t tier \t size_kb」で stdout に出力。
+# 候補を「cand \t repo_root \t worktree \t branch \t tier \t size_kb \t untracked_kb」、
+# 残骸を「orphan \t path \t size_kb」で stdout に出力。
 # skip 等の情報は stderr へ。stdout は機械可読・並列安全に保つ。
 worker() {
   local REPO="$1"
@@ -80,7 +103,9 @@ worker() {
           if [[ -n "$oid" ]]; then
             tip="$(git -C "$wt" rev-parse HEAD 2>/dev/null)"
             if [[ "$oid" == "$tip" ]]; then tier="squash"
-            else echo "${C_YEL}skip (tip≠merged SHA, 未push?): ${REPO##*/}:$br${C_RST}" >&2; fi
+            elif git -C "$REPO" merge-base --is-ancestor "$oid" "origin/$default_branch" 2>/dev/null
+            then tier="landed-pr"   # 報告のみ。削除はしない
+            else echo "${C_YEL}skip (tip≠merged SHA かつ PR 頭も default に無い): ${REPO##*/}:$br${C_RST}" >&2; fi
           fi
         fi
         if [[ -n "$tier" ]]; then
@@ -91,11 +116,13 @@ worker() {
             [[ -z "$u" ]] && continue
             uk="$(du -sk "$wt/$u" 2>/dev/null | cut -f1)"; untk=$((untk + ${uk:-0}))
           done < <(git -C "$wt" ls-files --others --exclude-standard --directory 2>/dev/null)
-          printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$REPO" "$wt" "$br" "$tier" "${szk:-0}" "$untk"
+          printf 'cand\t%s\t%s\t%s\t%s\t%s\t%s\n' "$REPO" "$wt" "$br" "$tier" "${szk:-0}" "$untk"
         fi
         wt=""; br="" ;;
     esac
   done < <(git -C "$REPO" worktree list --porcelain; echo "")
+
+  [[ -d "$REPO/.wt" ]] && scan_orphans "$REPO/.wt"
 }
 
 # ワーカー呼び出し (xargs から再帰起動される内部モード)
@@ -112,7 +139,8 @@ while [[ $# -gt 0 ]]; do
     --apply)       APPLY=1 ;;
     --keep-branch) KEEP_BRANCH=1 ;;
     --jobs)        JOBS="$2"; shift ;;
-    -h|--help)     sed -n '2,33p' "${BASH_SOURCE[0]}"; exit 0 ;;
+    # ヘッダコメントを行番号ではなく「最初の非コメント行まで」で切る (範囲がずれない)
+    -h|--help)     awk 'NR>1 && !/^#/{exit} NR>1' "${BASH_SOURCE[0]}"; exit 0 ;;
     -*)            echo "unknown option: $1" >&2; exit 2 ;;
     *)             [[ -n "$ROOT" ]] && { echo "ROOT_DIR は1つだけ: $1" >&2; exit 2; }; ROOT="$1" ;;
   esac
@@ -142,16 +170,51 @@ printf '%s\n' "${REPO_ROOTS[@]}" \
   | sort > "$TMP"
 
 declare -a D_ROOT=() D_PATH=() D_BR=() D_TIER=() D_KB=() D_UNT=()
-while IFS=$'\t' read -r repo wt br tier szk untk; do
-  [[ -z "$repo" ]] && continue
-  D_ROOT+=("$repo"); D_PATH+=("$wt"); D_BR+=("$br"); D_TIER+=("$tier")
-  D_KB+=("$szk"); D_UNT+=("${untk:-0}")
+declare -a R_PATH=() R_BR=() R_KB=()
+declare -a O_PATH=() O_KB=()
+while IFS=$'\t' read -r kind f1 f2 f3 f4 f5 f6; do
+  case "$kind" in
+    # landed-pr は削除候補に混ぜない (自動削除の対象外)
+    cand)   if [[ "$f4" == "landed-pr" ]]; then
+              R_PATH+=("$f2"); R_BR+=("$f3"); R_KB+=("$f5")
+            else
+              D_ROOT+=("$f1"); D_PATH+=("$f2"); D_BR+=("$f3"); D_TIER+=("$f4")
+              D_KB+=("$f5"); D_UNT+=("${f6:-0}")
+            fi ;;
+    orphan) O_PATH+=("$f1"); O_KB+=("${f2:-0}") ;;
+  esac
 done < "$TMP"
 
-echo
-if [[ ${#D_PATH[@]} -eq 0 ]]; then echo "${C_GRN}削除候補なし。${C_RST}"; exit 0; fi
-
 fmtsize() { awk -v k="$1" 'BEGIN{ if (k+0==0){print "-"} else {printf "%.1fG", k/1024/1024} }'; }
+sumsize() { local t=0 k; for k in "$@"; do t=$((t + k)); done; fmtsize "$t"; }
+
+# tier3 と残骸はどちらも git で安全性を確定できないため、--apply でも報告だけ。
+report_review() {
+  [[ ${#R_PATH[@]} -eq 0 ]] && return 0
+  printf '\n%s要確認%s  PR は取り込み済みだがローカル tip がそこに到達しない (%d 本 / %s)\n' \
+    "$C_YEL" "$C_RST" "${#R_PATH[@]}" "$(sumsize "${R_KB[@]}")"
+  local i
+  for i in "${!R_PATH[@]}"; do
+    printf '%-8s %s\n' "$(fmtsize "${R_KB[$i]}")" "${R_BR[$i]}"
+  done
+  printf '%stip 側のコミットが重複か後から積んだ作業かは git では判別できない。%s\n' "$C_DIM" "$C_RST"
+  printf '%s中身を見て問題なければ git worktree remove で消すこと。%s\n' "$C_DIM" "$C_RST"
+}
+
+report_orphans() {
+  [[ ${#O_PATH[@]} -eq 0 ]] && return 0
+  printf '\n%s未登録の残骸%s  (git worktree list に出ない。中断した remove の跡)\n' "$C_YEL" "$C_RST"
+  local i
+  for i in "${!O_PATH[@]}"; do
+    printf '%-8s %s\n' "$(fmtsize "${O_KB[$i]}")" "${O_PATH[$i]}"
+  done
+  printf '%s中身を git で検証できないため自動削除はしない。確認のうえ手で消すこと。%s\n' "$C_DIM" "$C_RST"
+}
+
+echo
+if [[ ${#D_PATH[@]} -eq 0 ]]; then
+  echo "${C_GRN}削除候補なし。${C_RST}"; report_review; report_orphans; exit 0
+fi
 
 printf '\n%s候補一覧%s  (UNTRACKED列 = --force で破棄される untracked 分)\n' "$C_GRN" "$C_RST"
 printf '%-40s %-10s %-8s %-9s %s\n' REPO TIER SIZE UNTRACKED BRANCH
@@ -164,6 +227,9 @@ for i in "${!D_PATH[@]}"; do
 done
 printf '%s合計 %s 解放見込み (%d worktree)%s\n' "$C_GRN" \
   "$(awk -v k="$total_kb" 'BEGIN{printf "%.1fG", k/1024/1024}')" "${#D_PATH[@]}" "$C_RST"
+
+report_review
+report_orphans
 
 if [[ $APPLY -eq 0 ]]; then
   echo; echo "${C_DIM}dry-run。実削除するには --apply を付けてください。${C_RST}"; exit 0
