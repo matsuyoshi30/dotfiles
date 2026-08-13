@@ -1,6 +1,6 @@
 ---
 name: preparing-worktrees
-description: Use when setting up an isolated git worktree for feature work — selects the worktree directory with `.wt/` as the top priority, verifies `.gitignore` safety, creates the worktree on a new branch, and runs project setup. Pairs with devflow Step 4 Isolation gate.
+description: Use when setting up an isolated git worktree for feature work — selects the worktree directory with `.wt/` as the top priority, verifies `.gitignore` safety, creates the worktree on a new branch, applies the repo's sparse-checkout policy when it has one (skipping bulk tracked data), and runs project setup. Pairs with devflow Step 4 Isolation gate.
 ---
 
 # Preparing Worktrees
@@ -64,6 +64,29 @@ git worktree add "$path" -b "$BRANCH_NAME"
 
 If the branch already exists, drop `-b` and check out the existing branch instead.
 
+**If `git config --get-all wt.sparse` returns patterns**, the repo has opted out of copying
+bulk tracked data into every worktree (each worktree gets its own working tree; only the
+object database is shared). Create it empty and let sparse-checkout populate it — creating
+it normally would write the excluded data and immediately delete it again:
+
+```bash
+git worktree add --no-checkout "$path" -b "$BRANCH_NAME"
+git -C "$repo_root" config --get-all wt.sparse \
+  | git -C "$path" sparse-checkout set --no-cone --stdin
+git -C "$path" checkout
+git -C "$path" sparse-checkout list
+```
+
+`sparse-checkout list` is the only signal that the policy applied — a mangled pattern still
+produces a clean-looking worktree with files silently missing. Carry its output into the
+report. (Patterns go over `--stdin` for that reason: passed as arguments, one containing
+whitespace splits into two and the exclusion is lost without an error.) Inside the
+worktree, `git sparse-checkout disable` restores the excluded paths when it does need them.
+
+A repo opts in with `git config --local --add wt.sparse '/*'` plus a `'!path/to/bulk-data'`
+line per exclusion. That config is per-clone and untracked, so it silently vanishes on a
+re-clone — record the intended patterns in the repo's `CLAUDE.md`.
+
 ### 3. Project setup (auto-detect)
 
 Run whatever the project needs to be usable. Detect from files at the worktree root:
@@ -90,6 +113,7 @@ Skip by default. Callers (e.g. devflow Step 7) already run verification at the r
 ```
 Worktree ready at <full-path>
 Branch: <branch-name>
+Sparse: <patterns from sparse-checkout list, or "full checkout">
 Setup: <command run, or "skipped">
 ```
 
@@ -106,6 +130,9 @@ Return both the absolute path and the branch name so the caller can `cd` in and 
 | None of the above | Ask user (`.wt/` vs global) |
 | Directory not ignored | Append to `.gitignore`, commit, proceed |
 | Branch already exists | `git worktree add <path> <branch>` (no `-b`) |
+| Repo has `wt.sparse` in local config | `worktree add --no-checkout` → `sparse-checkout set --stdin` → `checkout` → `sparse-checkout list` |
+| `sparse-checkout list` output looks wrong | Stop and report — the worktree is missing files, silently |
+| Worktree needs an excluded path back | `git sparse-checkout disable` inside it |
 | No recognizable project files | Skip setup |
 
 ## Rules
