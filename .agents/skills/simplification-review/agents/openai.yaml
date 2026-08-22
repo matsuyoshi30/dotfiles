@@ -1,0 +1,4 @@
+interface:
+  display_name: "Simplification Review"
+  short_description: "Review an implementation for over-engineering — only when asked"
+  default_prompt: "$simplification-review: review this implementation down to its smallest safe form"
