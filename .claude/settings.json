@@ -340,6 +340,6 @@
   "autoMemoryEnabled": false,
   "skipDangerousModePermissionPrompt": true,
   "theme": "dark",
-  "skipAutoPermissionPrompt": true,
-  "model": "sonnet"
+  "remoteControlAtStartup": false,
+  "skipAutoPermissionPrompt": true
 }
