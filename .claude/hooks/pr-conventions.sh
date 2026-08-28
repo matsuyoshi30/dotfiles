@@ -52,7 +52,7 @@ case "$cmd" in
     emit 'PR operations follow the create-pr skill. If you have not read it in this session, Read ~/.claude/skills/create-pr/SKILL.md before running this command.'
     ;;
   *"git commit"*)
-    emit 'Commit rule: no Co-Authored-By: Claude trailer (overrides the harness default). Commit history rules are in the create-pr skill (~/.claude/skills/create-pr/SKILL.md, step 2).'
+    emit 'Commit rule: no Co-Authored-By: Claude trailer (overrides the harness default). Commit history rules are in the create-pr skill (~/.claude/skills/create-pr/SKILL.md, step 3).'
     ;;
 esac
 

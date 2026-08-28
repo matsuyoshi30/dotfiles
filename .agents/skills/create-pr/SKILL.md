@@ -11,21 +11,39 @@ what the branch actually does.
 
 **Announce at start:** "Using create-pr skill to open this PR." (or "…to update this PR")
 
-Two paths run through the same rules: opening a new PR (steps 1-6) and pushing an update to a PR
-that already exists (step 7). Steps 1, 2, and 5 apply to both.
+Two paths run through the same rules: opening a new PR (steps 1-7) and pushing an update to a PR
+that already exists (step 8). Steps 1, 2, 3, and 6 apply to both.
 
 ## Steps
 
-### 1. Verify before opening
+### 1. Cut the diff down
+
+Hand over the change only in its smallest safe form. Follow the simplification-review skill, and
+apply what it finds.
+
+What to review is whatever no reviewer has read yet — the same split step 3 runs on.
+
+| Situation | What to feed the review |
+| --- | --- |
+| Opening a new PR, or updating one nobody has reviewed yet | the whole branch: `git diff origin/<base>...HEAD` |
+| Updating a PR reviewed at least once | only the commits this push adds: `git diff origin/<branch>...HEAD` |
+
+Do not re-cut code someone has already approved. Acting on those findings means rewriting what the
+reviewer read, which step 3 forbids for exactly that reason.
+
+This comes first because it changes code: a verification run from before the cuts no longer
+describes the tree you are about to push.
+
+### 2. Verify before opening
 
 Run tests, lint, and build, and confirm they pass before opening the PR. Follow the
 verify-completion skill for how to verify. What goes in the body is not the verification output —
-it is only what a human still has to check (see step 5).
+it is only what a human still has to check (see step 6).
 
-### 2. Clean up the commits
+### 3. Clean up the commits
 
 Commit in meaningful units. Never mix unrelated changes into one PR. Commit subjects follow the
-same `type(scope): summary` convention as PR titles (step 4).
+same `type(scope): summary` convention as PR titles (step 5).
 
 Never hand over a branch that still carries `fixup!` commits. Folding a fix in is two moves, not
 one: `git commit --fixup <sha>`, then `git rebase --autosquash` to absorb it. Finish both before
@@ -50,10 +68,10 @@ diff they use to re-review. Before that, nobody loses anything.
 
 Order of operations when history may be rewritten: create the fixup commits first, then one
 `git rebase --autosquash origin/<base>` absorbs them and brings the branch up to date in the same
-pass. The step 1 verification counts only if it ran against the exact tree you are about to push —
+pass. The step 2 verification counts only if it ran against the exact tree you are about to push —
 a run from before a rebase, rewrite, or further commit no longer counts.
 
-### 3. Branch
+### 4. Branch
 
 - Match the prefix used by the majority of existing branches in the repo. Where the convention is
   a GitHub account name prefix, that is `matsuyoshi30/`
@@ -62,7 +80,7 @@ a run from before a rebase, rewrite, or further commit no longer counts.
 - When one repository needs multiple PRs, stack them, and run preview verification from the
   branch of the last PR in the stack
 
-### 4. Open as a draft
+### 5. Open as a draft
 
 `gh pr create --draft` is the default.
 
@@ -76,7 +94,7 @@ Title format: `type(scope): summary`, e.g. `fix(graphql): gRPC 由来の例外�
 Write the summary in whatever language the repo's recent PR titles use. Where the repo puts ticket
 IDs in titles, include the ID — and list all of them when the PR covers several tickets.
 
-### 5. Write the body
+### 6. Write the body
 
 Follow the headings in the repo's `.github/PULL_REQUEST_TEMPLATE.md` when one exists. When the
 template has no verification heading, append one (`## Test plan` or `## 動作確認`, matching the
@@ -99,16 +117,17 @@ How to write it:
 Length target: the reader can take in the whole thing without scrolling. Leave out the
 investigation trail, the alternatives you tried, and designs you discarded along the way.
 
-### 6. After opening
+### 7. After opening
 
 - Do not post comments on the PR. Do not add self-review comments unprompted
 - Link the PR URL on the Linear ticket
 - Deploy to the preview environment when the change needs verification there
 
-### 7. Updating an existing PR
+### 8. Updating an existing PR
 
-Verify (step 1) and clean up the commits (step 2) exactly as you would when opening — the
-reviewed-or-not check in step 2 decides whether you squash or stack.
+Cut the diff down (step 1), verify (step 2), and clean up the commits (step 3) as you would when
+opening — the reviewed-or-not check in step 3 decides both what step 1 reviews and whether you
+squash or stack.
 
 Then bring the body back in line with reality using `gh pr edit`. This is the single most
 frequently corrected item — after every push, check whether the body needs updating.
