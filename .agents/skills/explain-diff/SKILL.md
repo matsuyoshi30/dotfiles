@@ -1,7 +1,7 @@
 ---
 name: explain-diff
 description: Use when the user needs to understand a code change, diff, branch, or PR before reviewing it — especially a large or unfamiliar PR at work where the surrounding context, intent, or history is missing. Produces a self-contained local HTML explainer (background, intuition, code walkthrough, comprehension quiz) that never leaves the machine. Not for finding bugs or leaving review comments (use `diff-review` or `code-review` for that). Invoke with `/explain-diff [PR-number-or-URL | branch | commit-range]`.
-allowed-tools: Bash, Read, Glob, Grep, Write
+allowed-tools: Agent, Skill, Bash, Read, Glob, Grep, Write
 user-invocable: true
 ---
 
@@ -98,9 +98,21 @@ degrade everything after it. If you are the user's top-level conversation
 many files or reads past a few hundred lines, dispatch a subagent to do
 Steps 3 and 4 and report back just the finished HTML content (or write the
 file itself and report the path) — the invoking conversation only needs the
-result, not every file read to produce it. Skip this for a small diff; the
-dispatch overhead isn't worth it. **If you are already running as a
-dispatched subagent, do Steps 3-4 inline instead — do not dispatch a child.**
+result, not every file read to produce it. That subagent is the one writing
+the page, so its brief must carry the writing instructions, not just the
+task: paste in Step 4 verbatim, tell it to read
+[references/visual-design.md](references/visual-design.md) before laying out
+a single section, and tell it to invoke the `japanese-tech-writing` skill
+(with the exclusions Step 4 lists) if the user wrote their request in
+Japanese. Dispatch a general-purpose subagent, not `Explore` — this one has
+to invoke a skill and write a file, and a read-only search agent can do
+neither, which would make both instructions inert. A dispatch brief that says only "explain this PR" produces a page
+that ignores every rule below, and you won't see that it did until you open
+it.
+
+Skip the dispatch for a small diff; the overhead isn't worth it. **If you
+are already running as a dispatched subagent, do Steps 3-4 inline instead —
+do not dispatch a child.**
 A subagent has no later turn to be woken into by a grandchild's async
 result, so a nested dispatch here strands silently instead of failing loudly.
 After dispatching, stop your turn and let the completion notification resume
@@ -134,7 +146,9 @@ Produce one HTML document with these sections, in order:
   beginners (note it can be skipped if already familiar), then a narrower
   background specific to what this change touches.
 - **Intuition** — the core idea behind the change. Essence, not full
-  implementation detail. Concrete examples with toy data. Diagrams liberally.
+  implementation detail. Concrete examples with toy data. This is where
+  diagrams earn the most, provided each one shows something the prose beside
+  it doesn't already say.
 - **Code** — a high-level walkthrough of the actual changes, grouped and
   ordered so the logic builds (not necessarily file order).
 - **Quiz** — 5 medium-difficulty multiple-choice questions that require
@@ -154,14 +168,25 @@ versions of this template — a quiz that can be gamed teaches nothing):
 - Distractors must be plausible misconceptions about *this* change, not
   generic wrong answers a reader could reject without knowing the PR.
 
-Format:
+Format — read [references/visual-design.md](references/visual-design.md)
+before laying out a single section. It carries the token palette, the type
+scale, the seven diagram families and how to route a change to one, and the
+reject list. What stays here is what shapes the document rather than its
+appearance, plus the handful of rules Step 5 greps for:
+
 - Single self-contained HTML file: inline CSS and JavaScript, no external
-  requests. One long page with section headers and a table of contents — no
-  tabs for the top-level structure. Basic responsive styling.
-- No ASCII diagrams. Build diagrams in HTML/CSS — pick a small number of
-  reusable diagram families (a simplified UI mockup for UI-facing changes, a
-  data-flow/component diagram with real example data for logic changes) and
-  reuse them across the doc rather than inventing a new visual per section.
+  requests — that includes font CDNs, so the type stack is system fonts. One
+  long page with section headers and a table of contents, no tabs for the
+  top-level structure. Basic responsive styling.
+- No ASCII diagrams. Build them in inline SVG or CSS boxes, tag each with an
+  HTML comment naming its family (`<!-- diagram: before-after -->`), and reuse
+  a family across the doc rather than inventing a new visual per section. A
+  reader who learns one visual grammar reads the fourth diagram faster than
+  the first; a reader given four grammars reads none of them.
+- Every color and font goes through a `var(--…)` token. No inline hex, no
+  inline `font-family`.
+- No `box-shadow`. (The rest of the reject list — gradients, emoji-as-icon,
+  card-in-card, fake window chrome — is in the reference, not grepped.)
 - Code blocks: always plain `<pre>` tags, never a styled `<div>`/`<span>`
   substitute — a single shared rule (`pre { white-space: pre; }` or
   `pre-wrap`) in the `<style>` block then covers every one of them, and Step
@@ -173,13 +198,36 @@ Format:
 - Write clearly and engagingly, with smooth transitions between sections —
   match the language the user wrote their request in.
 
+If that language is Japanese, invoke the `japanese-tech-writing` skill and
+hold the prose to every section of it, with exactly three carve-outs. That
+skill is written for book manuscripts in Markdown, so a few of its rules
+describe a medium this page isn't; everything it says about argument,
+paragraph structure, reader load, and honesty applies unchanged, and
+読者への誠実さ in particular is the same commitment Step 5 enforces.
+
+The three carve-outs, and nothing beyond them:
+
+- 整形 § 「一文ごとに改行する」— a Markdown-manuscript rule that becomes `<br>`
+  soup in HTML. Paragraphs are `<p>`; the browser wraps them. The rest of 整形
+  (ダッシュ, 中黒, 見出しに区切り線を詰め込まない, 用語の初出は太字) still holds.
+- 演出の抑制 § 「本文中の太字強調を多用しない」— yields to the callouts Step 4
+  mandates. A callout box is structure, not emphasis, so it doesn't spend that
+  budget. Inline `<strong>` inside body prose still does.
+- 視点と語り § 「読者を『あなた』と呼ばず役割名で書く」— yields in the Background
+  section, which is written for a reader whose prior knowledge you don't know
+  and which invites them to skip ahead. The rest of 視点と語り (行為者を主語に,
+  架空の人物設定を冠しない, 曖昧語に後退しない) still holds.
+
+Where the two documents collide anywhere else, this skill's Step 4 wins — but
+say so in your reply rather than resolving it silently.
+
 ## Step 5: Verify before saving
 
 "Looks done" isn't a check — run one before you open the file. Two passes,
 in order:
 
 **Mechanical check** — each of these is a command whose output you read, not
-a judgment call. Run all five before moving on:
+a judgment call. Run all eight before moving on:
 - `grep -n` for the 4 section header strings and confirm the line numbers
   come back strictly increasing in this order: Background, Intuition, Code,
   Quiz. (Presence alone doesn't confirm order — the line numbers do.)
@@ -191,22 +239,56 @@ a judgment call. Run all five before moving on:
   every code block used the mandated tag) — and confirm a `pre { white-space:
   pre` or `pre-wrap` rule exists in the `<style>` block. One rule covers every
   `<pre>` because Step 4 forbids alternative containers.
-- `grep -c` for `src="http`/`href="http` — must be 0.
+- `grep -c` for `src="http`/`href="http` — must be 0. This is also the gate
+  that catches a font CDN `<link>`, which is the easiest external request to
+  add without noticing.
+- `grep -c 'box-shadow'` — must be 0. Depth on this page comes from a
+  background tint plus a hairline.
+- `grep -cE '(fill|stroke|style)="[^"]*#'` — must be 0. A hex in an inline
+  `style`, or in an SVG `fill`/`stroke` attribute, is a color that escaped the
+  token block, which is how a three-color page becomes an eight-color one.
+  (`fill` and `stroke` are in there because the diagrams are inline SVG, where
+  the color sits in an attribute rather than a `style`. Don't widen the pattern
+  to a bare `="[^"]*#` — the table-of-contents anchors would all match.)
+- `grep -o '<!-- diagram: [a-z-]*' | sort | uniq -c` — read the output and
+  confirm every family named is one of the seven in `visual-design.md`. A name
+  that isn't on that list means a visual was invented rather than reused, and a
+  family appearing exactly once each across six diagrams means the same thing.
+  **Empty output is a failure, not a pass** — it means the diagrams went in
+  untagged, which is the case this gate exists to catch. Confirm the floor
+  separately: `grep -c '<!-- diagram:'` must be greater than 0 and at least
+  `grep -c '<svg'`, since every SVG in the page is a diagram and a diagram
+  built from CSS boxes carries a tag but no `<svg>`.
 
 Any of these failing means fix the HTML and re-run that check — don't open a
 file that fails one.
 
 **Fact check** — a passing mechanical check says nothing about whether the
-content is *true*. Re-examine every specific claim in the draft (counts,
-"only X does Y" absolute statements, described behavior) against the actual
-diff and the background material from Step 3, with the skepticism you'd
-bring to someone else's writing, not your own. A claim invented in Step 4 to
-smooth over a gap, rather than sourced from something you actually read, is
-exactly what this catches. Prefer dispatching a fresh subagent for this over
-re-reading your own draft — a subagent with no stake in the draft being
+content is *true*, or readable. Prefer dispatching a fresh subagent for this
+over re-reading your own draft: a subagent with no stake in the draft being
 right catches what a self-review, done minutes after writing it, rationalizes
-past. Fix whatever it flags, and re-run the mechanical check if a fix changed
-the HTML.
+past. One subagent, three jobs in one brief — they all want the same reader,
+so don't split them into separate passes.
+
+1. **Claims.** Re-examine every specific claim (counts, "only X does Y"
+   absolutes, described behavior) against the actual diff and the Step 3
+   background, with the skepticism you'd bring to someone else's writing. A
+   claim invented in Step 4 to smooth over a gap, rather than sourced from
+   something actually read, is what this catches. Numbers get the harshest
+   look: a number-shaped hole labelled as unverified is honest, an invented
+   statistic makes every other claim on the page unreadable.
+2. **Diagrams.** For each one, ask what it tells the reader that the
+   paragraph and code block beside it do not. A diagram that restates its
+   neighbours is decoration; cut it and keep the prose. The highest-quality
+   edit to a diagram is usually a deletion.
+3. **Prose.** If the page is in Japanese, hold it to the
+   `japanese-tech-writing` sections named in Step 4 — the LLM っぽい表現 and
+   冗長 checks in particular, since those are exactly what a first draft
+   written under time pressure accumulates. Give the subagent the same
+   exclusion list, or it will flag the callouts and the second person as
+   violations and you'll spend the pass arguing with it.
+
+Fix whatever it flags, and re-run the mechanical check if a fix changed the HTML.
 
 ## Step 6: Save as local HTML and open it
 
@@ -240,3 +322,8 @@ doesn't cover 100% of `git status`/`gh pr diff --name-only`.
 - Don't skip Step 5. A confident, well-formatted explanation with an invented
   claim in it is worse than one that admits a gap — the reader has no way to
   tell which parts were verified.
+- The visual system in `references/visual-design.md` is not styling advice
+  applied at the end. Read it before writing the first section: the diagram
+  family a change routes to determines how the Intuition section is written,
+  and retrofitting a palette onto a page laid out without one only produces a
+  recolored version of the same undifferentiated document.
