@@ -1,7 +1,7 @@
 ---
 name: shaping-screens
-description: Shape a vague UI idea into a runnable Astro + HTML/CSS prototype through dialogue. Use when screens, transitions, and states should be settled before implementation, for either a new web app or an extension to an existing repo. Combines external design-system references (via WebFetch) with existing-repo token extraction (via Grep/Glob), and optionally captures existing screens via playwright-skill or browser-use.
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash, WebFetch, TodoWrite, Agent(Explore), Skill(playwright-skill, browser-use, superpowers:writing-plans, devflow, advisor-critique-loop)
+description: Shape a vague UI idea into a runnable Astro + HTML/CSS prototype through dialogue. Use when screens, transitions, and states should be settled before implementation, for either a new web app or an extension to an existing repo. Combines external design-system references (via WebFetch) with existing-repo token extraction (via Grep/Glob), and optionally captures existing screens via playwright-skill or agent-browser.
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash, WebFetch, TodoWrite, Agent(Explore), Skill(playwright-skill, agent-browser, superpowers:writing-plans, devflow, advisor-critique-loop)
 user-invocable: true
 ---
 
@@ -105,7 +105,7 @@ Run the sub-flows that match the Step 0 tuple. If both `external_ds` and `existi
 2. For each URL, run `WebFetch` and summarise component naming, tone, and base tokens (color / spacing / typography).
 3. On failure:
    - 404 / timeout: ask the user to fix the URL or skip that DS.
-   - WebFetch returns an empty page or near-empty content (typical for SPA-rendered docs sites): ask the user whether to escalate to `Skill(browser-use)` for a rendered fetch, or to skip the DS.
+   - WebFetch returns an empty page or near-empty content (typical for SPA-rendered docs sites): ask the user whether to escalate to `Skill(agent-browser)` for a rendered fetch, or to skip the DS.
    - All URLs fail, or the user opts to reference nothing: continue from the user's prose alone. Record "no DS referenced" in the Context section of `spec.md`.
 
 #### Existing-repo sub-flow (when `existing_repo = Y`)
@@ -131,7 +131,7 @@ Run the sub-flows that match the Step 0 tuple. If both `external_ds` and `existi
    - (c) **Continue with template defaults** - keep `existing_repo = Y` but accept that no tokens were extracted. Record `Context: "no design tokens or components extracted from {target_repo}"` in `spec.md`. The Astro starter's default `global.css` values are used unchanged.
 5. **Visual capture (opt-in):**
    - Always ask explicit consent: "Should I capture screenshots of the existing screens? (Requires a dev server already running — I will not start it for you. Tell me the URL once it is up.)"
-   - If yes: confirm the **already-running** target URL with the user, then invoke `Skill(playwright-skill)` or `Skill(browser-use)`. Screenshots land in `{prototype_dir}references/screenshots/`. Because the directory is created in Step 4, in Step 1 only **plan** the capture; perform the actual capture after Step 4 has created the directory.
+   - If yes: confirm the **already-running** target URL with the user, then invoke `Skill(playwright-skill)` or `Skill(agent-browser)`. Screenshots land in `{prototype_dir}references/screenshots/`. Because the directory is created in Step 4, in Step 1 only **plan** the capture; perform the actual capture after Step 4 has created the directory.
    - If no: skip. Record "no visual capture" in the Context section of `spec.md`.
 6. Hold a summary of findings (candidate design tokens, main components, list of existing page URLs) in working memory. Present it to the user in Step 2.
 
@@ -260,7 +260,7 @@ Fill `{skill_dir}/templates/spec.md.tmpl` and `{skill_dir}/templates/README.md.t
 
 #### 4.9 Run the visual capture (only if opt-in was granted)
 
-For each URL noted in Step 1, invoke `Skill(playwright-skill)` or `Skill(browser-use)` and save screenshots under `{prototype_dir}references/screenshots/`.
+For each URL noted in Step 1, invoke `Skill(playwright-skill)` or `Skill(agent-browser)` and save screenshots under `{prototype_dir}references/screenshots/`.
 
 #### 4.10 User approval
 
@@ -303,7 +303,7 @@ If "Stop here" is chosen: tell the user the spec path and the recommended skill,
 
 - **No code edits in the target repo** - Steps 0-3 are read-only. The only write target is `{prototype_dir}` (resolved in Step 4.2).
 - **No auto install** - `pnpm install` is run by the user. The skill MUST NOT run `npm i -g astro` or similar.
-- **Visual capture is opt-in** - even in existing mode, explicit consent is required. Do not invoke `playwright-skill` / `browser-use` without it.
+- **Visual capture is opt-in** - even in existing mode, explicit consent is required. Do not invoke `playwright-skill` / `agent-browser` without it.
 - **`spec.md` always exists at the end** - even on partial failure, leave at least a Goal section.
 - **Single hop downstream** - invoke at most one downstream skill per session. If the user wants more, they chain manually.
 - **`## Downstream` is mandatory in spec.md** - never delete it; record "Stop here" verbatim with a reason if chosen.
@@ -313,9 +313,9 @@ If "Stop here" is chosen: tell the user the spec path and the recommended skill,
 | Case | Response |
 |---|---|
 | Step 0: target repo cannot be determined | Default both axes to N and require explicit user confirmation; offer to set `existing_repo = Y` with a path the user supplies. |
-| Step 1: WebFetch fails | Let the user fix the URL, escalate to `Skill(browser-use)` for SPA-rendered pages, or skip that DS. |
+| Step 1: WebFetch fails | Let the user fix the URL, escalate to `Skill(agent-browser)` for SPA-rendered pages, or skip that DS. |
 | Step 1: Grep/Glob returns 0 hits in existing mode | Present the three options from Step 1 sub-flow item 4: (a) re-confirm path/scope, (b) flip `existing_repo` to N, (c) continue with template defaults. Never silently fall back. |
-| playwright-skill / browser-use fails | Skip the visual capture and continue with URL/code exploration only. |
+| playwright-skill / agent-browser fails | Skip the visual capture and continue with URL/code exploration only. |
 | `{prototype_dir}` already exists | 1-second collisions are not expected; on the rare hit, retry with a fresh timestamp. |
 | Write error mid-template-expansion | Do not roll back. Ask the user to clean up manually; note this at the top of `spec.md`. |
 | User declines Agent(Explore) escalation | Continue with the lightweight exploration only; record "exploration limited" in `spec.md`'s Open Questions. |

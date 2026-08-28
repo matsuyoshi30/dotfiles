@@ -1,143 +1,140 @@
 ---
 name: agent-browser
-description: Lightweight browser automation using `@ref`-based element selection from accessibility-tree snapshots, with semantic locators (role/text/label) and parallel named sessions. Prefer this over `browser-use` for quick one-off flows, simple form filling, and when multiple independent browser sessions must run in parallel. Use `browser-use` instead when you need a persistent daemon, a real Chrome profile with existing logins, CDP connect to a running Chrome, cloud browsers, or a persistent Python scripting session.
+description: Scripted browser automation via the `agent-browser` CLI — accessibility-tree `@ref` selection, semantic locators, isolated parallel sessions, Chrome profile reuse, CDP connect, and measurement (Core Web Vitals, HAR, traces, React re-render profiling, visual diff). Use when the browser work should run without disturbing the user's own Chrome: unattended or parallel runs, repeated scripted flows, and performance or diagnostic measurement. When the user simply wants a logged-in page in their own browser read or driven, use claude-in-chrome instead.
+allowed-tools: Bash(agent-browser:*)
 ---
 
-# Browser Automation with agent-browser
+# Browser automation with agent-browser
 
-## Quick start
+A daemon-backed CLI. The browser stays open between commands, so chaining with `&&`
+in one shell call is both safe and fast.
+
+## This skill or claude-in-chrome
+
+Reach for claude-in-chrome when the user's own browser is the point — reading or
+driving a page they are already logged into, in the session in front of them.
+
+Reach for `agent-browser` when the user's Chrome should stay untouched:
+
+- unattended runs, or several independent browsers at once
+- a scripted flow repeated against a dev server or a staging build
+- measurement and diagnostics (Web Vitals, HAR, traces, React re-renders, visual diff)
+
+## Load the CLI's own guide first
 
 ```bash
-agent-browser open <url>        # Navigate to page
-agent-browser snapshot -i       # Get interactive elements with refs
-agent-browser click @e1         # Click element by ref
-agent-browser fill @e2 "text"   # Fill input by ref
-agent-browser close             # Close browser
+agent-browser skills get core --full
 ```
 
-## Core workflow
+The guide ships inside the CLI, so it is always version-matched — prefer it over
+guessing commands from flags. Specialized guides exist for other targets:
 
-1. Navigate: `agent-browser open <url>`
-2. Snapshot: `agent-browser snapshot -i` (returns elements with refs like `@e1`, `@e2`)
-3. Interact using refs from the snapshot
-4. Re-snapshot after navigation or significant DOM changes
-
-## Commands
-
-### Navigation
 ```bash
-agent-browser open <url>      # Navigate to URL
-agent-browser back            # Go back
-agent-browser forward         # Go forward
-agent-browser reload          # Reload page
-agent-browser close           # Close browser
+agent-browser skills list
+agent-browser skills get electron   # VS Code, Slack, Discord, Figma desktop apps
+agent-browser skills get slack
+agent-browser skills get dogfood    # exploratory bug hunting
 ```
 
-### Snapshot (page analysis)
+## Just the rendered text
+
+When the page only needs to be read — an SPA-rendered docs page that a plain fetch
+returns empty, for instance — skip the interaction loop entirely:
+
 ```bash
-agent-browser snapshot        # Full accessibility tree
-agent-browser snapshot -i     # Interactive elements only (recommended)
-agent-browser snapshot -c     # Compact output
-agent-browser snapshot -d 3   # Limit depth to 3
+agent-browser read <url>            # agent-readable text of the rendered page
+agent-browser get html --selector main
 ```
 
-### Interactions (use @refs from snapshot)
+## Core loop
+
+Snapshot, act on the refs it returns, re-snapshot after navigation or a large DOM change.
+
 ```bash
-agent-browser click @e1           # Click
-agent-browser dblclick @e1        # Double-click
-agent-browser fill @e2 "text"     # Clear and type
-agent-browser type @e2 "text"     # Type without clearing
-agent-browser press Enter         # Press key
-agent-browser press Control+a     # Key combination
-agent-browser hover @e1           # Hover
-agent-browser check @e1           # Check checkbox
-agent-browser uncheck @e1         # Uncheck checkbox
-agent-browser select @e1 "value"  # Select dropdown
-agent-browser scroll down 500     # Scroll page
-agent-browser scrollintoview @e1  # Scroll element into view
+agent-browser open https://example.com/login
+agent-browser snapshot -i          # interactive elements only → @e1, @e2, @e3
+agent-browser fill @e1 "user@example.com"
+agent-browser fill @e2 "password"
+agent-browser click @e3
+agent-browser wait --load networkidle
+agent-browser snapshot -i          # confirm the result
+agent-browser close
 ```
 
-### Get information
-```bash
-agent-browser get text @e1        # Get element text
-agent-browser get value @e1       # Get input value
-agent-browser get title           # Get page title
-agent-browser get url             # Get current URL
-```
+Semantic locators work without a snapshot when the target is unambiguous:
 
-### Screenshots
-```bash
-agent-browser screenshot          # Screenshot to stdout
-agent-browser screenshot path.png # Save to file
-agent-browser screenshot --full   # Full page
-```
-
-### Wait
-```bash
-agent-browser wait @e1                     # Wait for element
-agent-browser wait 2000                    # Wait milliseconds
-agent-browser wait --text "Success"        # Wait for text
-agent-browser wait --load networkidle      # Wait for network idle
-```
-
-### Semantic locators (alternative to refs)
 ```bash
 agent-browser find role button click --name "Submit"
-agent-browser find text "Sign In" click
 agent-browser find label "Email" fill "user@test.com"
 ```
 
-## Example: Form submission
+Add `--json` to any command for machine-readable output.
+
+## Reaching authenticated pages
+
+Four routes, ordered by how little they disturb the user's browser. Prefer the first
+that works.
 
 ```bash
-agent-browser open https://example.com/form
-agent-browser snapshot -i
-# Output shows: textbox "Email" [ref=e1], textbox "Password" [ref=e2], button "Submit" [ref=e3]
+# 1. Replay a saved cookie + storage bundle — the default for repeatable runs
+agent-browser state save auth.json      # after logging in once
+agent-browser --state auth.json open https://app.example.com/dashboard
 
-agent-browser fill @e1 "user@example.com"
-agent-browser fill @e2 "password123"
-agent-browser click @e3
-agent-browser wait --load networkidle
-agent-browser snapshot -i  # Check result
+# 2. Auto-save and restore per session, with a staleness check
+agent-browser --restore myapp --restore-check-text "Sign out" open https://app.example.com
+
+# 3. Reuse a real Chrome profile's existing logins
+agent-browser profiles                  # list them, then ask the user which to use
+agent-browser --profile Default open https://github.com
+
+# 4. Attach to a Chrome already running with remote debugging
+agent-browser --auto-connect open https://example.com
 ```
 
-## Example: Authentication with saved state
+`--auto-connect` also converts an existing login into a reusable bundle:
+`agent-browser --auto-connect state save ./auth.json`.
+
+For a site that demands a fresh form login every time, `agent-browser auth save <name>`
+stores the credentials and `agent-browser auth login <name>` replays them.
+
+## Parallel sessions
+
+Each named session is an isolated browser with its own cookies and storage.
 
 ```bash
-# Login once
-agent-browser open https://app.example.com/login
-agent-browser snapshot -i
-agent-browser fill @e1 "username"
-agent-browser fill @e2 "password"
-agent-browser click @e3
-agent-browser wait --url "**/dashboard"
-agent-browser state save auth.json
-
-# Later sessions: load saved state
-agent-browser state load auth.json
-agent-browser open https://app.example.com/dashboard
-```
-
-## Sessions (parallel browsers)
-
-```bash
-agent-browser --session test1 open site-a.com
-agent-browser --session test2 open site-b.com
+agent-browser --session a open https://site-a.com
+agent-browser --session b open https://site-b.com
 agent-browser session list
+agent-browser close --all
 ```
 
-## JSON output (for parsing)
+## Measurement and diagnostics
 
-Add `--json` for machine-readable output:
 ```bash
-agent-browser snapshot -i --json
-agent-browser get text @e1 --json
+agent-browser vitals --json                      # LCP/CLS/TTFB/FCP/INP + hydration
+agent-browser network har start ./trace.har      # ... then: network har stop
+agent-browser network requests --filter /api/
+agent-browser trace start                        # ... then: trace stop ./trace.json
+agent-browser diff screenshot --baseline         # visual regression against a baseline
+agent-browser console                            # console logs
+agent-browser errors                             # page errors
 ```
 
-## Debugging
+React internals need the flag at launch:
 
 ```bash
-agent-browser open example.com --headed  # Show browser window
-agent-browser console                    # View console messages
-agent-browser errors                     # View page errors
+agent-browser open http://localhost:3000 --enable react-devtools
+agent-browser react renders start
+# ... interact ...
+agent-browser react renders stop --json
+agent-browser react suspense --only-dynamic
+```
+
+## Debugging a flow that misbehaves
+
+```bash
+agent-browser open <url> --headed   # watch it happen
+agent-browser highlight <selector>  # confirm you are targeting what you think
+agent-browser inspect               # open DevTools on the active page
+agent-browser doctor --fix          # install and stale-state problems
 ```
