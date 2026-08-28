@@ -1,6 +1,6 @@
 # Frontend (TypeScript/React) Review Guardrails
 
-Guardrails for patterns from frontend PR reviews. Scoped to TypeScript/React idioms and pitfalls (observable models, component state, form bindings, GraphQL-backed views) — generic review concerns (naming, DRY, etc.) live in the main `code-reviewer` SKILL.md.
+Guardrails for patterns from frontend PR reviews. Scoped to TypeScript/React idioms and pitfalls (observable models, component state, form bindings, GraphQL-backed views) — generic review concerns (naming, DRY, etc.) live in the main `reviewing-code` SKILL.md.
 
 After writing code, self-check against these rules. When reviewing, apply the same checks to the diff.
 

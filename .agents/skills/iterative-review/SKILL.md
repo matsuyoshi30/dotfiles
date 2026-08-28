@@ -67,7 +67,7 @@ Read [review-prompt.md](review-prompt.md) and fill in the placeholders:
 - `{cwd}` — current working directory
 - `{target_files}` — list of files to review
 
-Launch an Agent with `subagent_type: "review-agent"` using the filled prompt. Do NOT use `superpowers:code-reviewer` or any other subagent type.
+Launch an Agent with `subagent_type: "review-agent"` using the filled prompt. Do NOT use any other subagent type.
 
 Wait for the review result.
 
@@ -121,7 +121,7 @@ After the loop ends, present a consolidated report to the user:
 
 ## Important Rules
 
-- **Use ONLY `review-agent` and `fix-agent` subagent types.**. Do not use any other subagent type. The `review-agent` already has the code-reviewer skill preloaded via its `skills` field.
+- **Use ONLY `review-agent` and `fix-agent` subagent types.**. Do not use any other subagent type. The `review-agent` definition already points at the `reviewing-code` skill.
 - **Do not modify code yourself.** All code changes happen through the fix subagent.
 - **Do not skip the review subagent.** Even if you think you know the issues, always run the reviewer.
 - **Preserve the structured summary format.** The `---SUMMARY---` block is required for the exit condition check.
