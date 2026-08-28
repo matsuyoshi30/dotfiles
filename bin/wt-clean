@@ -11,11 +11,28 @@
 # ボトルネックは git fetch / gh pr list のネットワーク I/O なので並列化が効く。
 #
 # マージ判定 (3 段):
-#   tier1 reachable : `git branch --merged origin/<default>` に出る
-#                     = ローカル tip が default の祖先。通常/ff/rebase merge。安全。
+#   tier1 reachable : tip が origin/<default> の祖先。通常/ff/rebase merge。安全。
+#                     detached HEAD も対象に含める。codex 等の agent が作る
+#                     detached worktree は大半がこの型 (default に乗ったまま放置)。
+#                     branch --merged ではローカルブランチしか列挙されず detached が
+#                     判定の土俵に乗らないため、merge-base --is-ancestor で判定する。
 #   tier2 squash    : tier1 に出ないが merged PR があり かつ
 #                     ローカル tip == PR の headRefOid。
 #                     squash merge はコミットが祖先にならず tier1 で漏れるため。
+#   merged-else     : tip が「自分の upstream 以外」の origin ref から到達可能
+#                     かつ、そのブランチに open な PR が無い。スタックした PR の
+#                     親ブランチに取り込まれた場合がこれ。upstream を除外するの
+#                     が要点で、除外しないと push しただけの生きたブランチが
+#                     全部候補に落ちる。detached は upstream が無いので origin
+#                     ref すべてが対象になる (default の祖先なら先に tier1 で
+#                     拾われる)。open PR チェックが要るのは、取り込まれてはいて
+#                     も両方の PR がまだ動いている途中 (スタック作業中) のこと
+#                     があり、それを消すと作業中のブランチを壊すため。
+#   closed-pr       : PR が CLOSED (merged ではない) かつ tip が push 済み。
+#                     コミットは origin に残るので手元を消しても失われないが、
+#                     close は放棄とは限らず後で再開しうる。よって既定では
+#                     「要確認」枠に報告するだけで、--include-closed-pr を
+#                     付けたときだけ削除候補に入る。
 #   tier3 landed-pr : tip が headRefOid と一致しないが、headRefOid 自体が
 #                     origin/<default> から到達可能。PR の中身が取り込まれたことは
 #                     確実だが、ローカル tip はそこに到達しないので、tip 側のコミットが
@@ -25,14 +42,43 @@
 #                     よって削除はせず「要確認」として本数・容量つきで報告する。
 #                     PR が入ったあとに積み直したブランチはこの型に落ちる。
 #
+# 稼働中ガード:
+#   lsof -a -d cwd で全プロセスの cwd を 1 回だけ取り、worktree 配下を掴んでいる
+#   ものを in-use として除外する。agent (codex/claude) のセッションが worktree を
+#   cwd にしたまま生きていることがあり、消すとセッションが壊れるため。
+#   mtime による「N 日以内は保護」は採らない。実測で稼働中の worktree の方が
+#   停止済みのものより古いケースがあり、閾値では分離できないことが分かっている。
+#   lsof が取れない場合は detached の削除を止める (fail closed)。
+#
 # 除外: primary worktree / 現在いる worktree / tracked 変更あり
 #       (modified/staged/deleted)。untracked のみ (.devflow/.advisor 等の
 #       ツール掃き溜め) は保護せず削除対象に含め、--apply 時に
 #       `git worktree remove --force` で破棄する (破棄量は UNTRACKED 列に表示)。
 #
+# 入れ子ガード:
+#   候補 worktree の中に別リポジトリの worktree/clone が入れ子になっている場合
+#   (agent が作る作業ツリーで実際に起きる。実例: henry-workspace の worktree の
+#   中に henry-backend の worktree が別途登録されており、未 push のコミットを
+#   持っていた)、その worktree は候補から外し「要確認」として報告する
+#   (has_nested_repo)。`git worktree remove --force` は中身ごとディレクトリを
+#   消すため、入れ子側に未 push のコミットがあるとどの ref からも到達不能なまま
+#   失われる。入れ子側が直前の判定で skip dirty として保護されていても、外側を
+#   消せば道連れで消えるので、未 push かどうかを見分けようとはせず一律で除外する。
+#
+# 入れ子ガードにより、別リポジトリを内包する候補は削除されない。入れ子側に
+# 未 push のコミットがあってもどの ref からも到達不能になることはなく、外側を
+# 消す代わりに人が確認する枠に回る。よって「削除順」は wt-clean が依存する性質
+# ではない — 削除するかどうかを「消しても安全か」で決めており、いつ消すかの
+# 順序で安全性を確保してはいない。bin/test/wt-clean-test.sh の
+# case_nested_repo がこのガードを固定している。
+#
 # .wt 配下に .git をどこにも持たないディレクトリは、中断した worktree remove の
 # 残骸として報告する。git worktree list に出ないため放置され続けるが、git から
 # 中身を検証できないので削除はしない。
+#
+# ディレクトリが消えたのに登録だけ残った worktree (git worktree list に prunable と
+# 出るもの) は報告し、--apply のときだけ git worktree prune で除去する。
+# dry-run が状態を変えないようにするため、prune は必ず --apply の中で呼ぶ。
 #
 # Usage:
 #   wt-clean [ROOT_DIR]                # 配下を dry-run (既定: カレント)
@@ -40,6 +86,7 @@
 #   wt-clean ~/ghq --apply             # 実削除
 #   wt-clean ~/ghq --keep-branch       # worktree のみ削除しブランチは残す
 #   wt-clean ~/ghq --jobs 16           # 並列数 (既定 8)
+#   wt-clean ~/ghq --include-closed-pr # close 済み PR の worktree も削除対象に含める
 #
 set -uo pipefail
 
@@ -59,13 +106,91 @@ scan_orphans() {
   printf 'orphan\t%s\t%s\n' "$d" "$(du -sk "$d" 2>/dev/null | cut -f1)"
 }
 
+# 稼働中プロセスが cwd として掴んでいるか。worktree 自身か、その配下。
+# パス境界 ("/") を見るので /a/b が /a/bc に誤って一致しない。
+# awk の exit は END ブロックへ飛ぶだけで即終了しない (END 内の exit が最終ステータス
+# を上書きする) ため、単純な `{exit 0} END{exit 1}' では常に 1 で返ってしまう。
+# フラグ変数で判定して END で一度だけ exit する。
+is_in_use() {
+  [[ "${CLEANUP_GUARD_OK:-0}" == 1 ]] || return 1
+  awk -v p="$1" '$0==p || index($0, p "/")==1 {f=1; exit} END{exit !f}' \
+    "${CLEANUP_LIVE_CWD:-/dev/null}"
+}
+
+# tip を含む origin ref のうち、自分の upstream と origin/HEAD を除いたもの。
+# 「自分の upstream 以外にも含まれる」= 別のブランチに取り込まれた、と読む。
+# upstream を除かないと、push しただけの生きたブランチが全部候補に落ちる
+# (open PR の worktree と close 済みの worktree は git 上で同じ形をしている)。
+others_containing() {
+  local repo="$1" wt="$2" tip="$3" br="$4" up self
+  up="$(git -C "$wt" rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null)"
+  # push 済みでも追跡設定が無いブランチは @{u} が空になる。そのままだと
+  # 自分自身のリモート追跡ブランチが「自分の upstream 以外の ref」として残り、
+  # どこにも合流していないブランチが merged-else になる (実測: kango-72-graphql)。
+  # よって同名の origin/<branch> も必ず除外する。
+  self="__no_branch__"; [[ -n "$br" ]] && self="origin/$br"
+  git -C "$repo" for-each-ref --format='%(refname:short)' --contains "$tip" \
+      refs/remotes/origin 2>/dev/null \
+    | grep -v -x -e 'origin/HEAD' -e "${up:-__no_upstream__}" -e "$self"
+}
+
+# ブランチに OPEN な PR が付いているか。
+# others_containing は「取り込み済み」しか見ないので、スタックした PR の
+# 親に取り込まれてはいるがまだ両方の PR が動いている (作業中) ケースと、
+# 作業が終わって親だけ残った本当に不要なケースを区別できない。
+# open PR があれば前者と分かるので、merged-else から除外する。
+has_open_pr() {
+  local url="$1" br="$2" n rc
+  [[ -n "$br" ]] || return 1
+  n="$(gh pr list --repo "$url" --head "$br" --state open \
+         --json number -q '.[0].number' 2>/dev/null)"
+  rc=$?
+  # squash 判定・is_closed_pr は gh 失敗時の空出力を「その tier を付けない」方向に
+  # しか使わないので fail closed になる。has_open_pr は merged-else を止める唯一の
+  # 否定ガードなので、同じ「空 = 無い」読みだと gh 障害時に危険側 (誤削除) へ倒れる。
+  # よって gh 自体が失敗した (rc!=0) ときは「open PR は無い」と断定せず、
+  # 安全側 = open PR がある扱いにして merged-else を止める。
+  if [[ $rc -ne 0 ]]; then
+    echo "${C_YEL}gh pr list 失敗、open PR の有無を確認できないため安全側 (open扱い) に倒す: ${br}${C_RST}" >&2
+    return 0
+  fi
+  [[ -n "$n" ]]
+}
+
+# PR が CLOSED (merged ではない) かつ tip が push 済みか。
+# tip が upstream の祖先であること = 手元に未 push のコミットが無いこと。
+# 未 push があると worktree を消した時点でそれが失われるので候補にしない。
+is_closed_pr() {
+  local url="$1" br="$2" repo="$3" wt="$4" tip="$5" state up
+  state="$(gh pr list --repo "$url" --head "$br" --state all \
+             --json state -q '.[0].state' 2>/dev/null)"
+  [[ "$state" == "CLOSED" ]] || return 1
+  up="$(git -C "$wt" rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null)"
+  [[ -n "$up" ]] || return 1
+  git -C "$repo" merge-base --is-ancestor "$tip" "$up" 2>/dev/null
+}
+
+# 候補 worktree の中に、別リポジトリの worktree や clone が入れ子になっていないか。
+# `git worktree remove --force` はディレクトリごと消すので、入れ子側に未 push の
+# コミットがあるとどの ref からも到達不能なまま失われる。しかも入れ子側は直前の
+# 判定で skip dirty (tracked変更) として保護されていたかもしれないのに、外側を
+# 消せば道連れで消える。未 push かどうかを見分けようとはせず、入れ子が見つかった
+# ら一律で削除候補から外し、人が確認する枠に回す。node_modules/vendor を刈らないと
+# 大半の JS worktree が誤検知で要確認行きになる。
+has_nested_repo() {
+  local wt="$1"
+  [[ -n "$(find "$wt" -mindepth 2 \( -name node_modules -o -name vendor \) -prune \
+             -o -name .git -print -quit 2>/dev/null)" ]]
+}
+
 # ───────────────────────── ワーカー: repo 1 つを検出 ─────────────────────────
 # 候補を「cand \t repo_root \t worktree \t branch \t tier \t size_kb \t untracked_kb」、
-# 残骸を「orphan \t path \t size_kb」で stdout に出力。
+# 残骸を「orphan \t path \t size_kb」、入れ子の別リポジトリ検出を
+# 「nested \t repo_root \t worktree \t branch」で stdout に出力。
 # skip 等の情報は stderr へ。stdout は機械可読・並列安全に保つ。
 worker() {
   local REPO="$1"
-  local default_ref default_branch merged_reachable repo_url
+  local default_ref default_branch repo_url
   default_ref="$(git -C "$REPO" symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null || true)"
   [[ -z "$default_ref" ]] && { echo "${C_YEL}skip repo (origin/HEAD 不明): $REPO${C_RST}" >&2; return; }
   default_branch="${default_ref#origin/}"
@@ -74,39 +199,67 @@ worker() {
   git -C "$REPO" fetch --quiet origin "$default_branch" 2>/dev/null \
     || echo "${C_DIM}fetch 失敗、ローカル origin/$default_branch で判定: $REPO${C_RST}" >&2
 
-  merged_reachable=$'\n'"$(git -C "$REPO" branch --merged "origin/$default_branch" \
-                            --format='%(refname:short)' 2>/dev/null)"$'\n'
-
-  local wt="" br="" tier tip oid szk
+  local wt="" br="" tier tip oid szk prunable=0
   while IFS= read -r line || [[ -n "$line" ]]; do
     case "$line" in
       "worktree "*) wt="${line#worktree }" ;;
       "branch "*)   br="${line#branch refs/heads/}" ;;
+      "prunable"*)  prunable=1 ;;
       "")
-        [[ -z "$wt" ]] && { wt=""; br=""; continue; }
+        [[ -z "$wt" ]] && { wt=""; br=""; prunable=0; continue; }
+        if [[ "$prunable" == 1 ]]; then
+          echo "${C_YEL}prunable (ディレクトリが消えて登録だけ残った): $wt${C_RST}" >&2
+          printf 'prune\t%s\t%s\n' "$REPO" "$wt"
+          wt=""; br=""; prunable=0; continue
+        fi
         tier=""
+        tip="$(git -C "$wt" rev-parse HEAD 2>/dev/null)"
         if   [[ "$wt" == "$REPO" ]]; then :                                   # primary
-        elif [[ -z "$br" ]]; then echo "${C_DIM}skip detached: $wt${C_RST}" >&2
-        elif [[ "$br" == "$default_branch" ]]; then :                         # default 自身
+        elif [[ -n "$br" && "$br" == "$default_branch" ]]; then :             # default 自身
         elif [[ "$wt" == "$CUR_TOP" ]]; then echo "${C_DIM}skip current: $wt${C_RST}" >&2
+        elif is_in_use "$wt"; then
+          echo "${C_YEL}skip in-use (稼働中プロセスが使用中): $wt${C_RST}" >&2
+        elif [[ -z "$tip" ]]; then echo "${C_YEL}skip (HEAD 不明): $wt${C_RST}" >&2
         elif [[ -n "$(git -C "$wt" status --porcelain --untracked-files=no 2>/dev/null)" ]]; then
           # tracked 変更 (modified/staged/deleted) があるものだけ保護対象。
           # untracked (.devflow/.advisor 等のツール掃き溜め) は削除対象に含める。
-          echo "${C_YEL}skip dirty (tracked変更): ${REPO##*/}:$br${C_RST}" >&2
-        elif [[ "$merged_reachable" == *$'\n'"$br"$'\n'* ]]; then
+          echo "${C_YEL}skip dirty (tracked変更): ${REPO##*/}:${br:-detached}${C_RST}" >&2
+        elif git -C "$REPO" merge-base --is-ancestor "$tip" "origin/$default_branch" 2>/dev/null; then
           tier="reachable"
+        elif [[ -n "$(others_containing "$REPO" "$wt" "$tip" "$br")" ]] \
+             && ! has_open_pr "$repo_url" "$br"; then
+          tier="merged-else"
         else
-          # tier2: squash merge は default の祖先にならないので branch 単位で
-          # merged PR を引く (--limit 方式だと古い PR が窓から漏れるため per-branch)。
-          oid="$(gh pr list --repo "$repo_url" --head "$br" --state merged \
-                   --json headRefOid -q '.[0].headRefOid' 2>/dev/null)"
-          if [[ -n "$oid" ]]; then
-            tip="$(git -C "$wt" rev-parse HEAD 2>/dev/null)"
-            if [[ "$oid" == "$tip" ]]; then tier="squash"
-            elif git -C "$REPO" merge-base --is-ancestor "$oid" "origin/$default_branch" 2>/dev/null
-            then tier="landed-pr"   # 報告のみ。削除はしない
-            else echo "${C_YEL}skip (tip≠merged SHA かつ PR 頭も default に無い): ${REPO##*/}:$br${C_RST}" >&2; fi
+          # tier2 squash: squash merge はコミットが origin/<default> の祖先に
+          # ならず merge-base では判定できないため、PR の headRefOid と tip を
+          # 直接比較する。tip はここで再取得しない (上の分岐で取得済み)。
+          if [[ -n "$br" ]]; then
+            oid="$(gh pr list --repo "$repo_url" --head "$br" --state merged \
+                     --json headRefOid -q '.[0].headRefOid' 2>/dev/null)"
+            if [[ -n "$oid" ]]; then
+              if [[ "$oid" == "$tip" ]]; then tier="squash"
+              elif git -C "$REPO" merge-base --is-ancestor "$oid" "origin/$default_branch" 2>/dev/null
+              then tier="landed-pr"   # 報告のみ。削除はしない
+              else echo "${C_YEL}skip (tip≠merged SHA かつ PR 頭も default に無い): ${REPO##*/}:$br${C_RST}" >&2; fi
+            elif is_closed_pr "$repo_url" "$br" "$REPO" "$wt" "$tip"; then
+              tier="closed-pr"
+            fi
           fi
+        fi
+        # landed-pr は既に要確認 (R_PATH) 行きで削除されないので、入れ子検査は不要。
+        # それ以外の tier は候補としてこの後 --apply で丸ごと rm される経路に乗るため、
+        # 消す前に入れ子の別リポジトリが無いか確認する。
+        if [[ -n "$tier" && "$tier" != "landed-pr" ]] && has_nested_repo "$wt"; then
+          echo "${C_YEL}skip (別リポジトリが入れ子): ${wt} (tier=${tier})${C_RST}" >&2
+          printf 'nested\t%s\t%s\t%s\n' "$REPO" "$wt" "${br:--}"
+          tier=""
+        fi
+        # detached はブランチ ref が無いため、worktree を消した時点でコミットが
+        # 到達不能になる。ガードが効かない状態でこれを消すのが唯一の不可逆な事故なので、
+        # lsof が取れなかったときは候補から外す。ブランチ付きは ref が残るので対象外。
+        if [[ -z "$br" && -n "$tier" && "${CLEANUP_GUARD_OK:-0}" != 1 ]]; then
+          echo "${C_YEL}skip detached (稼働中ガード無効): $wt${C_RST}" >&2
+          tier=""
         fi
         if [[ -n "$tier" ]]; then
           szk="$(du -sk "$wt" 2>/dev/null | cut -f1)"
@@ -116,9 +269,9 @@ worker() {
             [[ -z "$u" ]] && continue
             uk="$(du -sk "$wt/$u" 2>/dev/null | cut -f1)"; untk=$((untk + ${uk:-0}))
           done < <(git -C "$wt" ls-files --others --exclude-standard --directory 2>/dev/null)
-          printf 'cand\t%s\t%s\t%s\t%s\t%s\t%s\n' "$REPO" "$wt" "$br" "$tier" "${szk:-0}" "$untk"
+          printf 'cand\t%s\t%s\t%s\t%s\t%s\t%s\n' "$REPO" "$wt" "${br:--}" "$tier" "${szk:-0}" "$untk"
         fi
-        wt=""; br="" ;;
+        wt=""; br=""; prunable=0 ;;
     esac
   done < <(git -C "$REPO" worktree list --porcelain; echo "")
 
@@ -133,11 +286,12 @@ if [[ "${1:-}" == "--worker" ]]; then
 fi
 
 # ───────────────────────────── メイン ─────────────────────────────
-APPLY=0; KEEP_BRANCH=0; JOBS=8; ROOT=""
+APPLY=0; KEEP_BRANCH=0; JOBS=8; ROOT=""; INCLUDE_CLOSED_PR=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --apply)       APPLY=1 ;;
     --keep-branch) KEEP_BRANCH=1 ;;
+    --include-closed-pr) INCLUDE_CLOSED_PR=1 ;;
     --jobs)        JOBS="$2"; shift ;;
     # ヘッダコメントを行番号ではなく「最初の非コメント行まで」で切る (範囲がずれない)
     -h|--help)     awk 'NR>1 && !/^#/{exit} NR>1' "${BASH_SOURCE[0]}"; exit 0 ;;
@@ -164,7 +318,22 @@ echo "found ${#REPO_ROOTS[@]} repos, detecting with -P $JOBS ..." >&2
 # PIPE_BUF 以下の write は POSIX でアトミックなので、並列でも行が壊れ/欠落しない。
 # (ファイルへ直接 > すると共有 fd の非アトミック書き込みで行を取りこぼす)
 export CLEANUP_CUR_TOP; CLEANUP_CUR_TOP="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+export INCLUDE_CLOSED_PR
 TMP="$(mktemp)"; trap 'rm -f "$TMP"' EXIT
+
+# 稼働中プロセスの cwd 一覧。ワーカーごとに lsof を呼ぶと並列数ぶん重複するので
+# ここで 1 回だけ取る (実測 0.4 秒)。取得できなければ GUARD_OK=0 とし、
+# detached の削除を止める (fail closed)。
+LIVE_CWD="$(mktemp)"; trap 'rm -f "$TMP" "$LIVE_CWD"' EXIT
+if lsof -a -d cwd -u "$USER" -Fn 2>/dev/null | sed -n 's|^n||p' | sort -u > "$LIVE_CWD" \
+   && [[ -s "$LIVE_CWD" ]]; then
+  CLEANUP_GUARD_OK=1
+else
+  CLEANUP_GUARD_OK=0
+  echo "${C_YEL}lsof が使えないため detached は削除対象から外します${C_RST}" >&2
+fi
+export CLEANUP_LIVE_CWD="$LIVE_CWD" CLEANUP_GUARD_OK
+
 printf '%s\n' "${REPO_ROOTS[@]}" \
   | xargs -P "$JOBS" -I{} bash "${BASH_SOURCE[0]}" --worker "{}" \
   | sort > "$TMP"
@@ -172,16 +341,23 @@ printf '%s\n' "${REPO_ROOTS[@]}" \
 declare -a D_ROOT=() D_PATH=() D_BR=() D_TIER=() D_KB=() D_UNT=()
 declare -a R_PATH=() R_BR=() R_KB=()
 declare -a O_PATH=() O_KB=()
+declare -a C_PATH=() C_BR=() C_KB=()
+declare -a P_ROOT=() P_PATH=()
+declare -a N_PATH=() N_BR=()
 while IFS=$'\t' read -r kind f1 f2 f3 f4 f5 f6; do
   case "$kind" in
     # landed-pr は削除候補に混ぜない (自動削除の対象外)
     cand)   if [[ "$f4" == "landed-pr" ]]; then
               R_PATH+=("$f2"); R_BR+=("$f3"); R_KB+=("$f5")
+            elif [[ "$f4" == "closed-pr" && "${INCLUDE_CLOSED_PR:-0}" != 1 ]]; then
+              C_PATH+=("$f2"); C_BR+=("$f3"); C_KB+=("$f5")
             else
               D_ROOT+=("$f1"); D_PATH+=("$f2"); D_BR+=("$f3"); D_TIER+=("$f4")
               D_KB+=("$f5"); D_UNT+=("${f6:-0}")
             fi ;;
     orphan) O_PATH+=("$f1"); O_KB+=("${f2:-0}") ;;
+    prune)  P_ROOT+=("$f1"); P_PATH+=("$f2") ;;
+    nested) N_PATH+=("$f2"); N_BR+=("$f3") ;;
   esac
 done < "$TMP"
 
@@ -201,6 +377,18 @@ report_review() {
   printf '%s中身を見て問題なければ git worktree remove で消すこと。%s\n' "$C_DIM" "$C_RST"
 }
 
+report_closed_pr() {
+  [[ ${#C_PATH[@]} -eq 0 ]] && return 0
+  printf '\n%s要確認%s  PR は close 済み (merge されていない) (%d 本 / %s)\n' \
+    "$C_YEL" "$C_RST" "${#C_PATH[@]}" "$(sumsize "${C_KB[@]}")"
+  local i
+  for i in "${!C_PATH[@]}"; do
+    printf '%-8s %s\n' "$(fmtsize "${C_KB[$i]}")" "${C_BR[$i]}"
+  done
+  printf '%sコミットは origin に残っているので手元を消しても失われない。%s\n' "$C_DIM" "$C_RST"
+  printf '%s再開する予定が無ければ --include-closed-pr で削除対象に入る。%s\n' "$C_DIM" "$C_RST"
+}
+
 report_orphans() {
   [[ ${#O_PATH[@]} -eq 0 ]] && return 0
   printf '\n%s未登録の残骸%s  (git worktree list に出ない。中断した remove の跡)\n' "$C_YEL" "$C_RST"
@@ -211,25 +399,50 @@ report_orphans() {
   printf '%s中身を git で検証できないため自動削除はしない。確認のうえ手で消すこと。%s\n' "$C_DIM" "$C_RST"
 }
 
+report_prunable() {
+  [[ ${#P_PATH[@]} -eq 0 ]] && return 0
+  printf '\n%s登録だけ残った worktree%s  (%d 件、ディスクは減らない)\n' \
+    "$C_YEL" "$C_RST" "${#P_PATH[@]}"
+  local i
+  for i in "${!P_PATH[@]}"; do printf '         %s\n' "${P_PATH[$i]}"; done
+  printf '%s--apply で git worktree prune を実行する。%s\n' "$C_DIM" "$C_RST"
+}
+
+report_nested() {
+  [[ ${#N_PATH[@]} -eq 0 ]] && return 0
+  printf '\n%s要確認%s  中に別リポジトリの worktree/clone が入れ子になっている (%d 件)\n' \
+    "$C_YEL" "$C_RST" "${#N_PATH[@]}"
+  local i
+  for i in "${!N_PATH[@]}"; do
+    printf '         %s (%s)\n' "${N_PATH[$i]}" "${N_BR[$i]}"
+  done
+  printf '%sこの worktree ごと消すと入れ子側の未 push コミットが失われうる。%s\n' "$C_DIM" "$C_RST"
+  printf '%s中身を見て、入れ子側を別途整理してから手で消すこと。%s\n' "$C_DIM" "$C_RST"
+}
+
 echo
 if [[ ${#D_PATH[@]} -eq 0 ]]; then
-  echo "${C_GRN}削除候補なし。${C_RST}"; report_review; report_orphans; exit 0
+  echo "${C_GRN}削除候補なし。${C_RST}"; report_review; report_closed_pr; report_orphans; report_prunable; report_nested; exit 0
 fi
 
 printf '\n%s候補一覧%s  (UNTRACKED列 = --force で破棄される untracked 分)\n' "$C_GRN" "$C_RST"
-printf '%-40s %-10s %-8s %-9s %s\n' REPO TIER SIZE UNTRACKED BRANCH
+printf '%-40s %-10s %-8s %-9s %-28s %s\n' REPO TIER SIZE UNTRACKED BRANCH PATH
 total_kb=0
 for i in "${!D_PATH[@]}"; do
   total_kb=$((total_kb + ${D_KB[$i]}))
   name="${D_ROOT[$i]#"$ROOT"/}"; [[ "$name" == "${D_ROOT[$i]}" ]] && name="$(basename "${D_ROOT[$i]}")"
-  printf '%-40s %-10s %-8s %-9s %s\n' "$name" "${D_TIER[$i]}" \
-    "$(fmtsize "${D_KB[$i]}")" "$(fmtsize "${D_UNT[$i]}")" "${D_BR[$i]}"
+  wtrel="${D_PATH[$i]#"$ROOT"/}"
+  printf '%-40s %-10s %-8s %-9s %-28s %s\n' "$name" "${D_TIER[$i]}" \
+    "$(fmtsize "${D_KB[$i]}")" "$(fmtsize "${D_UNT[$i]}")" "${D_BR[$i]}" "$wtrel"
 done
 printf '%s合計 %s 解放見込み (%d worktree)%s\n' "$C_GRN" \
   "$(awk -v k="$total_kb" 'BEGIN{printf "%.1fG", k/1024/1024}')" "${#D_PATH[@]}" "$C_RST"
 
 report_review
+report_closed_pr
 report_orphans
+report_prunable
+report_nested
 
 if [[ $APPLY -eq 0 ]]; then
   echo; echo "${C_DIM}dry-run。実削除するには --apply を付けてください。${C_RST}"; exit 0
@@ -249,3 +462,12 @@ for i in "${!D_PATH[@]}"; do
     echo "   ${C_YEL}remove 失敗 (dirty?) skip${C_RST}"
   fi
 done
+
+# prune は dry-run では絶対に走らせない (dry-run が状態を変えない性質を守る)。
+# 重複を避けるため repo ごとに 1 回だけ呼ぶ。
+if [[ ${#P_ROOT[@]} -gt 0 ]]; then
+  printf '%s\n' "${P_ROOT[@]}" | sort -u | while IFS= read -r r; do
+    echo "prune: $r"
+    git -C "$r" worktree prune
+  done
+fi
