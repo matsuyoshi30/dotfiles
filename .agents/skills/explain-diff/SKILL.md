@@ -150,7 +150,9 @@ Produce one HTML document with these sections, in order:
   diagrams earn the most, provided each one shows something the prose beside
   it doesn't already say.
 - **Code** — a high-level walkthrough of the actual changes, grouped and
-  ordered so the logic builds (not necessarily file order).
+  ordered so the logic builds (not necessarily file order), closing with a
+  map of the whole diff (see below) that says which files each subsection
+  opened and which it did not.
 - **Quiz** — 5 medium-difficulty multiple-choice questions that require
   actually understanding the change to answer, not gotchas or trivia.
   Interactive: clicking an option immediately shows correct/incorrect with a
@@ -159,6 +161,50 @@ Produce one HTML document with these sections, in order:
   explanations}, ... ]`) rendered by a loop, rather than 5 hand-written
   blocks of markup — Step 5 counts entries in this array, which is exact,
   instead of counting rendered DOM elements, which isn't.
+
+The diff map — without one the page teaches six well-chosen groups out of a
+25-file PR and says nothing about the other nineteen, so the reader still
+meets them cold in the review tool. The map closes that gap.
+
+**It goes last, after the walkthrough, not before it.** A 25-row table up
+front contributes nothing to understanding: a reader who has not yet seen the
+change has no way to tell which of those rows matter, so the table reads as a
+wall of paths to skip. After the walkthrough the same table does real work —
+it says what the six subsections actually opened, what they didn't, and why
+the remainder is safe to move through quickly. It is a coverage check handing
+the reader off to the review tool, not a primer.
+
+It is a plain table with one row per changed file, covering **every** file
+from Step 2's list — including the ones that produced no hunks (pure renames,
+binaries) — grouped by the role that file plays in the change: the core
+implementation first, then the same shape repeated across N cases, then
+tests, then mechanical changes (renames, generated code, config). A last
+column names the subsection that covered each file, and an em dash where none
+did — which is what makes the table an honest coverage statement instead of a
+decorated file list.
+
+Three rules make it worth having rather than actively misleading:
+
+- **Group by role, never by a reading priority.** "必読" / "飛ばしてよい" per
+  file is a verdict, and verdicts belong to `diff-review`. Ordering by role
+  gives the reader the same "start with these three" without this page
+  issuing a judgment it isn't entitled to.
+- **Order by comprehension, not by risk.** This page ranks changes by what
+  has to be understood before the rest makes sense. `diff-review` ranks the
+  same diff by what is most likely to be wrong. Blending the two turns the
+  explainer into a second-rate review.
+- **Every role claim is observable or sourced, never in between.**
+  *Observable* means derivable from the file list alone — the path says it is
+  a test, `--name-status` says it is a rename, the diffstat says +592/-0.
+  *Sourced* means you actually read the file in Step 3. A file you did not
+  open gets the coarse observable role ("テスト") and nothing more, never a
+  specific one ("件数比例の呼び出しが復活しないことを固定する"). A confident
+  one-line role for all 25 files, written from having read eight of them, is
+  seventeen invented claims wearing the authority of a table — the same
+  failure as an invented statistic, and harder to spot.
+
+Don't tag the map's table with a `<!-- diagram: -->` family. `matrix` means
+condition x outcome logic; this table is navigation.
 
 Quiz construction rules (these come from observed failure modes in earlier
 versions of this template — a quiz that can be gamed teaches nothing):
@@ -169,10 +215,12 @@ versions of this template — a quiz that can be gamed teaches nothing):
   generic wrong answers a reader could reject without knowing the PR.
 
 Format — read [references/visual-design.md](references/visual-design.md)
-before laying out a single section. It carries the token palette, the type
-scale, the seven diagram families and how to route a change to one, and the
-reject list. What stays here is what shapes the document rather than its
-appearance, plus the handful of rules Step 5 greps for:
+before laying out a single section. It opens with a complete stylesheet to
+paste verbatim; do not write your own CSS for this page. It also carries the
+type scale, the seven diagram families and how to route a change to one, the
+diagram construction rules, and the reject list. What stays here is what
+shapes the document rather than its appearance, plus the handful of rules
+Step 5 greps for:
 
 - Single self-contained HTML file: inline CSS and JavaScript, no external
   requests — that includes font CDNs, so the type stack is system fonts. One
@@ -188,12 +236,17 @@ appearance, plus the handful of rules Step 5 greps for:
 - No `box-shadow`. (The rest of the reject list — gradients, emoji-as-icon,
   card-in-card, fake window chrome — is in the reference, not grepped.)
 - Code blocks: always plain `<pre>` tags, never a styled `<div>`/`<span>`
-  substitute — a single shared rule (`pre { white-space: pre; }` or
-  `pre-wrap`) in the `<style>` block then covers every one of them, and Step
-  5 can check that coverage by counting `<pre>` tags instead of auditing each
-  container's CSS by eye. Need per-line coloring inside a code block (e.g. a
-  diff view)? Put the color on `<span>`s *nested inside* the `<pre>`, not on
-  a container that replaces it.
+  substitute, and **every line inside a `<pre>` is its own `<span>`** —
+  `add` / `del` / `ln`. The reference's stylesheet makes the newlines between
+  those spans collapse; a bare text line loses its indentation, and markup
+  where only the changed lines are spans comes out double-spaced. Nested
+  spans (a `.cm` comment) sit inside a line span. Inside a change run, write
+  the removals before the additions that replace them — the split view pairs
+  them in that order.
+- Include the reference's inline/split toggle script verbatim, with its
+  labels in the document's language. It gives every code block holding both
+  removals and additions a side-by-side view derived from the same markup;
+  no per-block markup or per-block decision is involved.
 - Callouts for key concepts, definitions, and important edge cases.
 - Write clearly and engagingly, with smooth transitions between sections —
   match the language the user wrote their request in.
@@ -227,7 +280,7 @@ say so in your reply rather than resolving it silently.
 in order:
 
 **Mechanical check** — each of these is a command whose output you read, not
-a judgment call. Run all eight before moving on:
+a judgment call. Run all twelve before moving on:
 - `grep -n` for the 4 section header strings and confirm the line numbers
   come back strictly increasing in this order: Background, Intuition, Code,
   Quiz. (Presence alone doesn't confirm order — the line numbers do.)
@@ -236,9 +289,16 @@ a judgment call. Run all eight before moving on:
 - `grep -c` for ASCII box-drawing characters (`│┌┐└┘├┤─═║╔╗╚╝` etc.) — must
   be 0.
 - Count `<pre` opening tags vs `</pre>` closing tags — must be equal (proves
-  every code block used the mandated tag) — and confirm a `pre { white-space:
-  pre` or `pre-wrap` rule exists in the `<style>` block. One rule covers every
-  `<pre>` because Step 4 forbids alternative containers.
+  every code block used the mandated tag), and confirm every line inside every
+  `<pre>` is wrapped in a span, which is what keeps the diff rows from
+  double-spacing. Must print `0`:
+
+  ```bash
+  python3 -c 'import re,sys; s=open(sys.argv[1]).read(); bad=[l for m in re.finditer(r"<pre[^>]*>(.*?)</pre>",s,re.S) for l in m.group(1).split("\n") if l.strip() and not (l.startswith("<span") and l.endswith("</span>"))]; print(len(bad)); print(*bad[:5],sep="\n")' <the html file>
+  ```
+- Confirm no `id` appears twice: `grep -o 'id="[^"]*"' | sort | uniq -d` must
+  be empty. A `<h2 id="quiz">` above a `<div id="quiz">` silently makes the
+  quiz render inside the heading.
 - `grep -c` for `src="http`/`href="http` — must be 0. This is also the gate
   that catches a font CDN `<link>`, which is the easiest external request to
   add without noticing.
@@ -250,6 +310,18 @@ a judgment call. Run all eight before moving on:
   (`fill` and `stroke` are in there because the diagrams are inline SVG, where
   the color sits in an attribute rather than a `style`. Don't widen the pattern
   to a bare `="[^"]*#` — the table-of-contents anchors would all match.)
+- Confirm every SVG `<text>` holds a label, not a sentence — the failure that
+  makes a diagram read as cramped, and the one a screenshot review catches
+  last: `grep -oE '<text[^>]*>[^<]*</text>'` and fail on any content longer
+  than 24 characters. Move it to the `figcaption` or the adjacent paragraph.
+- Confirm the diff map covers the whole diff: its table's row count must
+  equal the changed-file count from Step 2 (`gh pr diff <n> --name-only` /
+  `git diff --name-only <range>`, piped to `wc -l`). A file missing from the
+  map is a file the reader meets in the review tool with no idea what it is.
+- Confirm the one-width rule: `grep -n 'max-width'` must return exactly one
+  hit, `.wrap`'s, and `grep -o '<svg[^>]*viewBox="[^"]*"'` must show
+  `0 0 768 …` for every one. (Match on `<svg` — a `<marker>` carries its own
+  small viewBox and is not a violation.)
 - `grep -o '<!-- diagram: [a-z-]*' | sort | uniq -c` — read the output and
   confirm every family named is one of the seven in `visual-design.md`. A name
   that isn't on that list means a visual was invented rather than reused, and a
@@ -304,9 +376,9 @@ open "$OUT"   # macOS
 
 The file lives outside `$REPO` and outside version control on purpose — it's
 disposable, and its filename is date-prefixed so old explanations sort
-naturally and don't need manual cleanup. Tell the user the path, and mention
-any changed files that produced no hunks (Step 2) so they know the page
-doesn't cover 100% of `git status`/`gh pr diff --name-only`.
+naturally and don't need manual cleanup. Tell the user the path. (Files that
+produced no hunks need no separate mention here — the Step 4 map already
+carries a row for each of them.)
 
 ## Important rules
 
@@ -315,7 +387,10 @@ doesn't cover 100% of `git status`/`gh pr diff --name-only`.
   HTML is 100% local and self-contained.
 - This skill explains; it does not review. Don't add a findings list,
   severity ratings, or adopt/reject affordances — that's `diff-review` /
-  `code-review`.
+  `code-review`. The sharpest version of that line is the ordering: this page
+  orders a diff by comprehension (what must be understood first), those skills
+  order it by risk (what is most likely to be wrong). A reading order is
+  explanation; a reading *priority* is a verdict.
 - Don't skip Step 3. An explanation written only from the diff text, without
   reading the surrounding code, is the failure mode this skill exists to
   avoid.
@@ -327,3 +402,7 @@ doesn't cover 100% of `git status`/`gh pr diff --name-only`.
   family a change routes to determines how the Intuition section is written,
   and retrofitting a palette onto a page laid out without one only produces a
   recolored version of the same undifferentiated document.
+- Don't re-derive that file's CSS. Every rule in it fixes a defect a previous
+  run of this skill shipped; a stylesheet rewritten from the prose around it
+  reintroduces them, and the resulting page passes every grep in Step 5 while
+  looking exactly as bad as the one that prompted the rules.
