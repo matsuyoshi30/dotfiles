@@ -29,3 +29,11 @@ key = "f6"
 type = "shell"
 command = "herdr-switch"
 description = "focus next blocked/done agent"
+
+[[keys.command]]
+key = "prefix+t"
+type = "popup"
+command = "exec \"${SHELL:-sh}\""
+description = "open scratch terminal"
+width = "80%"
+height = "80%"
