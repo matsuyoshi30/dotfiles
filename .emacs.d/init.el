@@ -1634,6 +1634,15 @@ by PAD, BEGINNING and END."
          :prepend t
          :empty-lines 1))))
 
+(use-package jots
+  :ensure (:host github :repo "matsuyoshi30/Jots"
+           :files ("editor/emacs/jots.el"))
+  :custom
+  (jots-directory "~/ghq/github.com/matsuyoshi30/jots-journal")
+  :bind (("C-c j c" . jots-capture)
+         ("C-c j t" . jots-open-today)
+         ("C-c j d" . jots-open-date)))
+
 ;;; Utility
 
 (use-package google-this :ensure t)
