@@ -1,6 +1,6 @@
 ---
 name: explain-diff
-description: Use when the user needs to understand a code change, diff, branch, or PR before reviewing it — especially a large or unfamiliar PR at work where the surrounding context, intent, or history is missing. Produces a self-contained local HTML explainer (background, intuition, code walkthrough, comprehension quiz) that never leaves the machine. Not for finding bugs or leaving review comments (use `diff-review` or `code-review` for that). Invoke with `/explain-diff [PR-number-or-URL | branch | commit-range]`.
+description: Use when the user needs to understand a code change, diff, branch, or PR before reviewing it — especially a large or unfamiliar PR at work where the surrounding context, intent, or history is missing. Produces a self-contained local HTML explainer (plain-language overview, background, intuition, code walkthrough, comprehension quiz) that never leaves the machine. Not for finding bugs or leaving review comments (use `diff-review` or `code-review` for that). Invoke with `/explain-diff [PR-number-or-URL | branch | commit-range]`.
 allowed-tools: Agent, Skill, Bash, Read, Glob, Grep, Write
 user-invocable: true
 ---
@@ -8,13 +8,13 @@ user-invocable: true
 # explain-diff
 
 Turns a diff/PR into a self-contained local HTML page that teaches the
-reader what changed and why — background, the core idea, a guided code
-walkthrough, and a 5-question quiz to check their own understanding. This is
-for a human who has to review or work with a change they didn't write and
-don't have context on. It does not hunt for bugs, does not produce
-adopt/reject findings, and never sends the diff or code anywhere external —
-for `diff-review` (blind + plan cross-check, findings) or `code-review` (bug
-/ simplification findings), use those skills instead.
+reader what changed and why — a plain-language overview, background, the core
+idea, a guided code walkthrough, and a 5-question quiz to check their own
+understanding. This is for a human who has to review or work with a change
+they didn't write and don't have context on. It does not hunt for bugs, does
+not produce adopt/reject findings, and never sends the diff or code anywhere
+external — for `diff-review` (blind + plan cross-check, findings) or
+`code-review` (bug / simplification findings), use those skills instead.
 
 Copy this checklist into your visible reply and check off items as you go:
 
@@ -23,7 +23,7 @@ Explain-diff progress:
 - [ ] Step 1: Resolve the diff target
 - [ ] Step 2: Capture the diff
 - [ ] Step 3: Explore background (surrounding code, intent, history)
-- [ ] Step 4: Write the explanation (Background / Intuition / Code / Quiz)
+- [ ] Step 4: Write the explanation (ELI5 / Background / Intuition / Code / Quiz)
 - [ ] Step 5: Verify before saving (mechanical check + fact check)
 - [ ] Step 6: Save as local HTML and open it
 ```
@@ -141,14 +141,34 @@ inline would have.
 
 Produce one HTML document with these sections, in order:
 
+- **ELI5** — before anything else, one short overview for a reader who knows
+  nothing about this codebase: what changed, and why anyone cares. About 150
+  words and one diagram, and nothing beyond that. No domain vocabulary, no toy
+  data, no file or function names — those all have a section further down that
+  is the right place for them. Explain it the way you would to someone who
+  wandered in: the outcome, not the mechanism.
+
+  Its diagram uses the `before-after` family — do not invent an `eli5` family,
+  Step 5 rejects any family name outside the seven. "Big pictures, few words"
+  buys its size from the node count, not from the canvas or the type: three or
+  four large, well-spaced boxes inside the same `0 0 768 H` viewBox, where a
+  normal diagram fits eight. The label sizes are fixed by the scale classes and
+  are not yours to raise, and the 24-character cap on SVG `<text>` still holds
+  — a sentence goes in the `figcaption`.
+
+  This section is one paragraph and one picture. It is never a file inventory:
+  the map of the whole diff stays at the end of the Code section, for the
+  reason given there.
 - **Background** — the existing system relevant to this change. You don't
   know how much the reader already knows: include a deep background for
   beginners (note it can be skipped if already familiar), then a narrower
   background specific to what this change touches.
-- **Intuition** — the core idea behind the change. Essence, not full
-  implementation detail. Concrete examples with toy data. This is where
-  diagrams earn the most, provided each one shows something the prose beside
-  it doesn't already say.
+- **Intuition** — the core idea behind the change: the mechanism, where ELI5
+  gave only the outcome. Essence, not full implementation detail. Concrete
+  examples with toy data. It assumes the Background, so this is the first
+  section where domain vocabulary is fair game. This is where diagrams earn
+  the most, provided each one shows something the prose beside it doesn't
+  already say.
 - **Code** — a high-level walkthrough of the actual changes, grouped and
   ordered so the logic builds (not necessarily file order), closing with a
   map of the whole diff (see below) that says which files each subsection
@@ -281,9 +301,9 @@ in order:
 
 **Mechanical check** — each of these is a command whose output you read, not
 a judgment call. Run all twelve before moving on:
-- `grep -n` for the 4 section header strings and confirm the line numbers
-  come back strictly increasing in this order: Background, Intuition, Code,
-  Quiz. (Presence alone doesn't confirm order — the line numbers do.)
+- `grep -n` for the 5 section header strings and confirm the line numbers
+  come back strictly increasing in this order: ELI5, Background, Intuition,
+  Code, Quiz. (Presence alone doesn't confirm order — the line numbers do.)
 - Count entries in the `QUIZ` array (Step 4) — must be exactly 5. Don't count
   rendered elements; the array is the source of truth.
 - `grep -c` for ASCII box-drawing characters (`│┌┐└┘├┤─═║╔╗╚╝` etc.) — must
@@ -352,7 +372,10 @@ so don't split them into separate passes.
 2. **Diagrams.** For each one, ask what it tells the reader that the
    paragraph and code block beside it do not. A diagram that restates its
    neighbours is decoration; cut it and keep the prose. The highest-quality
-   edit to a diagram is usually a deletion.
+   edit to a diagram is usually a deletion. This rule starts at Background:
+   the ELI5 diagram is exempt, because restating that section's one paragraph
+   in a picture is the point of the section, not a redundancy in it. Say so
+   in the brief, or the pass cuts the one diagram the reader was promised.
 3. **Prose.** If the page is in Japanese, hold it to the
    `japanese-tech-writing` sections named in Step 4 — the LLM っぽい表現 and
    冗長 checks in particular, since those are exactly what a first draft

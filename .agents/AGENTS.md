@@ -37,6 +37,11 @@
 
 - Avoid horizontal rules (`---`) and bold emphasis (`**`) in notes and memos
 - Use plain text and headings (`#`) for structure instead
+- Don't hard-wrap prose. Write each paragraph as one long line and let the viewer wrap it
+  - Applies to every Markdown and prose artifact: notes, PR bodies, skill files, Linear comments, design docs
+  - Fixed-width wrapping is a terminal-era habit. Displays are wide, some renderers turn the breaks into real line breaks, and reflowing a paragraph after a one-word edit inflates the diff with unrelated lines
+  - Commit messages are the exception. Wrap those as usual
+  - Structural line breaks stay: list items, table rows, code blocks
 
 ## Work Records in Notes
 
