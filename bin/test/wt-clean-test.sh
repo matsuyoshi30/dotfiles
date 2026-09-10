@@ -53,6 +53,15 @@ assert_reported() {
   if grep -q "$pat" <<<"$out"; then ok "$label"; else ng "$label"; fi
 }
 
+# 「報告に出ない」も、出力が空なら何もマッチせず勝手に真になる。
+# assert_not_candidate と同じく dry-run が完走した証拠を要求する。
+assert_not_reported() {
+  local out="$1" rc="$2" pat="$3" label="$4"
+  if [[ -z "$out" || "$rc" -ne 0 ]]; then
+    ng "$label (dry-run が完走していない: rc=$rc)"
+  elif grep -q "$pat" <<<"$out"; then ng "$label"; else ok "$label"; fi
+}
+
 # lsof が使えない状況を作り、detached が候補から外れる (fail closed) ことを見る。
 # 「detached が出ない」だけでは候補を全部落としても真になってしまうので、
 # branch 付きの reachable (old-merged) は引き続き候補に出ることも確認し、
@@ -195,6 +204,32 @@ case_open_pr_branch() {
 case_orphan() {
   local repo="$1"
   mkdir -p "$repo/.wt/leftover/build"; echo junk > "$repo/.wt/leftover/build/x"
+}
+
+# ケース: .claude/worktrees 配下の worktree (Claude Code の EnterWorktree が作る置き場)。
+# ブランチは最初のコミットを指すので、fixture の他ケースが main をどれだけ進めても
+# 必ず origin/main の祖先になる -> reachable。呼ぶ順序に依存しない。
+case_claude_worktree() {
+  local repo="$1" root
+  root="$(git -C "$repo" rev-list --max-parents=0 origin/main)"
+  git -C "$repo" branch cc-merged "$root"
+  git -C "$repo" worktree add --quiet "$repo/.claude/worktrees/cc-merged" cc-merged
+}
+
+# ケース: 空ディレクトリは残骸として報告しない。
+# worktree を全部消したあとの置き場がこの形になる。解放できる容量が無いので
+# 報告しても人がやることが無く、次に worktree を作れば作り直されるだけ。
+case_empty_dir() {
+  local repo="$1"
+  mkdir -p "$repo/.wt/cc-empty"
+}
+
+# ケース: .claude/worktrees 配下に .git を持たないディレクトリ -> orphan。
+# 名前に leftover を含めない (case_orphan の照合が別の行で通ってしまうため)。
+case_claude_orphan() {
+  local repo="$1"
+  mkdir -p "$repo/.claude/worktrees/cc-stale/build"
+  echo junk > "$repo/.claude/worktrees/cc-stale/build/x"
 }
 
 # ケース: tier3 landed-pr (wt-clean のヘッダコメントに定義がある)。PR の中身は origin/main に
@@ -364,6 +399,9 @@ main() {
   case_reachable_branch "$repo"
   case_open_pr_branch  "$repo"
   case_orphan          "$repo"
+  case_claude_worktree "$repo"
+  case_claude_orphan   "$repo"
+  case_empty_dir       "$repo"
   case_landed_pr_branch "$repo"
   case_merged_else     "$repo"
   case_merged_else_open_pr "$repo"
@@ -384,6 +422,12 @@ main() {
   assert_tier          "$out" old-merged reachable
   assert_not_candidate "$out" "$rc" open-pr
   assert_reported      "$out" 'leftover' 'orphan として報告される'
+
+  # .wt 以外の worktree 置き場 (.claude/worktrees) も同じ判定・報告に乗ること。
+  # worktree はブランチ名ではなくパスで照合する (固定したいのは置き場所そのもの)。
+  assert_tier          "$out" '.claude/worktrees/cc-merged' reachable
+  assert_reported      "$out" 'cc-stale' '.claude/worktrees 配下の残骸が orphan として報告される'
+  assert_not_reported  "$out" "$rc" 'cc-empty' '空ディレクトリは残骸として報告されない'
 
   # landed-pr は要確認 (report_review 関数) にだけ出て、削除候補一覧 (D_* 配列) には
   # 出ないはず (worker() の cand ルーティングで landed-pr は R_PATH 行きになる)。

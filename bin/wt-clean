@@ -72,7 +72,12 @@
 # 順序で安全性を確保してはいない。bin/test/wt-clean-test.sh の
 # case_nested_repo がこのガードを固定している。
 #
-# .wt 配下に .git をどこにも持たないディレクトリは、中断した worktree remove の
+# worktree の置き場は .wt (preparing-worktrees) と .claude/worktrees
+# (Claude Code の EnterWorktree) の両方を見る。登録済み worktree の削除判定は
+# git worktree list 経由なので元から置き場に依らないが、残骸スキャンと repo 列挙は
+# パスを直接見るため、列挙した置き場だけが対象になる。
+#
+# 置き場配下に .git をどこにも持たないディレクトリは、中断した worktree remove の
 # 残骸として報告する。git worktree list に出ないため放置され続けるが、git から
 # 中身を検証できないので削除はしない。
 #
@@ -94,7 +99,16 @@ if [[ -t 1 ]]; then
   C_DIM=$'\e[2m'; C_GRN=$'\e[32m'; C_YEL=$'\e[33m'; C_RED=$'\e[31m'; C_RST=$'\e[0m'
 else C_DIM=""; C_GRN=""; C_YEL=""; C_RED=""; C_RST=""; fi
 
-# .wt 配下で .git をどこにも持たないディレクトリ = 中断した worktree remove の残骸。
+# worktree の置き場 (repo root からの相対パス)。.wt は preparing-worktrees が使い、
+# .claude/worktrees は Claude Code の EnterWorktree が使う。
+# 登録済み worktree の削除判定は git worktree list を見るので置き場に依らないが、
+# 残骸スキャンと repo 列挙はパスを直接見るのでここを参照する。
+# .claude ではなく .claude/worktrees まで含めること。.claude 自体は settings や
+# skills を置く追跡対象のディレクトリで、丸ごと残骸として報告してしまう。
+WT_HOMES=(.wt .claude/worktrees)
+
+# 置き場 (WT_HOMES) の配下で .git をどこにも持たないディレクトリ =
+# 中断した worktree remove の残骸。
 # 名前空間ディレクトリ (.wt/<user>/) と区別するため、配下に .git があれば降りる。
 scan_orphans() {
   local d="$1" c
@@ -103,6 +117,11 @@ scan_orphans() {
     for c in "$d"/*/; do [[ -d "$c" ]] && scan_orphans "${c%/}"; done
     return 0
   fi
+  # 空ディレクトリは報告しない。worktree を全部消したあとの置き場そのものがこれで
+  # (git worktree remove は空になった親ディレクトリを消さない)、解放できる容量が
+  # 無いのに「確認のうえ手で消すこと」と出てしまう。次に worktree を作れば同じ
+  # ディレクトリが作り直されるだけなので、消す意味も無い。
+  [[ -n "$(ls -A "$d" 2>/dev/null)" ]] || return 0
   printf 'orphan\t%s\t%s\n' "$d" "$(du -sk "$d" 2>/dev/null | cut -f1)"
 }
 
@@ -275,7 +294,10 @@ worker() {
     esac
   done < <(git -C "$REPO" worktree list --porcelain; echo "")
 
-  [[ -d "$REPO/.wt" ]] && scan_orphans "$REPO/.wt"
+  local home
+  for home in "${WT_HOMES[@]}"; do
+    [[ -d "$REPO/$home" ]] && scan_orphans "$REPO/$home"
+  done
 }
 
 # ワーカー呼び出し (xargs から再帰起動される内部モード)
@@ -308,7 +330,8 @@ echo "scan: $ROOT ..." >&2
 declare -a REPO_ROOTS=()
 while IFS= read -r gitdir; do
   REPO_ROOTS+=("$(dirname "$gitdir")")
-done < <(find "$ROOT" \( -name node_modules -o -name .wt -o -name vendor \) -prune -o \
+done < <(find "$ROOT" \( -name node_modules -o -name .wt -o -name vendor \
+                       -o -path '*/.claude/worktrees' \) -prune -o \
             -type d -name .git -print 2>/dev/null | sort)
 [[ ${#REPO_ROOTS[@]} -eq 0 ]] && { echo "git repo が無い: $ROOT" >&2; exit 0; }
 echo "found ${#REPO_ROOTS[@]} repos, detecting with -P $JOBS ..." >&2
