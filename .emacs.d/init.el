@@ -740,6 +740,14 @@
     (define-key vertico-map (kbd "C-s") 'vertico-next))
   (setq xref-show-xrefs-function #'consult-xref))
 
+(use-package dumb-jump
+  :ensure t
+  :custom
+  (dumb-jump-prefer-searcher 'rg)
+  :config
+  ;; Keep language-server backends such as Eglot ahead of the text-search fallback.
+  (add-hook 'xref-backend-functions #'dumb-jump-xref-activate t))
+
 (use-package embark
   :ensure t
   :bind (("C-." . embark-act)))
@@ -1057,7 +1065,6 @@ bypassing `browse-url-browser-function'."
   (add-hook 'go-mode-hook #'(lambda ()
                              (setq c-basic-offset 4)
                              (setq indent-tabs-mode t)
-                             (local-set-key (kbd "M-.") 'godef-jump)
                              (local-set-key (kbd "C-c C-r") 'go-remove-unused-imports)
                              (local-set-key (kbd "C-c i") 'go-goto-imports)
                              (local-set-key (kbd "C-c d") 'godoc)))
