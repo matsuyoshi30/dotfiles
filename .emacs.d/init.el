@@ -1017,6 +1017,7 @@ bypassing `browse-url-browser-function'."
 (use-package eglot
   :ensure t
   :hook ((go-mode . eglot-ensure)
+         (kotlin-mode . eglot-ensure)
          (rust-mode . eglot-ensure)
          (scala-mode . eglot-ensure)
          (html-mode . eglot-ensure)
@@ -1027,6 +1028,8 @@ bypassing `browse-url-browser-function'."
   :config
   (add-to-list 'eglot-server-programs
                '(html-mode "vscode-html-language-server" "--stdio"))
+  (add-to-list 'eglot-server-programs
+               '(kotlin-mode "kotlin-lsp" "--stdio"))
   (add-to-list 'eglot-server-programs
                '(css-mode "vscode-css-language-server" "--stdio"))
   (add-to-list 'eglot-server-programs
