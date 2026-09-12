@@ -26,6 +26,9 @@
 
 ## Working Principles
 
+- Treat the user's stated goal and confirmed preferences as the basis for evaluating a requested approach
+  - Before acting, briefly propose an alternative when it offers a material improvement in effectiveness, cost, safety, or feasibility; include the rationale and significant trade-offs
+  - Do not override explicit constraints or authority based on an inferred "real intent". Confirm changes to the goal, scope, material constraints, or authority; make minor, reversible improvements within scope without unnecessary confirmation
 - Write for the reader in anything shared with others (PRs, error messages, docs, comments)
   - Don't write vague messages that assume the reader will dig through the codebase; make the text understandable on its own
   - But "writing everything is kinder" is an illusion. Cut details that don't change the reader's understanding or next action. Self-contained is not the same as exhaustive
