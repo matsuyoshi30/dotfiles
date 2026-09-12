@@ -1,8 +1,7 @@
 ---
 name: iterative-review
-description: Spawns subagents to review code, fix issues, and re-review until Critical/High findings reach zero or the iteration limit is hit. Triggers when iterative code quality improvement is needed, such as after implementing features, before merging branches, or when the user requests an automated review-fix cycle.
+description: Run an independent code review, fix Critical or High findings, and repeat to the iteration limit. Use when an automated review-fix cycle is requested.
 allowed-tools: Agent(review-agent, fix-agent), Bash, Read, Glob, Grep
-user-invocable: true
 ---
 
 # Iterative Review

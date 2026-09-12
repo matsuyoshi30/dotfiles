@@ -1,7 +1,6 @@
 ---
 name: memory
-description: Manual command for checking memory status, saving, searching, and cleaning up
-user-invocable: true
+description: Inspect, save, search, or clean up the agent's persistent work memory.
 allowed-tools: Read, Write, Grep, Glob, Bash
 ---
 

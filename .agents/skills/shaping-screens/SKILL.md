@@ -1,15 +1,12 @@
 ---
 name: shaping-screens
-description: Shape a vague UI idea into a runnable Astro + HTML/CSS prototype through dialogue. Use when screens, transitions, and states should be settled before implementation, for either a new web app or an extension to an existing repo. Combines external design-system references (via WebFetch) with existing-repo token extraction (via Grep/Glob), and optionally captures existing screens via playwright-skill or agent-browser.
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash, WebFetch, TodoWrite, Agent(Explore), Skill(playwright-skill, agent-browser, superpowers:writing-plans, devflow, advisor-critique-loop)
-user-invocable: true
+description: Shape a vague interface idea into a runnable Astro prototype before implementation. Use for new or existing-repository screens when transitions, states, design references, or repository tokens must be settled.
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash, WebFetch, TodoWrite, Agent(Explore), Skill(playwright-skill, agent-browser, superpowers:writing-plans, devflow)
 ---
 
 # Shaping Screens
 
 Shape a vague UI request into a runnable Astro prototype through dialogue. UI-focused counterpart to `shaping-spec`.
-
-**Announce at start:** "Using shaping-screens skill to shape your UI idea into an interactive Astro prototype."
 
 ## Positioning vs Adjacent Skills
 
@@ -23,28 +20,13 @@ If both text-spec and screen-spec are needed, the user runs them serially (recom
 
 Artifacts are written under `{prototype_dir}` — the absolute path resolved in Step 4.2. By default this expands to `{base_dir}/screens/{YYYY-MM-DDTHH-MM-SS}_{slug}/`, but Step 4.2 normalises away duplicate `screens` segments when the user supplies a `{base_dir}` that already ends in `/screens`.
 
-`{base_dir}` resolution algorithm:
+Resolve `{project_root}` from the target repository, or from the current repository when there is no target. Resolve `{base_dir}` in this order:
 
-```
-1. Build the file list F:
-   - {project_root}/CLAUDE.md  ({project_root} = git top-level of target_repo,
-     or cwd's git top-level if no target_repo)
-   - $HOME/.claude/CLAUDE.md
-   For each file in F, also include any file referenced via @filename.md
-   imports (one level deep).
+1. Read `{project_root}/AGENTS.md`, `{project_root}/CLAUDE.md`, `~/.claude/CLAUDE.md`, and one level of their `@filename.md` imports when present. In textual order, collect path tokens from lines that mention notes, specs, work, save, output, location, 保存, or ディレクトリ. Expand `~` and `$HOME`; use the first candidate that exists as a directory.
+2. Use the first existing conventional directory: `{project_root}/.matsuyoshi/`, `{project_root}/.matsuyoshi30/`, `~/.matsuyoshi/`, `~/.matsuyoshi30/`.
+3. If none exists, create and use `~/.shaping-screens/`.
 
-2. Build the candidate path list P (preserve textual order across files):
-   For each line L in each file in F:
-     if L contains ANY of [notes, specs, work, save, 保存, ディレクトリ,
-                            location, output]
-     AND L contains a path token matching /^[/~.]/ OR `…` (backticks):
-        extract the path token, expand $HOME and ~, append to P.
-
-3. Walk P in order; return the first path that exists and is a directory.
-
-4. If P is empty or none exist, fall back to $HOME/.shaping-screens/
-   (create it if missing).
-```
+When one line lists multiple paths, preserve their textual order. Do not reorder them to match another skill's preference.
 
 `{slug}` is a kebab-case identifier (max 50 chars). Propose it to the user in Step 4 and confirm.
 
@@ -54,9 +36,7 @@ Artifacts are written under `{prototype_dir}` — the absolute path resolved in 
 
 `{skill_dir}` is the absolute path of the directory holding this `SKILL.md`. Resolve it **once** at the start of the run, in this order:
 
-1. If the harness exposes a skill-load path (e.g. via env var or tool argument), use it.
-2. Otherwise, check `$HOME/.claude/skills/shaping-screens/` and the project-local fallback `<repo>/.agents/skills/shaping-screens/` (resolve `<repo>` against cwd's git top-level). Use the first that exists and contains this `SKILL.md`.
-3. If neither resolves, ask the user for the absolute path to the skill directory and stop until answered.
+Use the skill-load path exposed by the harness. If unavailable, check the current repository's `.agents/skills/shaping-screens/`, `~/.codex/skills/shaping-screens/`, and `~/.claude/skills/shaping-screens/` in that order. Use the first directory containing this `SKILL.md`; ask for its absolute path only if none resolves.
 
 All later references to `{skill_dir}/templates/...` resolve against that absolute path, regardless of cwd or target-repo path.
 
@@ -280,7 +260,6 @@ Recommend a downstream skill and let the user choose:
 |---|---|
 | **superpowers:writing-plans** | Screens / transitions are settled, but the implementation approach is open. |
 | **devflow** | Adding to existing code is a straight extension; the approach has a clear precedent. |
-| **advisor-critique-loop** | Wide blast radius; multi-model review adds value. |
 | **Stop here** | The user prefers to hand the spec off manually. |
 
 > "Recommended downstream: **{skill}** - {one-line reason}. Alternatives: {others}. Or stop here. Which?"

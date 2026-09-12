@@ -1,8 +1,7 @@
 ---
 name: practicing-tdd-tidy-first
-description: Guides implementation with Kent Beck's TDD cycle (Red-Green-Refactor) and Tidy First discipline (separating structural from behavioral changes). Use when writing or modifying production code, especially when driving implementation one failing test at a time or when a plan.md with a checklist of tests exists in the project.
+description: Implement or modify production code with Red-Green-Refactor and Tidy First, especially for features, bug fixes, or plans organized around failing tests.
 model: sonnet
-user-invocable: true
 ---
 
 # Practicing TDD with Tidy First

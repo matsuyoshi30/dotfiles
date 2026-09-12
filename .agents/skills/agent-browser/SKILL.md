@@ -1,6 +1,6 @@
 ---
 name: agent-browser
-description: Scripted browser automation via the `agent-browser` CLI — accessibility-tree `@ref` selection, semantic locators, isolated parallel sessions, Chrome profile reuse, CDP connect, and measurement (Core Web Vitals, HAR, traces, React re-render profiling, visual diff). Use when the browser work should run without disturbing the user's own Chrome: unattended or parallel runs, repeated scripted flows, and performance or diagnostic measurement. When the user simply wants a logged-in page in their own browser read or driven, use claude-in-chrome instead.
+description: Automate unattended, repeated, parallel, or diagnostic browser flows with the `agent-browser` CLI. Do not use for the user's current logged-in browser tab.
 allowed-tools: Bash(agent-browser:*)
 ---
 

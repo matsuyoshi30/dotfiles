@@ -1,8 +1,7 @@
 ---
 name: spec-review
-description: Spawns subagents to review implementation against spec/requirements, fix gaps, and re-review until all spec compliance issues are resolved or the iteration limit is hit. Use after implementing features to verify the code matches what was requested — nothing more, nothing less.
+description: Compare an implementation with its specification, fix missing, extra, or misunderstood behavior, and re-review to the iteration limit.
 allowed-tools: Agent(spec-review-agent, fix-agent), Bash, Read, Glob, Grep
-user-invocable: true
 ---
 
 # Spec Compliance Review-Fix Loop

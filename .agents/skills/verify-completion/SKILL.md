@@ -1,8 +1,7 @@
 ---
 name: verify-completion
-description: Verification gate before claiming work is complete. Auto-discovers and runs test/lint/build commands, checks exit codes and output, and blocks completion claims without fresh evidence. Use before committing, creating PRs, or claiming a task is done.
+description: Run proportionate test, lint, and build checks before a commit, pull request, or completion claim.
 allowed-tools: Bash, Read, Glob, Grep
-user-invocable: true
 ---
 
 # Verification Before Completion

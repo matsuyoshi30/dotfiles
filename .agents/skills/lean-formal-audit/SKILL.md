@@ -1,6 +1,6 @@
 ---
 name: lean-formal-audit
-description: Audit and verify software systems in any domain — cryptographic protocols, ZK circuits, smart contracts, distributed systems, business logic (payments, inventory, access control), embedded systems, APIs, and more — by formalizing them in Lean 4. Use not only for auditing existing implementations but also for product architecture decisions (comparing design candidates, examining invariants, sanity-checking design soundness). Always use this skill when the user says things like "check / audit / prove it with Lean", "verify soundness or safety", "I want to formally confirm the design is correct", "verify or compare architecture candidates", "create an audit folder and formally verify", or when they ask to check consistency between implementation and design, invariants, or security properties. Apply the same full procedure to re-audit requests for new versions (v2, etc.). Always begin with an interview (questions from Claude to the user) to pin down the target, the mode, and the properties to verify — tailored to the case — before starting any work.
+description: Formalize software behavior or architecture in Lean 4 to audit invariants and safety. Use for requested formal verification or safety-critical audits that benefit from machine-checked invariants.
 ---
 
 # Lean Formal Verification & Audit Skill (lean-formal-audit)

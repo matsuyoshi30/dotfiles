@@ -1,17 +1,14 @@
 ---
 name: shaping-spec
-description: Turns a rough idea about an existing codebase into a semi-structured spec file through codebase-aware dialogue. Use when the user has vague thoughts and wants to shape them into input for downstream skills (devflow / superpowers:writing-plans / advisor-critique-loop). Produces a single markdown spec; does not produce a PLAN.md or write code.
+description: Turn a vague idea about an existing codebase into a concise downstream-ready specification without choosing an implementation plan or writing production code.
 # `allowed-tools` and `user-invocable` are Claude Code harness extensions
 # beyond Anthropic's required name/description. Other harnesses ignore them.
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent(Explore), Skill(devflow, superpowers:writing-plans, advisor-critique-loop)
-user-invocable: true
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent(Explore), Skill(devflow, superpowers:writing-plans)
 ---
 
 # Shaping Spec
 
-Bridge from "I have a rough idea about this codebase" to "here is a spec a downstream skill can act on". The output is deliberately neutral — it does not choose a plan format or an implementation approach — so it can feed devflow, superpowers:writing-plans, or advisor-critique-loop equally well.
-
-**Announce at start:** "Using shaping-spec skill to shape your idea into a downstream-ready spec."
+Bridge from "I have a rough idea about this codebase" to "here is a spec a downstream skill can act on". The output is deliberately neutral: it records the goal and constraints without turning them into an implementation plan.
 
 ## Positioning vs Adjacent Skills
 
@@ -23,27 +20,15 @@ Bridge from "I have a rough idea about this codebase" to "here is a spec a downs
 
 The generated spec file is written to `{base_dir}/specs/{YYYY-MM-DDTHH-MM-SS}_{slug}.md`.
 
-`{base_dir}` is resolved in this order:
+Resolve `{project_root}` from the codebase being shaped, which may differ from the process working directory. Resolve `{base_dir}` in this order:
 
-1. **CLAUDE.md-declared notes directory.**
+1. Read `{project_root}/AGENTS.md`, `{project_root}/CLAUDE.md`, `~/.claude/CLAUDE.md`, and one level of their `@filename.md` imports when present. In textual order, collect path tokens from lines that mention notes, specs, work, save, output, location, 保存, or ディレクトリ. Expand `~` and `$HOME`; use the first candidate that exists as a directory.
+2. Use the first existing conventional directory: `{project_root}/.matsuyoshi/`, `{project_root}/.matsuyoshi30/`, `~/.matsuyoshi/`, `~/.matsuyoshi30/`.
+3. If none exists, create and use `~/.shaping-spec/`.
 
-   `{project_root}` means the git top-level of the codebase being shaped (i.e. the repo the user is asking about), not necessarily the process cwd. If cwd differs from the shaping target, use the shaping target's repo root. If the target has no git repo, use the nearest ancestor directory that does, or fall back to cwd only if neither exists.
+When one line lists multiple paths, preserve their textual order. Do not reorder them to match another skill's preference.
 
-   Read these files in order, including any file referenced via `@filename.md` imports (recursively, one level is enough in practice):
-   - `{project_root}/CLAUDE.md`
-   - `$HOME/.claude/CLAUDE.md`
-
-   In each file, look for lines that contain BOTH:
-   - One of the keywords: `notes`, `specs`, `work`, `save`, `保存`, `ディレクトリ`, `location`, `output`
-   - A path token: starts with `/`, `~`, `$HOME`, `.`, or is wrapped in backticks
-
-   Extract the paths, expand `$HOME` and `~`, and test each as a fallback chain. Use the first one that exists and is a directory.
-
-   **Tie-breaking for parallel candidates.** If a single CLAUDE.md / AGENTS.md line lists multiple parallel path candidates, always evaluate them in the **textual order they appear in that file** and adopt the first existing one. Do not reorder based on what adjacent skills (`memory`, etc.) happen to prefer — this rule is the single source of truth, so that the same environment yields the same `{base_dir}` regardless of executor.
-
-2. **Fallback.** `$HOME/.shaping-spec/`. Create it if missing.
-
-`{slug}` is a short kebab-case identifier derived from the user's idea (max ~50 chars). Propose it to the user and confirm before writing.
+`{slug}` is a short kebab-case identifier derived from the user's idea (max ~50 chars). Choose it without a separate confirmation unless the name itself affects the requested outcome.
 
 `{YYYY-MM-DDTHH-MM-SS}` uses local time, e.g. `2026-04-21T15-30-42`. Uniqueness at 1-second granularity is assumed — if the write somehow collides, re-run with a fresh timestamp.
 
@@ -99,7 +84,7 @@ Ask questions **one at a time**. Prefer multiple-choice with 2–4 options + a r
 3. **Definition of Done** — verifiable completion criteria.
 
 For each of the optional sections (`Approach Options`, `Out of Scope`, `Risks / Unknowns`, `Open Questions`), judge whether the task needs it. Ask **before** adding — default is YAGNI. Rule of thumb:
-- `Approach Options`: include when downstream will be writing-plans or advisor-critique-loop.
+   - `Approach Options`: include when downstream planning still needs to choose an approach.
 - `Out of Scope`: include when the idea is adjacent to other in-flight work.
 - `Risks / Unknowns`: include when any Step 1 finding was surprising or unknown.
 - `Open Questions`: include when there are real questions you are intentionally leaving for downstream.
@@ -107,7 +92,7 @@ For each of the optional sections (`Approach Options`, `Out of Scope`, `Risks / 
 ### Step 4 — Write Spec and Get Approval
 
 1. Read `templates/spec.md`.
-2. **Propose `{slug}`** — derive a kebab-case identifier (~50 chars max) from the user's idea and confirm with the user before writing. Example: *"Slug 案: `login-error-ux`。これで OK？別案あれば教えてください。"*
+2. Derive a kebab-case `{slug}` (~50 chars max) from the user's idea.
 3. Fill it in:
    - `## Goal`, `## Constraints`, `## Definition of Done` — from Step 3 dialogue.
    - `## Context` — from Step 1 exploration and Step 2 confirmation (concrete file/module/path list).
@@ -125,10 +110,7 @@ Propose a downstream skill, then let the user choose:
 |---|---|
 | **devflow** | Goal + DoD are sharp; work is a straight extension of existing code; approach has clear precedent. |
 | **superpowers:writing-plans** | New design elements; the shape of the solution still needs to be decided. |
-| **advisor-critique-loop** | Complex, multi-step, or high-stakes; multi-model review adds value. |
 | **Stop here** | User prefers to take the spec elsewhere manually. |
-
-> Maintenance note: this table is at 4 entries — the ceiling per "avoid offering too many options". Adding a 5th means regrouping (e.g. nest spec-only vs implementation-bound), not appending.
 
 Display in this form:
 
@@ -154,40 +136,3 @@ If the user stops here, end the session with the spec path and the suggested ski
 - **Downstream is a single hop** — invoke at most one downstream skill per session. If the user wants multiple, close this session and let them chain manually.
 - **`## Downstream` is mandatory** — the spec must always end with a `## Downstream` section recording the recommended skill and a one-line reason. If the user opted for "Stop here", record that verbatim with the recommended skill still listed. Do not delete this section when pruning optional ones.
 - **Spec is the single artifact** — do not also write WORKLOG / notes / scratch files. Everything that matters is in the spec file.
-
-## Example (mini)
-
-A condensed walk-through showing the dialogue style and a typical filled spec.
-
-**User input (Step 0):** 「ログイン周りで何か直したい気がする」
-
-**Step 0 confirm:**
-> 「理解: 認証フロー周りを改善したい、という曖昧な状態。合っていますか？」
-
-**Step 2 ground-truth (after light Grep):**
-> 「`src/auth/login.ts` と `src/auth/errors.ts` のあたりですか？それとも別の領域？」
-
-**Step 3 Goal (multiple choice):**
-> 「Goal はどれが近いですか？
-> A. ログイン失敗時のエラー UX 改善（推奨: 影響範囲が局所的）
-> B. セッション期限切れの扱い変更
-> C. それ以外（自由記述）」
-
-**Resulting spec (excerpt):**
-
-```markdown
-## Goal
-ログイン失敗時のエラーメッセージとリトライ動線を改善する。
-
-## Context
-- src/auth/login.ts (form handler)
-- src/auth/errors.ts (error mapping)
-
-## Definition of Done
-- [ ] エラー文言が i18n 経由で表示される
-- [ ] パスワード誤りと未登録メールで文言が分かれる
-- [ ] 既存テスト緑、新規テスト追加
-
-## Downstream
-**devflow** — DoD が明確で既存コード拡張のため。
-```

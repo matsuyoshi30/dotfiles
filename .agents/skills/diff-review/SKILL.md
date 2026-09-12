@@ -1,8 +1,7 @@
 ---
 name: diff-review
-description: Generates a local static HTML review screen for a largish diff - groups the changes by intent, orders them by risk with explanations, produces findings in two stages (a blind review with the plan hidden, then a plan cross-check), and collects the human's adopt/reject decisions and comments into a feedback markdown. Use when a diff is too large to review comfortably in the terminal, or when the user asks for a diff review / review screen. Invoke explicitly with `/diff-review [plan-path] [target-paths...]`.
+description: Create a local HTML review screen for a large diff and collect the reviewer's decisions. Use when the user asks for `/diff-review` or a browser review screen.
 allowed-tools: Agent(diff-blind-reviewer), Bash, Read, Glob, Grep, Write, Edit
-user-invocable: true
 ---
 
 # diff-review

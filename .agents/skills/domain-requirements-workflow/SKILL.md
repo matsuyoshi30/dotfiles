@@ -1,6 +1,6 @@
 ---
 name: domain-requirements-workflow
-description: Use when clarifying ambiguous product or business requirements, deepening understanding of a business domain, researching an unfamiliar domain from scratch when no reference materials have been provided yet, preserving source-backed findings during research, probing a domain through generated personas or real stakeholders, or turning scattered notes into traceable, audit-ready requirements. For heavyweight domain research that needs an audit trail; for lightweight idea shaping use brainstorming or shaping-spec instead.
+description: Research an unfamiliar business domain or turn documents, stakeholder evidence, and scattered notes into source-traceable requirements. Use when findings need an audit trail, not for lightweight idea shaping.
 ---
 
 # Domain Requirements Workflow

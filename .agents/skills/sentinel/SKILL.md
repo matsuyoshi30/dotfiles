@@ -1,7 +1,6 @@
 ---
 name: sentinel
-description: Continuously watch for targets matching a natural-language "watch condition" passed as an argument (Linear tickets / GitHub PRs・Issues / Sentry errors / Slack messages / CI・deploy state / any state observable via an MCP tool or shell command). On each detection, spawn a dedicated subagent that first runs a lightweight triage classifying the item as no-action / light-done / needs-implement, and only auto-escalates needs-implement items to devflow --auto, driving them up to (but not past) the irreversible step (Draft PR). Both the watch condition and the action are freely specifiable in natural language; polling self-paces via ScheduleWakeup; each task is delegated to a subagent so the main context stays lean. Fires on "sentinel で〜を監視して", "〜を見張って", "〜が来たら自動で対応して", "/sentinel <watch>", "センチネル回して", etc. Never performs irreversible operations (merge, production rollout); it stops just before them and reports.
-user-invocable: true
+description: Monitor observable tickets, pull requests, errors, messages, or CI and delegate matches for bounded action. Use for `/sentinel` or watch-and-act requests; not reminders or one-time checks.
 ---
 
 # sentinel

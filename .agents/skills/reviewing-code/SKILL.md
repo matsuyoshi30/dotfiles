@@ -1,8 +1,7 @@
 ---
 name: reviewing-code
-description: Performs comprehensive code review covering quality, security, design, performance, technical debt, and intent alignment. Loads language-specific guardrails for Kotlin (.kt/.kts) and TypeScript/React (.ts/.tsx) when those files are touched, plus the review criteria the target repository defines for itself. Use after implementing features or bug fixes, before commits, or when reviewing diffs.
+description: Review a local diff for substantiated correctness, security, design, performance, and test issues. Use repository criteria after feature or bug-fix implementation, before a commit, or on request.
 allowed-tools: Glob, Grep, Read, WebFetch, TodoWrite, WebSearch, BashOutput, KillShell
-user-invocable: true
 ---
 
 Conduct comprehensive code reviews evaluating:

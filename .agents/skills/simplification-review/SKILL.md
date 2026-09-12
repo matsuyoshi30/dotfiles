@@ -1,15 +1,6 @@
 ---
 name: simplification-review
-description: >
-  Revisit an implementation, design, or diff and reshape it into the smallest
-  safe form, free of over-engineering. Use when the user explicitly says
-  simplification review, asks for a minimization review (最小化レビュー), or
-  asks what code can be cut (削れるコードの検討) — optionally naming a target
-  (a diff, a path, a design). Also use before opening or updating a pull
-  request, where create-pr invokes it as a gate. Never run it unasked during
-  ordinary implementation work: a pass that hunts for things to cut will always
-  find some, so unrequested minimization strips code that was correctly sized
-  and stalls work in second-guessing.
+description: Find and remove unnecessary complexity from a requested implementation, design, or diff. Also used by create-pr before handoff; do not invoke during ordinary implementation.
 ---
 
 # Simplification Review

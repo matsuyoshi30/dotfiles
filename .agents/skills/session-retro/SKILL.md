@@ -1,8 +1,7 @@
 ---
 name: session-retro
-description: 'Session retrospective - analyzes the current session, extracts knowledge, proposes prompt improvements, and generates a summary.'
+description: Analyze the current session, preserve reusable lessons, and propose targeted instruction improvements.
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash, AskUserQuestion
-user-invocable: true
 ---
 
 # Session Retrospective

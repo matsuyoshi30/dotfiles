@@ -1,8 +1,7 @@
 ---
 name: devflow
-description: End-to-end development workflow that orchestrates codebase exploration, plan refinement (user dialogue or subagent drafting), spike prototyping, implementation with WORKLOG/DR loop, and multi-stage review. Supports `--auto` mode for lightweight tasks where the orchestrator auto-approves its own recommended choice at each gate. Use when the user has a clear task or spec and wants autonomous implementation with quality gates.
+description: Run development from exploration and planning through implementation, independent review, and verification. Use for `/devflow` or a clear task that should be implemented autonomously with quality gates.
 allowed-tools: Agent, Bash, Read, Write, Edit, Glob, Grep, TodoWrite, Skill
-user-invocable: true
 ---
 
 # Development Flow
@@ -13,83 +12,6 @@ Explore → Plan-Refine → Plan-Spike → Plan-Execute → Review → Verify.
 - **exploration.md** — codebase survey output from Step 1. Read-only reference for later steps.
 - **WORKLOG.md** — append-only execution log. Agents report; orchestrator appends.
 - **DR (Decision Record)** — blocker-only A/B choices that bridge agent autonomy and human judgment.
-
-## Overview
-
-```dot
-digraph devflow {
-    rankdir=TB;
-    "Step 0: Resolve Task" [shape=doublecircle];
-    "Step 0.5: Lightweight check\n(auto mode only)" [shape=diamond];
-    "Confirm with user:\nstay auto / switch / abort" [shape=box];
-    "Step 1: Explore\n(explorer-agent)" [shape=box];
-    "Step 2: Plan-Refine" [shape=box];
-    "Plan: DIALOGUE or DIRECT?" [shape=diamond];
-    "Dialogue with user\n(orchestrator)" [shape=box];
-    "Draft PLAN.md\n(plan-draft-agent)" [shape=box];
-    "plan-draft status" [shape=diamond];
-    "User approves PLAN.md?" [shape=diamond];
-    "Step 3: Plan-Spike" [shape=box];
-    "Spike: RUN or SKIP?" [shape=diamond];
-    "Investigate + Prototype\n+ Update PLAN" [shape=box];
-    "Spike plan review:\nSUFFICIENT?" [shape=diamond];
-    "Step 4 preamble:\nIsolation gate" [shape=diamond];
-    "Step 4 preamble:\nExecution Mode gate" [shape=diamond];
-    "Create persistent worktree\n(preparing-worktrees)" [shape=box];
-    "Step 4: Plan-Execute\n(per-mode dispatch)" [shape=box];
-    "Implementer status" [shape=diamond];
-    "Handle DR with user" [shape=box];
-    "Step 5: Spec review" [shape=box];
-    "Spec issues = 0?" [shape=diamond];
-    "fix-agent (spec)" [shape=box];
-    "Step 6: Code quality review" [shape=box];
-    "Critical + High = 0?" [shape=diamond];
-    "fix-agent (quality)" [shape=box];
-    "Step 7: Verification" [shape=box];
-    "Step 8: Final Report" [shape=doublecircle];
-    "Step 9: Retrospective\n(background, fire-and-forget)" [shape=box, style=dashed];
-
-    "Step 0: Resolve Task" -> "Step 0.5: Lightweight check\n(auto mode only)";
-    "Step 0.5: Lightweight check\n(auto mode only)" -> "Step 1: Explore\n(explorer-agent)" [label="LIGHT or non-auto"];
-    "Step 0.5: Lightweight check\n(auto mode only)" -> "Confirm with user:\nstay auto / switch / abort" [label="NOT_LIGHT (auto)"];
-    "Confirm with user:\nstay auto / switch / abort" -> "Step 1: Explore\n(explorer-agent)";
-    "Step 1: Explore\n(explorer-agent)" -> "Step 2: Plan-Refine";
-    "Step 2: Plan-Refine" -> "Plan: DIALOGUE or DIRECT?";
-    "Plan: DIALOGUE or DIRECT?" -> "Dialogue with user\n(orchestrator)" [label="DIALOGUE"];
-    "Plan: DIALOGUE or DIRECT?" -> "Draft PLAN.md\n(plan-draft-agent)" [label="DIRECT"];
-    "Dialogue with user\n(orchestrator)" -> "User approves PLAN.md?";
-    "Draft PLAN.md\n(plan-draft-agent)" -> "plan-draft status";
-    "plan-draft status" -> "User approves PLAN.md?" [label="DRAFTED"];
-    "plan-draft status" -> "Dialogue with user\n(orchestrator)" [label="NEEDS_DIALOGUE"];
-    "User approves PLAN.md?" -> "Dialogue with user\n(orchestrator)" [label="no"];
-    "User approves PLAN.md?" -> "Step 3: Plan-Spike" [label="yes"];
-    "Step 3: Plan-Spike" -> "Spike: RUN or SKIP?";
-    "Spike: RUN or SKIP?" -> "Investigate + Prototype\n+ Update PLAN" [label="RUN"];
-    "Spike: RUN or SKIP?" -> "Step 4 preamble:\nIsolation gate" [label="SKIP"];
-    "Investigate + Prototype\n+ Update PLAN" -> "Spike plan review:\nSUFFICIENT?";
-    "Spike plan review:\nSUFFICIENT?" -> "Investigate + Prototype\n+ Update PLAN" [label="no (max 2)"];
-    "Spike plan review:\nSUFFICIENT?" -> "Step 4 preamble:\nIsolation gate" [label="yes"];
-    "Step 4 preamble:\nIsolation gate" -> "Step 4 preamble:\nExecution Mode gate";
-    "Step 4 preamble:\nExecution Mode gate" -> "Create persistent worktree\n(preparing-worktrees)" [label="WORKTREE"];
-    "Step 4 preamble:\nExecution Mode gate" -> "Step 4: Plan-Execute\n(per-mode dispatch)" [label="IN_PLACE"];
-    "Create persistent worktree\n(preparing-worktrees)" -> "Step 4: Plan-Execute\n(per-mode dispatch)";
-    "Step 4: Plan-Execute\n(per-mode dispatch)" -> "Implementer status";
-    "Implementer status" -> "Step 5: Spec review" [label="DONE"];
-    "Implementer status" -> "Handle DR with user" [label="NEEDS_DECISION"];
-    "Handle DR with user" -> "Step 4: Plan-Execute\n(per-mode dispatch)";
-    "Implementer status" -> "Step 4: Plan-Execute\n(per-mode dispatch)" [label="NEEDS_CONTEXT /\nBLOCKED (re-dispatch)"];
-    "Step 5: Spec review" -> "Spec issues = 0?";
-    "Spec issues = 0?" -> "fix-agent (spec)" [label="no (max 2)"];
-    "fix-agent (spec)" -> "Step 5: Spec review";
-    "Spec issues = 0?" -> "Step 6: Code quality review" [label="yes"];
-    "Step 6: Code quality review" -> "Critical + High = 0?";
-    "Critical + High = 0?" -> "fix-agent (quality)" [label="no (max 3)"];
-    "fix-agent (quality)" -> "Step 6: Code quality review";
-    "Critical + High = 0?" -> "Step 7: Verification" [label="yes"];
-    "Step 7: Verification" -> "Step 8: Final Report";
-    "Step 8: Final Report" -> "Step 9: Retrospective\n(background, fire-and-forget)" [label="async"];
-}
-```
 
 ## Working Directory
 

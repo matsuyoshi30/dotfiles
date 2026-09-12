@@ -1,6 +1,6 @@
 ---
 name: html-review
-description: Use when the user asks to publish something for a human to review in the browser ("html-review で出して", "レビュー用に公開して", "ブラウザで見られる形にして"), or to pick up the comments they left there ("コメント見て", "inbox 確認して", "レビューの指摘取り込んで"). Wraps the `html-review` CLI, which must already be on PATH.
+description: Publish an artifact to the `html-review` browser workflow or retrieve and apply comments left there.
 ---
 
 # html-review

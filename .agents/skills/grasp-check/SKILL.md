@@ -1,8 +1,7 @@
 ---
 name: grasp-check
-description: Assess your own grasp of a topic through a structured dialogue, then output a learning roadmap. Runs in three stages — multiple-choice weakness mapping, Socratic deep-dive on weak areas, and a saved Markdown learning guide. Use when the user wants to check how well they understand a topic ("how well do I understand X?", "grill me on X", "self-assess my knowledge of X"), or when they want to objectify their grasp before / after self-study. Not for brainstorming ideas (use shaping-spec) or for stress-testing a plan (use grill-me-style design review).
+description: Assess the user's understanding of a topic through dialogue and produce a learning roadmap. Do not use to review a plan or shape a product idea.
 allowed-tools: Read, Write, Glob, Grep, Bash, WebSearch
-user-invocable: true
 ---
 
 # Grasp Check

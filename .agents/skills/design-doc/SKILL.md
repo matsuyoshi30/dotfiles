@@ -1,6 +1,6 @@
 ---
 name: design-doc
-description: Use when the user wants to write or scaffold a design doc / RFC / 設計ドキュメント for a feature, architecture change, schema change, or API design that warrants a written design before implementation. Triggers on phrases like "write a design doc", "design doc 書いて", "/design-doc", or when starting to plan a non-trivial change worth documenting before implementation.
+description: Write or scaffold a design document or RFC for a feature, architecture, schema, or API change.
 ---
 
 # Design Doc Skill

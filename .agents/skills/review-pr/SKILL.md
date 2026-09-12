@@ -1,6 +1,6 @@
 ---
 name: review-pr
-description: Use when reviewing a GitHub pull request and reporting the result to Slack — applies shared review criteria plus the target repository's own criteria, and never writes to the PR.
+description: Review a GitHub pull request and report the result to Slack without writing to the pull request.
 ---
 
 # review-pr

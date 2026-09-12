@@ -1,6 +1,6 @@
 ---
 name: create-pr
-description: Prepares commits and opens GitHub pull requests, and keeps existing PRs up to date (follow-up pushes, body, title). Use when creating or updating a PR — instructions like "draft PR つくって", "PR Description 更新して", "commit して PR 作成". Read before running gh pr create or gh pr edit.
+description: Prepare commits and create or update a GitHub pull request, including its title and body.
 ---
 
 # Creating Pull Requests

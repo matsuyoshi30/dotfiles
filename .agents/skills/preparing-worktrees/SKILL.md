@@ -1,6 +1,6 @@
 ---
 name: preparing-worktrees
-description: Use when setting up an isolated git worktree for feature work — selects the worktree directory with `.wt/` as the top priority, verifies `.gitignore` safety, creates the worktree on a new branch, applies the repo's sparse-checkout policy when it has one (skipping bulk tracked data), and runs project setup. Pairs with devflow Step 4 Isolation gate.
+description: Create an isolated Git worktree for feature work, honoring the repository's location, ignore, sparse-checkout, and setup conventions.
 ---
 
 # Preparing Worktrees

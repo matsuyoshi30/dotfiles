@@ -1,8 +1,7 @@
 ---
 name: explain-diff
-description: Use when the user needs to understand a code change, diff, branch, or PR before reviewing it — especially a large or unfamiliar PR at work where the surrounding context, intent, or history is missing. Produces a self-contained local HTML explainer (plain-language overview, background, intuition, code walkthrough, comprehension quiz) that never leaves the machine. Not for finding bugs or leaving review comments (use `diff-review` or `code-review` for that). Invoke with `/explain-diff [PR-number-or-URL | branch | commit-range]`.
+description: Create a local HTML explainer for an unfamiliar diff, branch, or pull request. Use for understanding a change, not finding defects or leaving review comments.
 allowed-tools: Agent, Skill, Bash, Read, Glob, Grep, Write
-user-invocable: true
 ---
 
 # explain-diff

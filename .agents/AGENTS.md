@@ -1,109 +1,43 @@
+## Priorities and Scope
+
+- Treat the user's stated goal, constraints, and confirmed preferences as authoritative. Skills guide execution but do not override explicit user instructions.
+- Infer routine details from the repository and prior conversation, and continue through implementation and proportionate verification. Ask only when a missing choice would materially change the goal, scope, constraints, authority, or externally visible result.
+- When a materially better alternative exists, state it briefly with the important trade-off. Proceed with the user's approach unless adopting the alternative is minor, reversible, and within scope.
+- Prefer the smallest sufficient solution. Apply YAGNI, KISS, and DRY; do not add compatibility shims or fallback paths unless they add no meaningful complexity.
+
 ## Code Quality
 
-- Default to no code comment. Add one only when the immediately following code needs a non-obvious reason or constraint that cannot be expressed clearly in the code itself
-  - Limit the comment to background that changes how the immediately following code should be understood or maintained
-  - Do not restate the code, narrate the implementation or change, label a code section, or include tangential history, architecture, or future work
-  - Prefer one concise sentence. If removing the comment would not hide a relevant reason or constraint, omit it
-  - Example: prefer `// The provider rejects deactivated IDs, so exclude them before batching.` over `// Filter inactive users.`
-- Generate documentation that explains WHY not WHAT, with examples
-- Auto-fix linting/formatting issues in files you touched; don't commit formatting-only
-  changes that auto-formatters apply to unrelated files
-- Write tests for new features and bug fixes
-  - Don't test trivial functions like just call other utilities
+- Default to no code comment. Add one concise comment only when a non-obvious reason or constraint cannot be expressed by the code itself; do not narrate the implementation or preserve tangential history.
+- Write documentation for the reader's decision or next action. Explain why, use examples when they clarify a constraint, and omit details recoverable from the code or automation.
+- Make invalid states structurally impossible with types, schemas, permissions, or automated checks when practical.
+- Do not put mechanically verifiable work such as lint, tests, CI, or hooks in human checklists. Automate it and reserve checklists for judgment that cannot be encoded reliably.
+- Add focused tests for new behavior and bug fixes. Do not test trivial forwarding functions.
+- Auto-fix lint and formatting issues in files you touched without including unrelated formatting-only changes.
 
-## Hypothesis Testing
+## Investigation and Verification
 
-- Test only one hypothesis per change
-- Explain the hypothesis and change details beforehand
-- Validate the hypothesis through testing
-- Revert the change if testing shows no effect
+- For an experimental change made to diagnose a cause, state one hypothesis, change one relevant variable, test it, and revert the change if the result does not support the hypothesis.
+- Verify changes in proportion to their risk and affected surface. Run affected tests first; broaden checks only when shared behavior, build configuration, or repository policy warrants it.
+- Keep working through failures caused by the requested change and rerun affected checks. Stop when completion requires a material product decision, new authority, unavailable external state, or when the remaining failure is demonstrated to be unrelated.
+- For substantial reviews, use an independent context that receives the diff and specification without the implementer's reasoning. Routine or mechanical edits do not require a separate reviewer.
 
-## Agent Guidelines
+## Shared Writing
 
-- Always prefer simplicity over pathological correctness
-- YAGNI, KISS, DRY
-- No backward compatibility shims or fallback paths unless they come free without adding cyclomatic complexity
-
-## Working Principles
-
-- Treat the user's stated goal and confirmed preferences as the basis for evaluating a requested approach
-  - Before acting, briefly propose an alternative when it offers a material improvement in effectiveness, cost, safety, or feasibility; include the rationale and significant trade-offs
-  - Do not override explicit constraints or authority based on an inferred "real intent". Confirm changes to the goal, scope, material constraints, or authority; make minor, reversible improvements within scope without unnecessary confirmation
-- Write for the reader in anything shared with others (PRs, error messages, docs, comments)
-  - Don't write vague messages that assume the reader will dig through the codebase; make the text understandable on its own
-  - But "writing everything is kinder" is an illusion. Cut details that don't change the reader's understanding or next action. Self-contained is not the same as exhaustive
-- Don't put things in checklists that automation can handle
-  - Push anything mechanically verifiable (lint, tests, CI, hooks) into automation; keep only items requiring human judgment in checklists
-- Prefer "structurally impossible" over "be careful"
-  - Don't rely on vigilance to prevent mistakes; make invalid states unrepresentable via types, schemas, permissions, and automated checks
-- Review in a structurally independent context
-  - A review that inherits the implementation context reproduces the implementer's assumptions. Hand only the diff and the spec to a party without that context, such as a separate session or subagent
-
-## Notes Style
-
-- Avoid horizontal rules (`---`) and bold emphasis (`**`) in notes and memos
-- Use plain text and headings (`#`) for structure instead
-- Don't hard-wrap prose. Write each paragraph as one long line and let the viewer wrap it
-  - Applies to every Markdown and prose artifact: notes, PR bodies, skill files, Linear comments, design docs
-  - Fixed-width wrapping is a terminal-era habit. Displays are wide, some renderers turn the breaks into real line breaks, and reflowing a paragraph after a one-word edit inflates the diff with unrelated lines
-  - Commit messages are the exception. Wrap those as usual
-  - Structural line breaks stay: list items, table rows, code blocks
-
-## Work Records in Notes
-
-- When research involves hands-on measurement, experiments, or inspecting artifacts,
-  add an appendix section ("Appendix: Work Record") to the note, separate from the conclusions
-  - When it applies: you created throwaway resources (scratch DB, test data, generated scripts)
-    to take measurements, operated a live system or external service to verify something,
-    or inspected actual artifacts (jars, binaries) — any case where the evidence exists
-    only in your local work
-  - Include: environment (versions, connection targets), setup steps, the exact commands/SQL
-    used for measurement, raw measured values, known limitations/biases of the method,
-    and cleanup of temporary resources
-  - Exclude: the full trial-and-error log. Drop intermediate steps that don't support a conclusion
-  - Write it right after taking the measurements, not at the end of the research;
-    reproduction details are lost once the session ends
+- Keep PR bodies, errors, review comments, and shared documentation self-contained but concise. Do not assume the reader will reconstruct missing context, and do not include details that change neither understanding nor action.
+- In notes and memos, avoid horizontal rules and bold emphasis; use plain text and headings for structure.
+- Do not hard-wrap prose in Markdown or shared prose artifacts, including notes, PR bodies, skill files, review comments, and design documents. Let the renderer wrap paragraphs; preserve structural line breaks for lists, tables, and code blocks. Commit messages are exempt.
 
 ## Japanese Writing Style
 
-- 日本語で説明するときは、英単語を生のまま文中に混ぜない
-  - 自然な日本語訳や定着したカタカナ語がある語は、そちらで書く
-    - 例: `bounded retry` → 回数制限付きの再試行 / 上限付きリトライ、`resolve` → 解決 / 確定、`fresh な request` → 新しいリクエスト、`合流元 read` → 合流元の読み取り
-  - 英単語を助詞や活用に直接つなぐ書き方(「resolve する」「fresh な」「read が返る」「bounded retry します」)をしない
-- 残すか訳すか迷ったら「貼り付きテスト」で判定する
-  - 英単語の直後に日本語の助詞・送り仮名・コピュラが直接貼り付くなら、その語は一語で訳せる普通語なので訳す
-    - NG例: 「低 severity の」「refuse する」「resolved target が」「fresh な」 → 「低い重大度の」「拒否する」「解決済みの対象が」「新しい」
-  - 概念・定型句として名詞のかたまりで独立し、助詞がかたまりの外側に付くだけなら残してよい
-    - OK例: 「YAGNI の観点で」「pathological correctness を避ける」「human-in-the-loop なので」
-  - 区別の軸は「業界で定着しているか」ではなく「一語で訳せる普通語が文法的に日本語と直接結合しているか」
-- 英語のまま残してよいのは次の場合に限る
-  - 固有名詞・API 名・関数名・型名・ライブラリ名・ファイルパスなど、訳すと指示対象がぶれるもの(例: `utils/refetchUntil`)
-  - 一語の訳語に置き換えると意味がぼやける複合概念・定型句(例: YAGNI, pathological correctness, human-in-the-loop)
-  - 業界で定着しており日本語化するとかえって読みにくい語(例: API, URL, commit, merge, CLI)。
-    ただし助詞がかたまりの外側に付く名詞用法に限る(「commit 3件を」は可)。
-    活用や助詞と直接結合するときは貼り付きテストどおりカタカナで書く(「commit する」→「コミットする」)
-- 日本語の回答を出す直前に、文中の英単語を一語ずつ洗い出し、貼り付きテストで残してよい側に該当しない語をすべて訳してから出力する
-- カタカナにすべきか漢字熟語にすべきかは読みやすさで判断し、過度なカタカナ連結も避ける
+- In Japanese prose, use natural Japanese translations or established katakana terms for ordinary words. Do not attach Japanese particles, conjugation, or copulas directly to an untranslated English word, such as `resolve する`, `fresh な`, or `read が返る`.
+- When uncertain, apply the attachment test: if a Japanese particle or conjugation attaches directly to a single English word, translate or transliterate that word. For example, write `低い重大度`, `拒否する`, `解決済みの対象`, and `新しいリクエスト`, not `低 severity`, `refuse する`, `resolved target`, or `fresh な request`.
+- Preserve English when translation would make the target ambiguous: proper names, API names, functions, types, libraries, paths, and exact identifiers. Also preserve established compound concepts whose meaning would blur under a one-word translation, such as YAGNI, pathological correctness, and human-in-the-loop.
+- Established technical nouns such as API, URL, commit, merge, and CLI may remain as nouns. When used as Japanese verbs, transliterate them, such as `コミットする`, rather than writing `commit する`.
+- Before sending Japanese prose, scan remaining English words and translate any that fail these exceptions. Prefer the more readable choice between katakana and a Japanese compound, and avoid long chains of katakana terms.
 
-## Notes Directory
+## Notes and Evidence
 
-- Automatically save research, investigation, summary results, plans and progress tracking as markdown files
-- Save location (fallback chain)
-  1. `.matsuyoshi/` or `.matsuyoshi30/` at project root (if exists)
-  2. `$HOME/.matsuyoshi/` or `$HOME/.matsuyoshi30/` for cross-project notes (if exists)
-  3. Tool's built-in memory directory
-- `.matsuyoshi` / `.matsuyoshi30` are globally gitignored
-
-## Code References
-
-- When writing code references (file:line) into notes, PR bodies, or Linear comments,
-  link them as GitHub permanent links:
-  `[path/file.kt:123](https://github.com/{owner}/{repo}/blob/{full SHA}/path/file.kt#L123)`
-  (line range: `#L10-L20`)
-- Resolve owner/repo from `git remote get-url origin` (once per repo per session);
-  resolve the SHA with `git rev-parse HEAD` at link-writing time — a session-cached SHA
-  silently goes stale once a commit lands mid-session
-- Keep plain `file:line` when the file is untracked, modified relative to HEAD
-  (`git diff HEAD -- <file>` non-empty; the permalink would point at stale lines),
-  the HEAD commit is not on any remote branch (`git branch -r --contains HEAD` empty;
-  the permalink would 404), or the remote is not GitHub
+- Save a Markdown note when research, investigation, a plan, or a progress record has durable reuse value. Do not create a note for a short answer or a routine edit.
+- Use the first existing location: project-root `.matsuyoshi/` or `.matsuyoshi30/`, then user-level `~/.matsuyoshi/` or `~/.matsuyoshi30/`, then the tool's memory directory. These directories are globally gitignored.
+- When conclusions depend on hands-on measurement, a live system, or inspected artifacts that are not otherwise reproducible, add `Appendix: Work Record` immediately after the measurement. Record the environment, setup, exact commands or SQL, raw values, limitations, and temporary-resource cleanup; omit trial-and-error that does not support the conclusion.
+- In PRs, issues, and shared design documents, link code references to GitHub at the current full SHA. Use plain `path:line` for personal notes, untracked or modified files, commits not present on a remote branch, or non-GitHub remotes.
