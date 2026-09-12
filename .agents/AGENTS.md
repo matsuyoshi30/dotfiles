@@ -1,7 +1,10 @@
 ## Code Quality
 
-- Add clear comments explaining complicated business logic
-  - Only write comments for non-obvious things not expressed by the code itself, and keep them concise
+- Default to no code comment. Add one only when the immediately following code needs a non-obvious reason or constraint that cannot be expressed clearly in the code itself
+  - Limit the comment to background that changes how the immediately following code should be understood or maintained
+  - Do not restate the code, narrate the implementation or change, label a code section, or include tangential history, architecture, or future work
+  - Prefer one concise sentence. If removing the comment would not hide a relevant reason or constraint, omit it
+  - Example: prefer `// The provider rejects deactivated IDs, so exclude them before batching.` over `// Filter inactive users.`
 - Generate documentation that explains WHY not WHAT, with examples
 - Auto-fix linting/formatting issues in files you touched; don't commit formatting-only
   changes that auto-formatters apply to unrelated files
