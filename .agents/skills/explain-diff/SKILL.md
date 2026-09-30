@@ -6,14 +6,7 @@ allowed-tools: Agent, Skill, Bash, Read, Glob, Grep, Write
 
 # explain-diff
 
-Turns a diff/PR into a self-contained local HTML page that teaches the
-reader what changed and why — a plain-language overview, background, the core
-idea, a guided code walkthrough, and a 5-question quiz to check their own
-understanding. This is for a human who has to review or work with a change
-they didn't write and don't have context on. It does not hunt for bugs, does
-not produce adopt/reject findings, and never sends the diff or code anywhere
-external — for `diff-review` (blind + plan cross-check, findings) or
-`code-review` (bug / simplification findings), use those skills instead.
+Turns a diff/PR into a self-contained local HTML page that teaches the reader what changed and why — a plain-language overview, diagrams in the notations the change calls for, background, the core idea, a guided code walkthrough, and a 5-question quiz to check their own understanding. This is for a human who has to review or work with a change they didn't write and don't have context on. It does not hunt for bugs, does not produce adopt/reject findings, and never sends the diff or code anywhere external — for `diff-review` (blind + plan cross-check, findings) or `code-review` (bug / simplification findings), use those skills instead.
 
 Copy this checklist into your visible reply and check off items as you go:
 
@@ -22,7 +15,7 @@ Explain-diff progress:
 - [ ] Step 1: Resolve the diff target
 - [ ] Step 2: Capture the diff
 - [ ] Step 3: Explore background (surrounding code, intent, history)
-- [ ] Step 4: Write the explanation (ELI5 / Background / Intuition / Code / Quiz)
+- [ ] Step 4: Write the explanation (ELI5 / Diagrams / Background / Intuition / Code / Quiz)
 - [ ] Step 5: Verify before saving (mechanical check + fact check)
 - [ ] Step 6: Save as local HTML and open it
 ```
@@ -56,19 +49,14 @@ Classify the argument (if any):
    the branch against itself. If the user confirms, continue exactly as case
    3 (single commit-ish) below, using `HEAD` as the ref.
 
-Also resolve a **head commit-ish** you can read file contents from, for Step 3.
-If the PR/branch is already checked out (`git rev-parse HEAD` matches the
-resolved head), just read the working tree normally. If it isn't, fetch it
-without touching the working tree — do not `git checkout` or `gh pr
-checkout`, the user's tree may hold unrelated in-progress work:
+Also resolve a **head commit-ish** `REF` to read file contents from, for Step 3: the SHA for a commit or range, or the fetched `refs/pr/…/head` for a PR or remote branch. Always read files from `REF`, never from the working tree, even when HEAD looks like the target: comparing two SHAs by eye is easy to get wrong, and a working tree that has moved past the target shows later edits as if they were part of the change. Never `git checkout` or `gh pr checkout` to get there, since the user's tree may hold unrelated in-progress work. A commit that already exists locally (`git cat-file -e "${REF}^{commit}"` succeeds) needs no fetch; a PR or remote branch that doesn't gets one:
 
 ```bash
 git -C "$REPO" fetch origin "pull/<n>/head:refs/pr/<n>/head"   # GitHub PR
 git -C "$REPO" fetch origin "<branch>:refs/pr/<branch>/head"   # remote branch
 ```
 
-Then read files with `git -C "$REPO" show <that-ref>:<path>` instead of the
-`Read` tool. (Leaving the fetched ref around is harmless; no cleanup needed.)
+Then read files with `git -C "$REPO" show "${REF}:<path>"` instead of the `Read` tool, and search with `git -C "$REPO" grep <pattern> "$REF"` instead of `Grep`. Keep the braces and quotes: in zsh, a bare `$REF:e…` path is read as a history modifier on the variable. (Leaving the fetched ref around is harmless; no cleanup needed.)
 
 If the diff is empty, tell the user and stop.
 
@@ -121,7 +109,7 @@ also burns far more wall-clock time and tool calls than doing the work
 inline would have.
 
 - Read the module/package the diff touches beyond just the changed lines —
-  callers of changed functions/types (`Grep` for usages), related tests, and
+  callers of changed functions/types (`git grep` at `REF` for usages), related tests, and
   any README/docs for that subsystem.
 - Read the pre-change version of the touched files (`git show
   <base>:<path>`) so you can describe what existed *before*, not just infer
@@ -140,34 +128,10 @@ inline would have.
 
 Produce one HTML document with these sections, in order:
 
-- **ELI5** — before anything else, one short overview for a reader who knows
-  nothing about this codebase: what changed, and why anyone cares. About 150
-  words and one diagram, and nothing beyond that. No domain vocabulary, no toy
-  data, no file or function names — those all have a section further down that
-  is the right place for them. Explain it the way you would to someone who
-  wandered in: the outcome, not the mechanism.
-
-  Its diagram uses the `before-after` family — do not invent an `eli5` family,
-  Step 5 rejects any family name outside the seven. "Big pictures, few words"
-  buys its size from the node count, not from the canvas or the type: three or
-  four large, well-spaced boxes inside the same `0 0 768 H` viewBox, where a
-  normal diagram fits eight. The label sizes are fixed by the scale classes and
-  are not yours to raise, and the 24-character cap on SVG `<text>` still holds
-  — a sentence goes in the `figcaption`.
-
-  This section is one paragraph and one picture. It is never a file inventory:
-  the map of the whole diff stays at the end of the Code section, for the
-  reason given there.
-- **Background** — the existing system relevant to this change. You don't
-  know how much the reader already knows: include a deep background for
-  beginners (note it can be skipped if already familiar), then a narrower
-  background specific to what this change touches.
-- **Intuition** — the core idea behind the change: the mechanism, where ELI5
-  gave only the outcome. Essence, not full implementation detail. Concrete
-  examples with toy data. It assumes the Background, so this is the first
-  section where domain vocabulary is fair game. This is where diagrams earn
-  the most, provided each one shows something the prose beside it doesn't
-  already say.
+- **ELI5** — before anything else, one short overview for a reader who knows nothing about this codebase: what changed, and why anyone cares. About 150 words of prose (about 300 characters on a Japanese page) and nothing beyond that — no diagram, no file or function names, no toy data. Everyday nouns from the domain (請求書, 看護師, 予約) are what make it concrete, so use them; 「処理を改善した」 fits every PR and says nothing about this one. Explain it the way you would to someone who wandered in: the outcome, not the mechanism. It is never a file inventory: the map of the whole diff stays at the end of the Code section, for the reason given there.
+- **Diagrams** — the change drawn in the notations its content calls for, before any long prose. Route the diff through the table in [references/visual-design.md](references/visual-design.md) § Routing: a schema change gets an ER diagram, a new type hierarchy a class diagram, a reordered call path a sequence diagram, a new capability for a role a use case diagram, and a change with several of these gets several diagrams. Each figure marks what the change added, removed and altered, and carries a figcaption plus a sentence or two on what to notice — enough to read it without the sections below, which then refer back to it. Record the routed families as the `diagram-plan` comment the reference describes.
+- **Background** — the existing system relevant to this change. You don't know how much the reader already knows: include a deep background for beginners (note it can be skipped if already familiar), then a narrower background specific to what this change touches.
+- **Intuition** — the core idea behind the change: the mechanism, where ELI5 gave only the outcome. Essence, not full implementation detail. Concrete examples with toy data. It assumes the Background, so this is the first section of prose where domain vocabulary is fair game. A diagram here is optional: add one when following a single toy value shows something the Diagrams section's figures do not — a `flow` or `sequence` with `orderId=42` on the arrows. The logic it walks may be pre-existing, as long as the diff changes what flows through it or which way it goes; the diff marks then land on the changed value and the branch it now takes. If a Diagrams figure already carries the toy values, refer back to it instead of redrawing it. The `diagram-plan` lists every family used anywhere on the page, these included.
 - **Code** — a high-level walkthrough of the actual changes, grouped and
   ordered so the logic builds (not necessarily file order), closing with a
   map of the whole diff (see below) that says which files each subsection
@@ -198,7 +162,7 @@ from Step 2's list — including the ones that produced no hunks (pure renames,
 binaries) — grouped by the role that file plays in the change: the core
 implementation first, then the same shape repeated across N cases, then
 tests, then mechanical changes (renames, generated code, config). A last
-column names the subsection that covered each file, and an em dash where none
+column names the subsection that covered each file, and an em dash where none (a table cell, not prose, so `japanese-tech-writing`'s dash rule does not apply)
 did — which is what makes the table an honest coverage statement instead of a
 decorated file list.
 
@@ -236,7 +200,7 @@ versions of this template — a quiz that can be gamed teaches nothing):
 Format — read [references/visual-design.md](references/visual-design.md)
 before laying out a single section. It opens with a complete stylesheet to
 paste verbatim; do not write your own CSS for this page. It also carries the
-type scale, the seven diagram families and how to route a change to one, the
+type scale, the diagram families and the routing table that picks them, the
 diagram construction rules, and the reject list. What stays here is what
 shapes the document rather than its appearance, plus the handful of rules
 Step 5 greps for:
@@ -245,11 +209,7 @@ Step 5 greps for:
   requests — that includes font CDNs, so the type stack is system fonts. One
   long page with section headers and a table of contents, no tabs for the
   top-level structure. Basic responsive styling.
-- No ASCII diagrams. Build them in inline SVG or CSS boxes, tag each with an
-  HTML comment naming its family (`<!-- diagram: before-after -->`), and reuse
-  a family across the doc rather than inventing a new visual per section. A
-  reader who learns one visual grammar reads the fourth diagram faster than
-  the first; a reader given four grammars reads none of them.
+- No ASCII diagrams. Build them in inline SVG or CSS boxes, tag each with an HTML comment naming its family (`<!-- diagram: er -->`), and list every family used in one `<!-- diagram-plan: … -->` comment. A family is an established notation (ER, UML class, sequence, use case, DFD, …), never a visual invented for this page: a reader who already knows the notation reads the diagram without a legend, and one given an invented grammar has to learn it first.
 - Every color and font goes through a `var(--…)` token. No inline hex, no
   inline `font-family`.
 - No `box-shadow`. (The rest of the reject list — gradients, emoji-as-icon,
@@ -265,7 +225,7 @@ Step 5 greps for:
 - Include the reference's inline/split toggle script verbatim, with its
   labels in the document's language. It gives every code block holding both
   removals and additions a side-by-side view derived from the same markup;
-  no per-block markup or per-block decision is involved.
+  no per-block markup or per-block decision is involved. Include it even when every block is pure additions: it then renders no control, which is the intended result, not a reason to drop it.
 - Callouts for key concepts, definitions, and important edge cases.
 - Write clearly and engagingly, with smooth transitions between sections —
   match the language the user wrote their request in.
@@ -295,14 +255,12 @@ say so in your reply rather than resolving it silently.
 
 ## Step 5: Verify before saving
 
-"Looks done" isn't a check — run one before you open the file. Two passes,
+"Looks done" isn't a check — run one before you open the file. Write the draft to the Step 6 path first (compute `OUT` as Step 6 shows), since every check below reads that file; Step 6 then only opens it. Two passes,
 in order:
 
 **Mechanical check** — each of these is a command whose output you read, not
 a judgment call. Run all twelve before moving on:
-- `grep -n` for the 5 section header strings and confirm the line numbers
-  come back strictly increasing in this order: ELI5, Background, Intuition,
-  Code, Quiz. (Presence alone doesn't confirm order — the line numbers do.)
+- `grep -n '<h2'` and confirm the six headings come back in this order: ELI5, Diagrams, Background, Intuition, Code, Quiz. Each `<h2>` starts with that English name, optionally followed by a translation in parentheses (`Diagrams（図で見る変更）`), so the check has a fixed string to find. Grep the `<h2` lines only: the table of contents repeats every name, and "Code" also matches `<code>`.
 - Count entries in the `QUIZ` array (Step 4) — must be exactly 5. Don't count
   rendered elements; the array is the source of truth.
 - `grep -c` for ASCII box-drawing characters (`│┌┐└┘├┤─═║╔╗╚╝` etc.) — must
@@ -329,11 +287,12 @@ a judgment call. Run all twelve before moving on:
   (`fill` and `stroke` are in there because the diagrams are inline SVG, where
   the color sits in an attribute rather than a `style`. Don't widen the pattern
   to a bare `="[^"]*#` — the table-of-contents anchors would all match.)
-- Confirm every SVG `<text>` holds a label, not a sentence — the failure that
-  makes a diagram read as cramped, and the one a screenshot review catches
-  last: `grep -oE '<text[^>]*>[^<]*</text>'` and fail on any content longer
-  than 24 characters. Move it to the `figcaption` or the adjacent paragraph.
-- Confirm the diff map covers the whole diff: its table's row count must
+- Confirm every SVG `<text>` holds a label, not a sentence — the failure that makes a diagram read as cramped, and the one a screenshot review catches last. Must print `0`; move anything it lists to the `figcaption` or the adjacent paragraph:
+
+  ```bash
+  python3 -c 'import re,sys,html; s=open(sys.argv[1]).read(); bad=[t for a,t in ((a,html.unescape(t)) for a,t in re.findall(r"<text([^>]*)>([^<]*)</text>",s)) if len(t)>(40 if "mono" in a else 24)]; print(len(bad)); print(*bad[:5],sep="\n")' <the html file>
+  ```
+- Confirm the diff map covers the whole diff: its file-row count, `grep -o '<td class="path">' | wc -l`, must
   equal the changed-file count from Step 2 (`gh pr diff <n> --name-only` /
   `git diff --name-only <range>`, piped to `wc -l`). A file missing from the
   map is a file the reader meets in the review tool with no idea what it is.
@@ -341,15 +300,13 @@ a judgment call. Run all twelve before moving on:
   hit, `.wrap`'s, and `grep -o '<svg[^>]*viewBox="[^"]*"'` must show
   `0 0 768 …` for every one. (Match on `<svg` — a `<marker>` carries its own
   small viewBox and is not a violation.)
-- `grep -o '<!-- diagram: [a-z-]*' | sort | uniq -c` — read the output and
-  confirm every family named is one of the seven in `visual-design.md`. A name
-  that isn't on that list means a visual was invented rather than reused, and a
-  family appearing exactly once each across six diagrams means the same thing.
-  **Empty output is a failure, not a pass** — it means the diagrams went in
-  untagged, which is the case this gate exists to catch. Confirm the floor
-  separately: `grep -c '<!-- diagram:'` must be greater than 0 and at least
-  `grep -c '<svg'`, since every SVG in the page is a diagram and a diagram
-  built from CSS boxes carries a tag but no `<svg>`.
+- Confirm the diagrams match the plan. Must print `plans: 1 missing: [] unplanned: []` — a planned family with no diagram is a routed aspect the page never drew, and a drawn family outside the plan skipped the routing:
+
+  ```bash
+  python3 -c 'import re,sys; s=open(sys.argv[1]).read(); p=re.findall(r"<!-- diagram-plan: ([a-z -]+?) -->",s); used=set(re.findall(r"<!-- diagram: ([a-z-]+) -->",s)); plan=set(p[0].split()) if len(p)==1 else set(); print("plans:",len(p),"missing:",sorted(plan-used),"unplanned:",sorted(used-plan))' <the html file>
+  ```
+
+  Then confirm the tags cover the drawings: `grep -o '<!-- diagram:' | wc -l` must be greater than 0 and at least `grep -o '<svg' | wc -l` (`-o` counts tags; `grep -c` counts lines and undercounts two tags on one line), since every SVG in the page is a diagram and a diagram built from CSS boxes carries a tag but no `<svg>`. Untagged diagrams pass the plan check while escaping it.
 
 Any of these failing means fix the HTML and re-run that check — don't open a
 file that fails one.
@@ -359,7 +316,7 @@ content is *true*, or readable. Prefer dispatching a fresh subagent for this
 over re-reading your own draft: a subagent with no stake in the draft being
 right catches what a self-review, done minutes after writing it, rationalizes
 past. One subagent, three jobs in one brief — they all want the same reader,
-so don't split them into separate passes.
+so don't split them into separate passes. If you are already running as a dispatched subagent, do the pass inline for the reason Step 3 gives, and re-read the diff itself rather than your notes on it before starting, so the claims are checked against the source and not against your own summary.
 
 1. **Claims.** Re-examine every specific claim (counts, "only X does Y"
    absolutes, described behavior) against the actual diff and the Step 3
@@ -368,13 +325,10 @@ so don't split them into separate passes.
    something actually read, is what this catches. Numbers get the harshest
    look: a number-shaped hole labelled as unverified is honest, an invented
    statistic makes every other claim on the page unreadable.
-2. **Diagrams.** For each one, ask what it tells the reader that the
-   paragraph and code block beside it do not. A diagram that restates its
-   neighbours is decoration; cut it and keep the prose. The highest-quality
-   edit to a diagram is usually a deletion. This rule starts at Background:
-   the ELI5 diagram is exempt, because restating that section's one paragraph
-   in a picture is the point of the section, not a redundancy in it. Say so
-   in the brief, or the pass cuts the one diagram the reader was promised.
+2. **Diagrams.** Give the subagent the Routing section of `visual-design.md`, and have it answer three questions:
+   - Does the plan match the diff? Read the diff's core against the routing table. A signal with no diagram of its family — a migration with no `er`, a new permission scope with no `usecase` — is a missing diagram to draw, not an acceptable omission. A family whose signal isn't in the diff was picked by habit — except an Intuition trace that Step 4 allows, where the diff changes the value or the branch taken through pre-existing logic.
+   - Is each diagram specific? Cover the figcaption: from the drawing alone, can a reader name what this change added, removed or altered? Boxes that would fit any PR fail, and so does a picture labelled 「処理」「改善」.
+   - Does each diagram carry something its neighbours don't (cardinality, call order, ownership, which transition is new)? One that only restates the prose is redrawn to carry that. Deletion is for a diagram whose aspect is not in the plan, and it takes the family out of the plan with it.
 3. **Prose.** If the page is in Japanese, hold it to the
    `japanese-tech-writing` sections named in Step 4 — the LLM っぽい表現 and
    冗長 checks in particular, since those are exactly what a first draft
@@ -390,9 +344,10 @@ Fix whatever it flags, and re-run the mechanical check if a fix changed the HTML
 SLUG=<short-kebab-case slug from the PR title or branch name; if neither
 exists (a bare commit target), derive it from the commit subject or, if
 that's also uninformative, from what the diff's main files/feature are about>
-OUT="${TMPDIR:-/tmp}/$(date +%Y-%m-%d)-explanation-${SLUG}.html"
+TMP="${TMPDIR:-/tmp}"
+OUT="${TMP%/}/$(date +%Y-%m-%d)-explanation-${SLUG}.html"
 [ -e "$OUT" ] && OUT="${OUT%.html}-$(date +%H%M%S).html"   # same target explained twice today, or a parallel run — don't clobber
-# write OUT via the Write tool, then:
+# the draft was written to OUT before Step 5; once every check passes:
 open "$OUT"   # macOS
 ```
 
@@ -419,11 +374,7 @@ carries a row for each of them.)
 - Don't skip Step 5. A confident, well-formatted explanation with an invented
   claim in it is worse than one that admits a gap — the reader has no way to
   tell which parts were verified.
-- The visual system in `references/visual-design.md` is not styling advice
-  applied at the end. Read it before writing the first section: the diagram
-  family a change routes to determines how the Intuition section is written,
-  and retrofitting a palette onto a page laid out without one only produces a
-  recolored version of the same undifferentiated document.
+- The visual system in `references/visual-design.md` is not styling advice applied at the end. Read it before writing the first section: the families a change routes to decide what the Diagrams section draws and how the Intuition section is written, and retrofitting a palette onto a page laid out without one only produces a recolored version of the same undifferentiated document.
 - Don't re-derive that file's CSS. Every rule in it fixes a defect a previous
   run of this skill shipped; a stylesheet rewritten from the prose around it
   reintroduces them, and the resulting page passes every grep in Step 5 while

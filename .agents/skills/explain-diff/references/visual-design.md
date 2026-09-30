@@ -19,9 +19,8 @@ is a dependency; nothing is fetched at run time.
 - Typography — three system-font families and the job each one holds
 - Geometry — the 4px grid, hairlines, and the ban on shadows
 - Layout — one column, one width, one containment layer
-- Diagram families — the seven, and how a change routes to one
-- Diagram construction — the measure, the type scale, arrowheads, and what
-  SVG text is allowed to hold
+- Diagram families — the common set, and the routing table that decides which ones a change needs
+- Diagram construction — the measure, the type scale, arrowheads, what SVG text is allowed to hold, and the notation for class, ER and use case diagrams
 - Code blocks — one span per line, and why that structure is load-bearing
 - Interaction — the quiz, the inline/split diff toggle, and the motion rules
 - Gates — the reject list. Read this section even if you skim the rest
@@ -239,6 +238,11 @@ svg text.mono { font-family: var(--font-mono); }
 svg .hdr { font-size: 13px; font-weight: 600; }
 svg .lbl { font-size: 14px; font-weight: 600; }
 svg .sub { font-size: 12px; fill: var(--muted); }
+/* Diff marks on labels. A fill attribute on <text> loses to the rules
+   above, so a mark set as an attribute never renders; these classes win. */
+svg text.add { fill: var(--add); }
+svg text.del { fill: var(--del); }
+svg text.chg { fill: var(--accent); }
 
 table {
   border-collapse: collapse;
@@ -262,6 +266,9 @@ th {
 }
 td.mono { font-family: var(--font-mono); font-size: 12px; }
 tr.is-new td { background: var(--accent-tint); }
+td.add, th.add { background: var(--add-tint); }
+td.del, th.del { background: var(--del-tint); }
+td.chg, th.chg { background: var(--accent-tint); }
 
 /* The Code section's file map. Group rows carry the reading order, so the
    table needs no priority column. */
@@ -306,6 +313,7 @@ tr.is-new td { background: var(--accent-tint); }
 .opt.wrong { border-color: var(--del); background: var(--del-tint); }
 .opt .mark { font-family: var(--font-mono); margin-right: 8px; }
 .opt .why { display: block; font-size: 12px; color: var(--muted); margin-top: 6px; }
+.opt .why[hidden] { display: none; }
 footer {
   margin-top: 64px;
   padding-top: 16px;
@@ -396,32 +404,70 @@ token only (`FOR UPDATE`, `batch upsert`), via `class="mono"`.
 
 ## Diagram families
 
-Seven families cover what a code change needs to show. Pick by the shape of
-the change, not by variety — reusing one family three times is better than
-inventing three visuals, because the reader learns the visual grammar once.
+A family is an established notation a reviewer may already read: UML, ER, DFD, C4 and the like. The family is decided by what the change *is*, through the routing table below, never by variety or by habit. A page that draws every change as two panels of boxes has skipped the routing: a schema change shown without its tables, or a new call path shown without its order, leaves the reader to reconstruct from code the one structure a picture carries better than prose.
 
-Mark each diagram with an HTML comment naming its family
-(`<!-- diagram: before-after -->`), so reuse is visible when re-reading the draft.
+The list below is the common set, not a closed one. When an aspect of the change is better shown by another established notation — a deployment diagram for where a process now runs, a data flow diagram for a pipeline, a timing diagram for a timeout or retry schedule, an object diagram for one concrete instance graph, a swimlane activity for work handed between people, a C4 context diagram for a new external system — use it, and name it by its common name in kebab-case (`deployment`, `dataflow`, `timing`). What is not allowed is an invented visual with no notation behind it: the reader has to learn its grammar from scratch, and it usually turns out to be boxes and arrows that mean nothing in particular.
 
-1. **before-after** — two panels with identical geometry, side by side; only
-   the changed node differs and carries the accent. The default choice for a
-   diff, and the one family a reader can always parse without a legend.
-2. **flow** — boxes and arrows carrying concrete toy values (`orderId=42`,
-   `status=DRAFT`), not type names. A flow labelled with types explains nothing
-   the signature didn't already say.
-3. **state** — a state machine for lifecycle or status changes. Transitions the
-   diff adds are accent; pre-existing ones are muted.
-4. **modules** — nested boxes for a refactor or a move: what lives where, and
-   which boundary the change crosses.
-5. **matrix** — an HTML table for condition x outcome logic (permissions,
-   feature flags, branch conditions). Often clearer than any drawing. Not
-   every table is one: the Code section's diff map is navigation, so it
-   carries no family tag.
-6. **sequence** — vertical lifelines when ordering across services or async
-   steps is the point.
-7. **ui** — a simplified mockup, boxes and real label text, for a user-facing
-   change. Never draw browser chrome, a window titlebar, or a phone frame
-   around it.
+Mark each diagram with an HTML comment naming its family (`<!-- diagram: er -->`).
+
+1. **er** — entities with their columns (`PK` / `FK` marked) and crow's-foot cardinality between them, for schema changes.
+2. **class** — UML-style class boxes: name, the members the change touches, and inheritance / implementation / dependency edges between types.
+3. **sequence** — vertical lifelines when ordering across layers, services or async steps is the point. Messages carry toy values.
+4. **usecase** — actors outside a system boundary, use cases as ovals inside it: who can now do what, and what they can no longer do.
+5. **state** — a state machine for lifecycle or status changes.
+6. **flow** — an activity diagram: boxes, decisions and arrows carrying concrete toy values (`orderId=42`, `status=DRAFT`), not type names. A flow labelled with types explains nothing the signature didn't already say.
+7. **modules** — nested boxes for a refactor or a move: what lives where, and which dependency crosses which boundary.
+8. **matrix** — an HTML table for condition x outcome logic (permissions, feature flags, branch conditions). Not every table is one: the Code section's diff map is navigation, so it carries no family tag.
+9. **ui** — a simplified mockup, boxes and real label text, for a user-facing change. Never draw browser chrome, a window titlebar, or a phone frame around it.
+10. **before-after** — two panels with identical geometry, side by side; only the changed part differs. The fallback when no notation fits, typically a behavior or performance change whose shape is not a schema, a type graph, an ordering or a lifecycle. When a structural diagram would overlap old and new in one drawing — a responsibility moving between classes — draw that notation in two panels instead and tag it with the notation (`class`), not `before-after`.
+
+### Routing
+
+Before writing, read the diff's core against this table. Every row whose signal is present gets its family, and a change that touches a schema, a call order and a type hierarchy gets all three diagrams: several families on one page is the normal case, not a smell. A signal that appears only in test fixtures or mechanical changes (a generated file, a rename) does not count.
+
+A row fires when the diff changes the thing the row names, not when that thing merely appears in it. A new enum whose values gain no new transitions is a type, so it goes in `class`, not `state`; a new DNS name or a new field on an existing query gives no actor a new operation, so it is not `usecase`. The test: would this diagram's diff marks land on the element the row is about? A `state` diagram where every transition is pre-existing, or a `usecase` diagram whose only new oval restates a hostname, fails it — drop the row rather than draw it to be safe.
+
+| Signal in the diff | Family | What the diagram must show |
+|---|---|---|
+| Migration, DDL, ORM entity or table mapping, schema file | `er` | The touched tables, added / removed columns, keys, and cardinality between them |
+| New or changed class, interface, sealed hierarchy, DTO, DI wiring | `class` | The types, the members the change touches, and inheritance / implementation / dependency |
+| New or reordered calls across layers or services, async job, event, transaction boundary, external API | `sequence` | Participants, message order with toy values, and the step the change inserts or removes |
+| An actor (user role, client application, external system) can perform an operation it could not before, or loses one: new mutation or endpoint, screen action, batch, role or permission scope | `usecase` | Actors, the system boundary, and the added / removed use cases |
+| A state, transition or guard of a lifecycle or workflow is added, removed or changed | `state` | States and transitions, with the guard on each changed one |
+| Branching, validation, retry, or an algorithm | `flow` | The decision path, followed with one concrete toy value |
+| Permission, role, feature flag, or condition-dependent config | `matrix` | Condition x outcome, with the changed cells marked |
+| File or package move, new module, dependency direction | `modules` | The boundaries and which dependency crosses them |
+| Visible UI | `ui` | The screen region that changed, with its real labels |
+| Infrastructure, deploy target, container or queue topology | `deployment` | Nodes, what runs on each, and the connection the change adds or moves |
+| Data moving through a pipeline, ETL, sync, or export | `dataflow` | Sources, processes, stores, and which flow the change adds or reroutes |
+| Timeout, retry, backoff, TTL, schedule, or rate limit | `timing` | A time axis with the events the change moves, using real durations |
+| Anything else with an established notation | its notation | Whatever that notation exists to show |
+| None of the above | `before-after` | The observable difference in behavior |
+
+The rows are the common signals, not an exhaustive list, and the last two are in that order on purpose: reach for another established notation before falling back to two panels of boxes.
+
+The routed diagrams go in the Diagrams section, ordered from the outside in: who is affected (`usecase`, `ui`) first, then structure (`er`, `class`, `modules`), then behavior (`sequence`, `state`, `flow`). Background, Intuition and Code may add a diagram that zooms into one part or follows a toy value through it.
+
+One piece of logic can match two rows — a feature-flag branch is both a condition (`matrix`) and a branch (`flow`). Draw the `matrix` when the question is which input gives which outcome; add the `flow` only when the order or placement of the checks matters to the reader (an early return that skips a query, a check that runs once per batch rather than per key). Two figures answering the same question is one too many.
+
+An element that is new as a whole — a new class, table or participant — carries the mark on the element: its outline and its name. Its members need no marks of their own, since all of them are new.
+
+Record every family used anywhere on the page once, near the top of the `<body>`, as a space-separated list: `<!-- diagram-plan: usecase er sequence -->`. Step 5 checks that every planned family is drawn and that nothing outside the plan is, and the fact check compares the plan against the diff.
+
+### Diff marks
+
+Any family marks its own diff, so a structural diagram usually needs no second panel:
+
+- Added element: stroke `var(--add)` on its shape, `class="add"` on its label, and a `+` prefix on the label (or a `.sub` reading `NEW`).
+- Removed element: stroke `var(--del)`, `class="del"` on its label, and a `−` prefix. Add `stroke-dasharray="4 4"` only where the notation gives dashes no meaning of its own; in a sequence diagram (replies), a class diagram (dependency, implementation) or a deployment diagram (dependency), a dashed removal reads as that relationship, so keep the notation's line style and let the color and the `−` carry the removal.
+- Changed element: stroke `var(--accent)` on its shape, `class="chg"` on its label. In a diagram `--accent` means changed and nothing else: the focal point of a diff diagram is the element the change touched, so do not also spend the accent on an unchanged node to draw the eye.
+- In a `matrix` table, the same three classes go on the `<td>` / `<th>` that changed. When a whole column is new, mark its header and say so in the caption rather than tinting every cell.
+
+Color labels through these classes, never a `fill` attribute on `<text>`: the stylesheet's `svg text` and `.sub` rules outrank a presentation attribute, so an attribute-colored label renders in ink or muted and the mark silently disappears. Shape strokes are not styled by the sheet, so a `stroke` attribute on them works.
+
+The prefix is what keeps the meaning off color alone. `--add` and `--del` marks do not count against the one-or-two accent limit below; an ER diagram with five new columns is five `--add` rows and still has one focal point.
+
+When old and new share no elements to mark against — every participant of a call path replaced, say — draw the notation twice, as two panels, and tag it with the notation. Do not borrow a construct that means something else at run time, such as a sequence `alt` fragment guarded by "before" and "after".
 
 ## Diagram construction
 
@@ -435,14 +481,8 @@ Mark each diagram with an HTML comment naming its family
   a narrow window it scales down rather than scrolling. Its labels get small
   there; that is the accepted trade for a file opened on a desktop. Tables do
   need the wrapper, since their columns cannot shrink past their content.
-- **A two-panel comparison is two 368-wide columns at x=0 and x=400.** Both
-  panels keep the same node width so the eye can diff them by row.
-- **SVG `<text>` holds labels, never sentences.** A node name, a sublabel, an
-  arrow label — up to about 24 characters. Anything longer is a conclusion,
-  and a conclusion belongs in the `figcaption` or the paragraph beside the
-  figure, where it wraps, scales with the reader's font, and is selectable.
-  Paragraphs typeset as SVG text is the second most common reason a diagram
-  on this page reads badly.
+- **A two-panel comparison is two 368-wide columns at x=0 and x=400.** Both panels keep the same node width so the eye can diff them by row. When a panel cannot fit 368 — a sequence with four participants, or 40-character message labels — stack the panels instead: before above after in one SVG, full width, with each shared lifeline or node at the same x in both, so the eye diffs them by column.
+- **SVG `<text>` holds labels, never sentences.** A node name, a sublabel, an arrow label — up to 24 characters. A `class="mono"` literal (a class member, a column definition, a message with its toy value) may run to 40, since identifiers are long and cannot be reworded. Anything longer is a conclusion, and a conclusion belongs in the `figcaption` or the paragraph beside the figure, where it wraps, scales with the reader's font, and is selectable. Paragraphs typeset as SVG text is the second most common reason a diagram on this page reads badly.
 - **Every text uses a scale class** (`hdr` / `lbl` / `sub`), not a
   `font-size` attribute. Add `class="mono"` for a literal token.
 - **Annotate below, not far right.** A cost or condition note goes on a
@@ -461,21 +501,45 @@ Mark each diagram with an HTML comment naming its family
   </marker>
   ```
 
-  A stack of boxes joined by plain hairlines reads as unrelated cards.
+  A stack of boxes joined by plain hairlines reads as unrelated cards. The exceptions are the notations whose lines are not directed: an ER relationship ends in cardinality marks, a use case association is a plain line, and so is a communication path between deployment nodes (a dependency between them keeps its dashed arrow).
 - **A sequence lane label is centred on its lifeline** (`text-anchor="middle"`
   at the lifeline's x), except the leftmost, which starts at x=8 so it isn't
   clipped.
-- One or two focal elements per diagram, in `--accent`. Everything else is
-  ink or muted. Three focal points means no focal point.
-- Every node earns its place. The highest-quality edit to a diagram is
-  usually a deletion.
-- A diagram must carry information the adjacent prose and code block do not
-  already state. One that restates the paragraph above it is decoration —
-  cut it, and keep the paragraph.
+- One or two focal elements per diagram, in `--accent`. Everything else is ink or muted, apart from the diff marks. Three focal points means no focal point.
+- Every node earns its place: draw the tables, types and participants the change touches plus the neighbours needed to read them, not the whole system.
+- A diagram must carry information the adjacent prose and code block do not already state — cardinality, call order, ownership, which transition is new. One that restates the paragraph above it is redrawn to carry that, not deleted; a diagram the routing plan calls for is not optional.
+- Label with real names. A node reading 「処理」「データ」「システム」 or an arrow reading 「改善」 fits every PR and so explains none; if a box has no better name, it probably should not be in the diagram.
 - Never encode meaning in color alone. Pair the accent with a label, a
   dashed stroke, or a position difference, so the diagram survives a
   grayscale print and a red-green colorblind reader.
 - Give each SVG `role="img"` and a `<title>` naming what it shows.
+
+### Notation for the structural families
+
+Hand-drawn SVG is enough for these; keep the standard shapes so a reader who knows the notation reads it without a legend.
+
+- **class** — a box with a name compartment (`lbl mono`, since a class name is an identifier and often passes 24 characters, with a `.sub` stereotype such as `«interface»` above it when relevant), a hairline, then one member per line as `.sub mono`. Leave out UML visibility markers, so a leading `+` / `−` can only mean the diff mark. Show only the members the change adds, removes or calls; signatures drop parameter lists when they would pass 40 characters. Inheritance is a solid line to a hollow triangle, implementation the same line dashed, dependency a dashed line to an open arrowhead.
+- **er** — a box per table: the table name as `lbl mono`, a hairline, then one column per line as `.sub mono` with `PK` / `FK` in front. Relationships are plain lines ending in crow's-foot marks on each side.
+- **usecase** — a boundary rectangle with the system name as `.hdr` at its top left, use cases as ellipses inside it with `.lbl` names, actors outside as a minimal stick figure (a circle and four strokes, `stroke="var(--ink)"`) or a box labelled `«actor»` for a non-human one, with the role name below. Emoji are not an actor glyph.
+
+The markers these need, ids unique across the document as before. The hollow triangle's fill is a token, not white, so it passes the hex gate:
+
+```svg
+<marker id="inh" viewBox="0 0 12 12" refX="12" refY="6"
+        markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto">
+  <path d="M0,0 L12,6 L0,12 z" fill="var(--paper)" stroke="var(--ink)" stroke-width="1"/>
+</marker>
+<marker id="cf-many" viewBox="0 0 12 12" refX="12" refY="6"
+        markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <path d="M0,6 L12,0 M0,6 L12,6 M0,6 L12,12" fill="none" stroke="var(--muted)" stroke-width="1.2"/>
+</marker>
+<marker id="cf-one" viewBox="0 0 12 12" refX="12" refY="6"
+        markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <path d="M0,6 L12,6 M8,0 L8,12" fill="none" stroke="var(--muted)" stroke-width="1.2"/>
+</marker>
+```
+
+`orient="auto-start-reverse"` lets one crow's-foot marker serve as both `marker-start` and `marker-end`.
 
 ## Code blocks
 
@@ -519,12 +583,12 @@ and the walkthrough subsection that covers it. A group is a full-width row
 inside the `<tbody>`, not a second table:
 
 ```html
-<tr class="grp"><th colspan="4" scope="colgroup">核心 (4 ファイル) — …</th></tr>
+<tr class="grp"><th colspan="4" scope="colgroup">核心の 4 ファイル：…</th></tr>
 <tr>
   <td class="path">shared/usecase/NursingConfirmableRequestUseCase.kt</td>
   <td class="stat">+70 −22</td>
   <td>一括受領と一括差し戻しの本体</td>
-  <td class="sec">1・2</td>
+  <td class="sec">1、2</td>
 </tr>
 ```
 
@@ -689,6 +753,8 @@ the rest belong to the fact-check pass.
   viewBox is not 768 wide.
 - A `<pre>` line that is not wrapped in a `<span>`.
 - A sentence typeset as SVG `<text>`.
+- A routing signal present in the diff's core with no diagram of its family, or a drawn family missing from the `diagram-plan`.
+- A diagram with no established notation behind it, or one labelled with words that would fit any PR (「処理」「改善」「システム」).
 - A duplicate `id` anywhere in the document.
 - Gradient background, gradient headline text, blurred color blob, floating orb.
 - Any `box-shadow`.
