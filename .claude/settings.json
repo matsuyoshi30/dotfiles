@@ -156,6 +156,7 @@
       "Bash(yarn fix:*)",
       "Bash(yarn lint:*)",
       "Bash(yarn prettier:*)",
+      "EnterWorktree",
       "WebFetch"
     ],
     "deny": [
