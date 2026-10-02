@@ -1,6 +1,6 @@
 # Frontend (TypeScript/React) Review Guardrails
 
-Guardrails for patterns from frontend PR reviews. Scoped to TypeScript/React idioms and pitfalls (observable models, component state, form bindings, GraphQL-backed views) — generic review concerns (naming, DRY, etc.) live in `../perspectives/`.
+Guardrails for TypeScript/React idioms and pitfalls (observable models, component state, form bindings, GraphQL-backed views) — generic review concerns (naming, DRY, etc.) live in `../perspectives/`.
 
 After writing code, self-check against these rules. When reviewing, apply the same checks to the diff.
 
@@ -21,7 +21,7 @@ After writing code, self-check against these rules. When reviewing, apply the sa
 
 **Rule**: If a model (aggregate) already exposes a derived property or method, don't re-implement the same logic in State / ViewModel / Component. Call the model's method instead.
 
-**Why**: Duplicated logic drifts — one site gets a new condition added, the other doesn't, and the two judgments silently diverge. In a past PR, the same "has expired item" check existed on both the Model and the State, and we shipped a bug where the Model reported OK but the State rejected it.
+**Why**: Duplicated logic drifts — one site gets a new condition added, the other doesn't, and the two judgments silently diverge. A typical result: the model reports a value as valid while the state that re-derives it rejects it.
 
 ```ts
 // ❌
@@ -61,7 +61,7 @@ const editor = DocumentEditor.create(document, { initialCursor });
 
 **Rule**: Don't propagate a value that isn't owned by the parent — feature flags, environment config, i18n — through a parent → child chain of reactions / props. Read it directly where you need it.
 
-**Why**: Piping non-owned data through a parent bloats the parent's responsibility and forces edits along the whole propagation path every time a new flag is added. In one PR, a feature flag was relayed across three layers (parent Model → child Model → View) when the child could just read it directly from the flag store.
+**Why**: Piping non-owned data through a parent bloats the parent's responsibility and forces edits along the whole propagation path every time a new flag is added. A flag relayed through parent model → child model → view can be read directly by the child instead.
 
 ```ts
 // ❌
@@ -84,7 +84,7 @@ class ChildModel {
 
 **Rule**: Before adding a new query / API call, check whether the current screen's State / Store already holds the same model. If it does, receive it as a function argument instead of refetching.
 
-**Why**: Duplicate fetches don't just cost network — they create cache consistency problems (two versions of the same entity coexisting). In a past PR, a detail action added a new query for data that the containing list-screen state was already holding.
+**Why**: Duplicate fetches don't just cost network — they create cache consistency problems (two versions of the same entity coexisting). A common case is a detail action that queries again for data the containing list state already holds.
 
 ```tsx
 // ❌
@@ -101,9 +101,9 @@ function DetailButton({ item }: { item: ItemModel }) {
 
 ## Don't pipe form-owned state (canSubmit / errors) through external props
 
-**Rule**: State that belongs to a form object — `canSave`, `errors`, `isDirty` — must not be passed from a parent component to children as props. Look for the existing form binding (`SubmitButtonBinding`, `useFormState`, etc.) and use it.
+**Rule**: State that belongs to a form object — `canSave`, `errors`, `isDirty` — must not be passed from a parent component to children as props. Look for the binding the form library or the codebase already provides and use it.
 
-**Why**: Externalizing form state duplicates the "is submit enabled?" logic and falls out of sync with the form's own updates. A hand-rolled `canSave` in one PR lagged behind the form's validation, causing the submit button to flicker between enabled and disabled.
+**Why**: Externalizing form state duplicates the "is submit enabled?" logic and falls out of sync with the form's own updates. A hand-rolled `canSave` lags behind the form's validation, and the submit button flickers between enabled and disabled.
 
 ```tsx
 // ❌
@@ -145,7 +145,7 @@ class Account {
 
 **Rule**: When a function's return value or a class's responsibility changes, rename the identifier (variable, method, JSDoc) in the same change. Don't defer it.
 
-**Why**: A getter called `adminLockLabel` started returning a policy-lock label too, but the name was never updated. Reviewers asked "what does this actually return?" on every subsequent PR that touched it. Stale identifiers are worse than missing comments — they actively mislead.
+**Why**: A getter called `adminLockLabel` that also returns a policy-lock label makes every later reader ask what it actually returns. Stale identifiers are worse than missing comments — they actively mislead.
 
 ```ts
 // ❌
@@ -165,7 +165,7 @@ get lockLabel(): string {
 
 **Rule**: If a getter is expanded to look at an additional field X, the corresponding setter / mutator must account for X as well (or neither should). Never expand only one side.
 
-**Why**: In one PR, the getter for `isLocked` was updated to also consider a new field, but the setter still only touched the original boolean. Reads and writes disagreed, and a UI toggle stopped reflecting immediately — a classic read/write skew bug.
+**Why**: When the getter for `isLocked` starts considering a new field but the setter still touches only the original boolean, reads and writes disagree, and a UI toggle stops reflecting immediately — a classic read/write skew bug.
 
 ```ts
 // ❌
@@ -186,7 +186,7 @@ set isLockedByAdmin(v: boolean) { this.lockedByAdmin = v; }
 
 **Rule**: For enum or discriminated union dispatch, use `switch` instead of chained `if`. Add a `default` branch with `const _: never = value` so the compiler catches missing cases.
 
-**Why**: `if` chains give you zero compiler help when a new enum case is added. When a new case was introduced after the fact in one PR, the existing `if` chain silently fell through its trailing `return false`, and the bug only surfaced in production.
+**Why**: `if` chains give you zero compiler help when a new enum case is added. When a case is added later, the existing `if` chain silently falls through its trailing `return false`, and the bug surfaces only in production.
 
 ```ts
 // ❌
@@ -213,7 +213,7 @@ switch (status) {
 
 **Rule**: Any `min-width: 0`, `as unknown as T`, `// eslint-disable-next-line`, `!important`, `any`, or `@ts-expect-error` must carry a one-line comment explaining why it's necessary.
 
-**Why**: Reviewers kept asking "what's this `min-width: 0` for?" on successive PRs, because the original author never left a note. Worse, a later maintainer, seeing no reason for it, deleted it — and the layout bug it was suppressing came back.
+**Why**: Without a note, every reader asks what the `min-width: 0` is for. Worse, a later maintainer who sees no reason for it deletes it, and the layout bug it was suppressing comes back.
 
 ```tsx
 // ❌

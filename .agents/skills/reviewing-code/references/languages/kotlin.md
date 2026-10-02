@@ -1,6 +1,6 @@
 # Kotlin Review Guardrails
 
-Guardrails for patterns from Kotlin PR reviews. Scoped to Kotlin-specific idioms and pitfalls — generic review concerns (naming, DRY, etc.) live in `../perspectives/`.
+Guardrails for Kotlin-specific idioms and pitfalls — generic review concerns (naming, DRY, etc.) live in `../perspectives/`.
 
 After writing code, self-check against these rules. When reviewing, apply the same checks to the diff.
 
@@ -20,7 +20,7 @@ After writing code, self-check against these rules. When reviewing, apply the sa
 
 **Rule**: Do not add `= null` defaults to parameters of domain models, factories, DTOs, or mutation inputs. If data "must always exist," express it as non-null.
 
-**Why**: LLM code generators (Claude/Copilot included) tend to add `= null` for call-site convenience. The result: data that *should* always exist becomes nullable, and downstream code grows defensive null-checks and fallbacks that should never fire. This has been flagged repeatedly in review:
+**Why**: LLM code generators (Claude/Copilot included) tend to add `= null` for call-site convenience. The result: data that *should* always exist becomes nullable, and downstream code grows defensive null-checks and fallbacks that should never fire.
 
 **Self-check after generation**: run `rg '= null' <edited file>`.
 
@@ -44,7 +44,7 @@ data class CreateUserInput(
 
 **Rule**: Do not add `value ?: someDefault` unless you can justify why that specific fallback value is correct. "Better than crashing" is not a justification.
 
-**Why**: A fallback added "just in case" silently mixes out-of-spec data into the happy path and hides bugs. It's almost always better to fail loudly or branch explicitly. Real review feedback:
+**Why**: A fallback added "just in case" silently mixes out-of-spec data into the happy path and hides bugs. It's almost always better to fail loudly or branch explicitly.
 
 ```kotlin
 // ❌
@@ -62,7 +62,7 @@ val user = repository.find(id)
 
 **Rule**: For simple branching, use a plain `if` instead of chaining `takeIf` / `let` / `run`. Use scope functions only when (a) the result type changes, or (b) you want to eliminate a temporary variable.
 
-**Why**: Chained scope functions impose reading cost for no real gain. Review feedback has explicitly rejected this pattern:
+**Why**: Chained scope functions impose reading cost for no real gain.
 
 ```kotlin
 // ❌
@@ -76,7 +76,7 @@ val profile = if (user.isActive) fetchProfile(user.id) else null
 
 **Rule**: When collecting values that might be null, use `listOfNotNull` / `mapNotNull` instead of manual filtering. Use `maxOf` / `maxOrNull` / `minOrNull` for min/max.
 
-**Why**: Hand-written null-skipping loops are noisy and error-prone. Real review feedback:
+**Why**: Hand-written null-skipping loops are noisy and error-prone.
 
 ```kotlin
 // ❌
@@ -93,7 +93,7 @@ val largest = listOfNotNull(a, b).maxOrNull()
 
 **Rule**: When a predicate on an enum / value class is checked in multiple places, extract it into an extension function backed by a `Set`, and use `in`. Don't leak the check logic to call sites.
 
-**Why**: When new cases are added later, scattered `==` comparisons are easy to miss. Review feedback suggested exactly this rewrite:
+**Why**: When new cases are added later, scattered `==` comparisons are easy to miss.
 
 ```kotlin
 // ❌ The check logic leaks to every call site
@@ -110,7 +110,7 @@ if (status.isTerminal()) { ... }
 
 **Rule**: When defining a higher-order function, put the lambda parameter last. If you can't, redesign the signature.
 
-**Why**: Call sites become awkward without trailing-lambda syntax. Review feedback:
+**Why**: Call sites become awkward without trailing-lambda syntax.
 
 ```kotlin
 // ❌
@@ -128,7 +128,7 @@ retry(3) {
 
 **Rule**: Enforce model invariants in an `init` block or a companion factory using `require` / `check`. Do not scatter validation across service, resolver, or presenter layers.
 
-**Why**: If invariants aren't enforced at construction time, every caller ends up writing defensive checks. Kotlin's `init` block makes this concise — use it. Review feedback:
+**Why**: If invariants aren't enforced at construction time, every caller ends up writing defensive checks. Kotlin's `init` block makes this concise — use it. If the class is also rebuilt from stored rows, check that existing rows satisfy the new check before moving it into `init`, or reading them will fail.
 
 ```kotlin
 // ❌ Validation in the service layer
@@ -154,7 +154,7 @@ data class OrderInput(val quantity: Int, /* ... */) {
 - For single-row reads, use `orderBy(...).limit(1).firstOrNull()` — do not call `firstOrNull()` on an unbounded query
 - For existence checks, use `.exists()` / `.any()` instead of fetching a row and checking `!= null`
 
-**Why**: `selectAll()` pulls unneeded columns and degrades query plans as the schema grows. A bare `firstOrNull()` on some DSLs fetches the entire result set before returning the first row, which explodes under real data volume. Existence checks should drop to SQL `EXISTS` rather than materializing rows. Review feedback:
+**Why**: `selectAll()` pulls unneeded columns and degrades query plans as the schema grows. A bare `firstOrNull()` on some DSLs fetches the entire result set before returning the first row, which explodes under real data volume. Existence checks should drop to SQL `EXISTS` rather than materializing rows.
 
 ```kotlin
 // ❌
@@ -176,7 +176,7 @@ val found = UserTable.select(UserTable.id).where { UserTable.email eq email }.an
 
 **Rule**: Do not issue a query inside a loop over an already-fetched collection. When you have a list of parent rows and need related data, fetch all related rows in a single query (`WHERE parent_id IN (...)`) and group them in memory.
 
-**Why**: Calling a repository inside `map` / `forEach` turns one request into N+1 queries. It looks fine in unit tests with 2-3 rows and melts under production data volume. This is one of the most common review rejections on repository/service code.
+**Why**: Calling a repository inside `map` / `forEach` turns one request into N+1 queries. It looks fine in unit tests with 2-3 rows and melts under production data volume. It is one of the most common defects in repository and service code.
 
 **Red flags to grep for**: `.map { repo.` / `.forEach { ... repo.` / `.associateWith { repo.` / any repository call inside a collection transform.
 

@@ -35,8 +35,8 @@ A repository's severity words do not map onto these one for one: theirs rank how
 ## Anchoring a finding
 
 Every finding carries a repository-root-relative path and line number.
-Good: `server/billing/query/InvoiceQuery.kt:36-62`
-Bad: `InvoiceQuery.kt:36-62`
+Good: `server/orders/query/OrderQuery.kt:36-62`
+Bad: `OrderQuery.kt:36-62`
 
 Line numbers are the ones the author will see once the change lands.
 
