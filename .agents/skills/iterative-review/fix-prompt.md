@@ -8,6 +8,6 @@ Working directory: {cwd}
 
 ## Priority
 
-Critical → High → Medium. Leave Low issues unfixed (they are reported only).
+Blocker → Follow-up. Leave Needs decision, Question, and Nits unfixed: they are reported only, because the first two need a human call.
 
 Follow your standard fix process, verification, and report schema.

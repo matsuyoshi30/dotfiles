@@ -14,4 +14,4 @@ Use after each review iteration in Step 5 (Spec) and Step 6 (Code quality). Appe
 ## Issue-count conventions
 
 - **Spec compliance review** — report MISSING / EXTRA / MISUNDERSTOOD counts
-- **Code quality review** — report CRITICAL / HIGH / MEDIUM / LOW counts
+- **Code quality review** — report BLOCKER / NEEDS_DECISION / QUESTION / FOLLOW_UP / NITS counts

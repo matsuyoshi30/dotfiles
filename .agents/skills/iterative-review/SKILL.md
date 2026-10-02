@@ -1,6 +1,6 @@
 ---
 name: iterative-review
-description: Run an independent code review, fix Critical or High findings, and repeat to the iteration limit. Use when an automated review-fix cycle is requested.
+description: Run an independent code review, fix Blocker and Follow-up findings, and repeat to the iteration limit. Use when an automated review-fix cycle is requested.
 allowed-tools: Agent(review-agent, fix-agent), Bash, Read, Glob, Grep
 ---
 
@@ -10,51 +10,14 @@ Orchestrate an automated improvement loop: a **review subagent** analyzes code, 
 
 ## Parameters
 
-- **Target** (optional argument): file paths or directories to review. If omitted, auto-detect from PR diff and local changes. When a directory is given, collect source files only — exclude common non-source paths (`node_modules`, `dist`, `build`, `.git`, `vendor`, `__pycache__`, binary files).
+- **Target** (optional argument): file paths or directories to narrow the review to. If omitted, review the whole local change.
 - **Max iterations**: 3 (hardcoded).
 
 ## Step 1 — Determine Review Target
 
-Resolve the target files using the following priority:
+The target is the local change: the diff from the merge-base with `origin/HEAD` to the working tree, which covers the branch's commits, staged and unstaged edits, and untracked files. If the user provided file paths or directories, they narrow it; a named file with no change is reviewed whole.
 
-### 1a. User-specified target (highest priority)
-
-If the user provided file paths or directories as arguments, use those.
-
-### 1b. PR diff + local unpushed changes
-
-If no target was specified, check whether the current branch has an open pull request:
-
-```bash
-gh pr view --json baseRefName 2>/dev/null
-```
-
-If a PR exists, collect files from **both** sources and deduplicate:
-
-1. PR diff (changes against base branch):
-   ```bash
-   gh pr diff --name-only
-   ```
-2. Local unpushed changes (staged + unstaged):
-   ```bash
-   git diff --name-only
-   git diff --name-only --cached
-   ```
-
-### 1c. Local git diff (fallback)
-
-If no PR exists, fall back to local changes only:
-
-```bash
-git diff --name-only
-git diff --name-only --cached
-```
-
-Collect the union of both outputs (deduplicate).
-
----
-
-If no files are found from any of the above, inform the user and stop.
+Create one working directory for the run (`mktemp -d`, under the session scratchpad when there is one). Each iteration prepares the target afresh in its own subdirectory, because the fixes change the diff.
 
 ## Step 2 — Run the Loop
 
@@ -62,9 +25,17 @@ For each iteration (max 3):
 
 ### 2a. Spawn Review Subagent
 
+Prepare the target into `<run dir>/iter-<n>`:
+
+```bash
+~/.claude/skills/reviewing-code/scripts/prepare_target.sh <run dir>/iter-<n> local [path...]
+```
+
+If the script fails, report its error and stop. If `diff.txt` is empty, there is nothing to review: skip to Step 3.
+
 Read [review-prompt.md](review-prompt.md) and fill in the placeholders:
 - `{cwd}` — current working directory
-- `{target_files}` — list of files to review
+- `{target_dir}` — the directory just prepared
 
 Launch an Agent with `subagent_type: "review-agent"` using the filled prompt. Do NOT use any other subagent type.
 
@@ -74,9 +45,9 @@ Wait for the review result.
 
 Parse the `---SUMMARY---` block from the review output.
 
-- If **all counts are 0** (Critical, High, Medium, and Low): no issues remain. Skip to Step 3.
-- If **Critical = 0 AND High = 0** but Medium or Low remain: continue the loop (fix Medium issues) until the max iteration limit is reached.
-- If counts cannot be parsed: check whether the review text contains any severity section headers ("## Critical Issues", "## High Priority Issues", "## Medium Priority Issues") with actual findings listed beneath them. If none have content, treat as resolved and skip to Step 3. Otherwise, treat as "issues remain" and continue.
+- If **Blocker = 0 AND Follow-up = 0**: nothing fixable remains. Skip to Step 3.
+- Otherwise: continue to 2c. Needs decision, Question, and Nits never keep the loop going: the first two need a human, and Nits need no fix.
+- If counts cannot be parsed: check whether the review text contains any `#### [Blocker]` or `#### [Follow-up]` headings. If none, treat as resolved and skip to Step 3. Otherwise, treat as "issues remain" and continue.
 
 ### 2c. Spawn Fix Subagent
 
@@ -100,22 +71,25 @@ After the loop ends, present a consolidated report to the user:
 ## Iterative Review Complete
 
 **Iterations**: {iterations_run} / 3
-**Exit reason**: {All issues resolved | Max iterations reached}
+**Exit reason**: {No fixable findings remain | Max iterations reached}
 
 ### Iteration 1
-**Review**: {critical} Critical, {high} High, {medium} Medium, {low} Low
+**Review**: {blocker} Blocker, {needs_decision} Needs decision, {question} Question, {follow_up} Follow-up, {nits} Nits
 **Fixed**: {summary of what was fixed}
 
 ### Iteration 2 (if applicable)
-**Review**: {critical} Critical, {high} High, {medium} Medium, {low} Low
+**Review**: {blocker} Blocker, {needs_decision} Needs decision, {question} Question, {follow_up} Follow-up, {nits} Nits
 **Fixed**: {summary of what was fixed}
 
 ### Iteration 3 (if applicable)
-**Review**: {critical} Critical, {high} High, {medium} Medium, {low} Low
+**Review**: {blocker} Blocker, {needs_decision} Needs decision, {question} Question, {follow_up} Follow-up, {nits} Nits
 **Fixed**: {summary of what was fixed}
 
+### Needs a Human
+{List every Needs decision and Question from the final review with its decision or question, or "None."}
+
 ### Remaining Issues
-{List any Low findings from the final review, or "None — all issues resolved."}
+{List Nits from the final review. On a max-iterations exit, also list the final review's Blockers and Follow-ups that the last fix report did not mark as fixed, labelled "not re-reviewed". Or "None."}
 ```
 
 ## Important Rules

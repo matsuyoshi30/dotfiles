@@ -1,37 +1,26 @@
 <!-- Orchestrator-only: dispatch metadata (not part of the agent's instructions)
 - subagent_type: review-agent
 - model: opus
-- placeholders: {cwd}, {target_files}, {what_was_implemented}, {base_sha}, {head_sha}
+- placeholders: {cwd}, {target_dir}, {what_was_implemented}
+- before dispatch, prepare {target_dir}: `cd {cwd} && ~/.claude/skills/reviewing-code/scripts/prepare_target.sh {target_dir} local --base {base_sha} {target_files}`, where {base_sha} is the commit the reviewed range starts from and {target_files} is the shell-quoted list of files the range changed (a listed file with no change would be reviewed whole)
 -->
 
 ---
 
-Review the following files in the working directory: {cwd}
+Review the prepared change with the reviewing-code skill.
 
-**What was implemented:** {what_was_implemented}
-**Files to review:** {target_files}
-**Git range:** {base_sha}..{head_sha}
+Working directory: {cwd}
+Prepared target directory (target kind `local`): {target_dir}
+What was implemented: {what_was_implemented}
 
-Review the diff (`git diff {base_sha}..{head_sha}`) and all changed files using the dimensions below.
+Also check whether each file keeps a single responsibility, can be tested on its own, and has not grown past what its responsibility needs.
 
-## Review Dimensions
-
-1. **Code Quality** — Readability, idioms, naming (encode lookup key: `findByTitle` not `get`), WHY comments on non-obvious branches, test quality, stale identifiers after refactoring
-2. **Security** — Input validation at boundaries, injection vulnerabilities, sensitive data exposure, race conditions
-3. **Design** — SOLID, separation of concerns, invariant enforcement at construction, error handling
-4. **Performance** — Algorithmic complexity, memory leaks, N+1 queries, resource management
-5. **Technical Debt** — Silent fallbacks masking bad data (every fallback needs justification), YAGNI violations (no caller), unreferenced code not removed, commented-out code, single-use shared utilities, dead defensive code
-6. **Intent Alignment** — Mismatches between stated implementation and diff, API openness contradicting intent, out-of-scope changes
-
-Also check: single responsibility per file, independent testability, file size growth.
-
-For each Critical/High/Medium issue: file path, line number, what's wrong, why it matters, specific fix.
-
-Be strict. Don't say "looks good" without thorough examination. Do acknowledge genuine strengths.
+IMPORTANT: End your review with a machine-readable summary block in exactly this format, counting the final findings by disposition:
 
 ---SUMMARY---
-CRITICAL: {count}
-HIGH: {count}
-MEDIUM: {count}
-LOW: {count}
+BLOCKER: {count}
+NEEDS_DECISION: {count}
+QUESTION: {count}
+FOLLOW_UP: {count}
+NITS: {count}
 ---END---

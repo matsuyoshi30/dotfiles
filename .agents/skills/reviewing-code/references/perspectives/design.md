@@ -3,6 +3,10 @@
 Does the change fit the shape of the code around it?
 
 - Identifiers and types — whether identifiers and category values are passed around as raw strings or UUIDs. Whether the representable states are minimal (if there is no need to distinguish absent from empty, collapse them into one)
+- Naming — whether method names encode the lookup key and source (`findByTitle`, `existsByEmail`) rather than vague verbs (`get`, `process`, `check`), and whether identifiers, comments, and doc comments still match the code after a refactor
+- Invariants — whether they are enforced at construction (constructor, factory, builder) rather than by defensive checks scattered across call sites, and whether an API is more open than the stated intent needs (an overridable method when the goal is unification)
+- Leftovers — code added with no caller, code this change leaves unreferenced without removing it, commented-out code, a shared utility with a single import site, and defensive code for a condition that can no longer occur
+- WHY comments — whether a non-obvious branch says why it exists: a feature-flag path, a migration or double-write state, a recovery path, intentional redundancy
 - Reuse — whether the same logic already exists somewhere. Whether it is consistent with sibling implementations (other kinds, other screens, sibling modules), and if not, whether there is a reason
 - Ripple — whether the same mistake, or the same rewrite, is also needed in other files or for other kinds
 - Coupling — what the change makes one part know about another: internal details, shared mutable state, control flags that steer the callee, a whole structure passed where a few fields are used

@@ -1,5 +1,6 @@
 .DS_Store
 .agents/skills/.system/
+.agents/skills/synced/
 .zsh/.zcompdump*
 __pycache__/
 

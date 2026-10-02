@@ -1,6 +1,6 @@
 # Kotlin Review Guardrails
 
-Guardrails for patterns Kotlin PR reviews. Scoped to Kotlin-specific idioms and pitfalls — generic review concerns (naming, DRY, etc.) live in the main `reviewing-code` SKILL.md.
+Guardrails for patterns from Kotlin PR reviews. Scoped to Kotlin-specific idioms and pitfalls — generic review concerns (naming, DRY, etc.) live in `../perspectives/`.
 
 After writing code, self-check against these rules. When reviewing, apply the same checks to the diff.
 

@@ -91,7 +91,7 @@ After all steps complete and per-step reviews pass: run **final cross-step revie
 
 - One spec-reviewer pass over the full PLAN-vs-final-diff to catch cross-step gaps (DoD items spanning steps, integration boundaries).
 - One code-quality-reviewer pass over the full diff to catch cross-cutting issues (consistency, layering, dead glue).
-- Max 1 iteration each. If either still has Critical/High after that single iteration, escalate to user — do not loop.
+- Max 1 iteration each. If either still has a Blocker (or spec issue) after that single iteration, escalate to user — do not loop. Carry every Needs decision and Question, per-step and final, into the Step 8 report.
 
 ## Retry budget (per-mode)
 

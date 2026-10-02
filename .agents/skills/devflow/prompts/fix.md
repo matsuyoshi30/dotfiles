@@ -20,7 +20,7 @@ Read `{baseline_json_path}` before you start. Signature = `{file, first_error_li
 
 ## Instructions
 
-1. Fix issues in priority order: Critical → High → Medium (or Missing → Misunderstood → Extra for spec compliance). Leave Low issues unfixed (they are reported only).
+1. Fix issues in priority order: Blocker → Follow-up (or Missing → Misunderstood → Extra for spec compliance). Leave Needs decision, Question, and Nits unfixed (they are reported only).
 2. For each fix:
    - Read the relevant file to understand context before editing.
    - Make the minimal change that addresses the finding.

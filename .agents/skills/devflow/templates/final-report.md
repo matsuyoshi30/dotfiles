@@ -27,6 +27,9 @@ Use at Step 8. Present to user and append to WORKLOG.md.
 - **Spec compliance**: {Compliant | Issues remain} (iteration {n}/2)
 - **Code quality**: {Clean | Issues remain} (iteration {n}/3)
 
+### Needs a Human
+{Every Needs decision and Question from the code quality reviews, per-step and final, with its decision or question, or "None."}
+
 ### Verification
 | Check | Result |
 |-------|--------|

@@ -21,7 +21,7 @@ Every finding must carry one of the following. Do not ship a finding you cannot 
 
 - Blocker — a defect you wrote breaking steps for. Fix before merge
 - Needs decision — whether it breaks depends on a spec, operational, or rollout-ordering decision. Requires a human call before merge
-- Follow-up — worth fixing, but not a reason to hold this PR
+- Follow-up — worth fixing, but not a reason to hold this change
 - Nits — taste and readability. No need to fix
 - Question — a doubt you cannot call a defect. Depending on the answer it may become a Blocker
 
@@ -42,7 +42,7 @@ Line numbers are the ones the author will see once the change lands.
 
 - For a line the diff shows, take the number the annotated diff prints beside it (`+N` and `ctxN` are after-image numbers). Do not derive numbers from hunk headers
 - For a deleted line (`-N`, a before-image number), anchor at the neighbouring `+` or `ctx` line where it used to be
-- For an unchanged line the diff does not show, read it from the working directory. In a file the PR modifies, that number is pre-change; anchor on a line the diff shows instead when you can
+- For an unchanged line the diff does not show, read it from the working directory. For a local target that number is already the after-image. For a PR, in a file the PR modifies, that number is pre-change; anchor on a line the diff shows instead when you can
 - If you cannot pin a single line, give the range you did verify rather than a number you guessed
-- Anchor at the line this PR changed. When the reason lives elsewhere — a caller, a sibling implementation — cite that path in the body, not in the anchor
-- A finding may sit on a file the PR does not touch only when the PR breaks that file. Say in the body that the file is unchanged, so the author knows the line is not theirs to look for in the diff. An untouched sibling the PR merely leaves unaligned is not broken by it: anchor at the changed line, as in the bullet above
+- Anchor at the line this change touched. When the reason lives elsewhere — a caller, a sibling implementation — cite that path in the body, not in the anchor
+- A finding may sit on a file the change does not touch only when the change breaks that file. Say in the body that the file is unchanged, so the author knows the line is not theirs to look for in the diff. An untouched sibling the change merely leaves unaligned is not broken by it: anchor at the changed line, as in the bullet above

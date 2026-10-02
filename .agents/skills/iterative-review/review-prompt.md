@@ -1,17 +1,14 @@
-Review the following files in the working directory: {cwd}
+Review the prepared change with the reviewing-code skill.
 
-**Files to review:**
-{target_files}
+Working directory: {cwd}
+Prepared target directory (target kind `local`): {target_dir}
 
-Apply the full reviewing-code methodology. Evaluate code quality, security, design, performance, technical debt, and intent alignment.
-
-For each Critical, High, and Medium issue, include the file path, line number, description, and a specific recommended fix.
-
-IMPORTANT: End your review with a machine-readable summary block in exactly this format:
+IMPORTANT: End your review with a machine-readable summary block in exactly this format, counting the final findings by disposition:
 
 ---SUMMARY---
-CRITICAL: {count}
-HIGH: {count}
-MEDIUM: {count}
-LOW: {count}
+BLOCKER: {count}
+NEEDS_DECISION: {count}
+QUESTION: {count}
+FOLLOW_UP: {count}
+NITS: {count}
 ---END---

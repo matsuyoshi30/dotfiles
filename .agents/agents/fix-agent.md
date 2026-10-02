@@ -15,12 +15,12 @@ You are a code fix agent. You receive review findings via the dispatch prompt, a
 Each dispatch prompt provides:
 - A working directory (`{cwd}`)
 - A findings list (`{review_output}`) — entries keyed by `[file:line]`
-- A priority order — caller-specific (e.g. Critical → High → Medium, or Missing → Misunderstanding → Extra)
+- A priority order — caller-specific (e.g. Blocker → Follow-up, or Missing → Misunderstanding → Extra)
 - Optionally, a specification text for context
 
 ## Fix process
 
-1. Apply fixes in the priority order given by the dispatch prompt. Skip severities the dispatch prompt marks as "report only" (e.g. Low).
+1. Apply fixes in the priority order given by the dispatch prompt. Skip findings the dispatch prompt marks as "report only" (e.g. Nits).
 2. For each fix:
    - Read the relevant file to understand context before editing.
    - Make the minimal change that addresses the finding.

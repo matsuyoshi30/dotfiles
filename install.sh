@@ -227,6 +227,7 @@ main() {
   info "Installing Codex configuration..."
   create_symlink "$SCRIPT_DIR/.agents/AGENTS.md" "$HOME/.codex/AGENTS.md"
   create_symlink "$SCRIPT_DIR/.agents/skills" "$HOME/.codex/skills"
+  create_symlink "$SCRIPT_DIR/.codex/agents" "$HOME/.codex/agents"
   echo
 
   info "Installing pi configuration..."

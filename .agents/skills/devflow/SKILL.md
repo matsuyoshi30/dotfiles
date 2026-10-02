@@ -41,7 +41,7 @@ Create TodoWrite todos for each step at start, then mark done as you progress:
 - [ ] Step 4 preamble: Isolation gate (WORKTREE/IN_PLACE) → Execution Mode gate (PER_PLAN/PER_TASK/HYBRID) → worktree creation (WORKTREE only) → Pre-flight baseline — run in this strict order, baseline runs in the final `{worktree_dir}`
 - [ ] Step 4: Plan-Execute — per-mode dispatch (whole-plan / per-step / foundation+per-step), handle DR/NEEDS_CONTEXT/BLOCKED, retry-budget check (per-step under PER_TASK), append to WORKLOG.md
 - [ ] Step 5: Spec compliance review — PER_PLAN: full-diff loop until MISSING+EXTRA+MISUNDERSTOOD = 0 (max 2). PER_TASK/HYBRID feature: per-step (during Step 4) + final cross-step (max 1).
-- [ ] Step 6: Code quality review — PER_PLAN: full-diff loop until CRITICAL+HIGH = 0 (max 3). PER_TASK/HYBRID feature: per-step (during Step 4) + final cross-step (max 1).
+- [ ] Step 6: Code quality review — PER_PLAN: full-diff loop until BLOCKER = 0 (max 3). PER_TASK/HYBRID feature: per-step (during Step 4) + final cross-step (max 1).
 - [ ] Step 7: Completion verification — format / lint / build / test
 - [ ] Step 8: Final report — present verdict, append to WORKLOG.md (devflow user-visible completion point); print the evolve nudge when ≥ 3 current-repo retrospectives are unprocessed in the evolve ledger
 - [ ] Step 9: Retrospective — dispatch retro-agent in background, do not wait; on completion notification append `RETRO_DONE`/`RETRO_FAILED` to WORKLOG and notify user with one line
@@ -286,11 +286,11 @@ If issues remain after max iterations: report to user and stop.
 - **PER_TASK / HYBRID feature phase**: per-step quality review already ran during Step 4 (max 2 iter per step). Step 6 here is the **final cross-step review** with **max 1 iteration**.
 
 1. Dispatch [prompts/code-quality-reviewer.md](prompts/code-quality-reviewer.md)
-2. Parse `---SUMMARY---`: if CRITICAL + HIGH = 0 → Step 7. Medium/Low reported but don't block.
-3. Otherwise: dispatch [prompts/fix.md](prompts/fix.md) (Critical → High priority), loop back to 1 (within mode-aware iteration cap)
-4. **Log**: after each iteration, append a WORKLOG entry using [templates/review-log-entry.md](templates/review-log-entry.md) (quality variant: CRITICAL/HIGH/MEDIUM/LOW counts)
+2. Parse `---SUMMARY---`: if BLOCKER = 0 → Step 7. Follow-up and Nits are reported but don't block. Carry every Needs decision and Question into the Step 8 report's "Needs a human" section.
+3. Otherwise: dispatch [prompts/fix.md](prompts/fix.md) (Blocker → Follow-up priority), loop back to 1 (within mode-aware iteration cap)
+4. **Log**: after each iteration, append a WORKLOG entry using [templates/review-log-entry.md](templates/review-log-entry.md) (quality variant: counts by disposition)
 
-If Critical/High remain after max iterations: report to user and stop.
+If Blockers remain after max iterations: report to user and stop.
 
 ## Step 7 — Completion Verification
 
