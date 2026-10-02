@@ -50,12 +50,33 @@ def relay_context_usage(data):
         json.dump({"pct": pct, "size": window.get("context_window_size")}, f)
     os.replace(tmp, path)
 
+def relay_rate_limits(data):
+    """Feed the SwiftBar plugin (swiftbar/codex_claude_usage.5m.sh).
+
+    Writes alternating used-percentage and resets_at lines per window.
+    """
+    limits = data.get("rate_limits")
+    if not limits:
+        return
+    lines = []
+    for key in ("five_hour", "seven_day", "seven_day_opus", "seven_day_sonnet"):
+        w = limits.get(key) or {}
+        used = w.get("used_percentage")
+        lines += ["NA" if used is None else str(round(used)), str(w.get("resets_at") or "")]
+    path = os.path.expanduser("~/.cache/claude-code/swiftbar-rate-limits.txt")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = f"{path}.{os.getpid()}"
+    with open(tmp, "w") as f:
+        f.write("\n".join(lines) + "\n")
+    os.replace(tmp, path)
+
 data = json.load(sys.stdin)
 
-try:
-    relay_context_usage(data)
-except Exception:
-    pass
+for relay in (relay_context_usage, relay_rate_limits):
+    try:
+        relay(data)
+    except Exception:
+        pass
 
 model = data.get("model", {}).get("display_name", "Claude")
 current_dir = data.get("workspace", {}).get("current_dir", "")

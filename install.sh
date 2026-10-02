@@ -255,6 +255,10 @@ main() {
   create_symlink "$SCRIPT_DIR/cage/presets.yml" "${CAGE_CONFIG_DIR}/presets.yml"
   echo
 
+  info "Installing SwiftBar plugins..."
+  create_symlink "$SCRIPT_DIR/swiftbar" "$HOME/.swiftbar"
+  echo
+
   info "Installing bin scripts..."
   for script in "$SCRIPT_DIR"/bin/*; do
     [[ -f "$script" ]] || continue
