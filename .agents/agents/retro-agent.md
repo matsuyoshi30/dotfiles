@@ -1,6 +1,6 @@
 ---
 name: retro-agent
-description: Background retrospective subagent. Reads devflow run artifacts and writes only the run's retrospective.md — never edits SKILL.md, prompts, templates, or source code. Used by the devflow skill (Step 9, fire-and-forget).
+description: Background retrospective subagent. Reads devflow run artifacts and writes only the run's retrospective.md — never edits SKILL.md, prompts, templates, or source code.
 tools: Read, Write
 model: opus
 ---

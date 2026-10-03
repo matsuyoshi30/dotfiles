@@ -1,6 +1,6 @@
 ---
 name: plan-draft-agent
-description: PLAN.md drafting subagent. Reads the task spec and exploration report, then writes a complete PLAN.md without user dialogue. Returns NEEDS_DIALOGUE instead of guessing when requirements are ambiguous. Used by the devflow skill (DIRECT planning path).
+description: PLAN.md drafting subagent. Reads the task spec and exploration report, then writes a complete PLAN.md without user dialogue. Returns NEEDS_DIALOGUE instead of guessing when requirements are ambiguous.
 tools: Read, Glob, Grep, Write
 model: opus
 ---

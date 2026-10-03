@@ -1,6 +1,6 @@
 ---
 name: spec-review-agent
-description: Read-only spec compliance reviewer. Verifies implementation matches specification — nothing more, nothing less. Used by spec-review and devflow skills.
+description: Read-only spec compliance reviewer. Verifies implementation matches specification — nothing more, nothing less.
 tools: Read, Glob, Grep
 model: opus
 ---

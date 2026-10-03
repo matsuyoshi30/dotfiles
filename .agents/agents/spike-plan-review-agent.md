@@ -1,6 +1,6 @@
 ---
 name: spike-plan-review-agent
-description: Context-free PLAN.md sufficiency reviewer. Evaluates whether a plan is specific enough to implement without ambiguity — has NO access to the codebase, investigation report, or prototype code. Used by the devflow skill after the spike step.
+description: Context-free PLAN.md sufficiency reviewer. Evaluates whether a plan is specific enough to implement without ambiguity — has NO access to the codebase, investigation report, or prototype code, so the PLAN.md text must be in the dispatch prompt.
 # tools must be a non-empty allowlist: an empty [] is treated as "inherit all
 # tools", which would give this context-free reviewer codebase access.
 # AskUserQuestion is the only entry because it exposes no file/repo context.

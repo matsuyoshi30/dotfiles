@@ -1,6 +1,6 @@
 ---
 name: review-agent
-description: Read-only code review subagent. Reviews a prepared change with the reviewing-code skill and returns its result. Used by the iterative-review and devflow skills.
+description: Read-only code review subagent. Reviews a change already prepared as a reviewing-code target directory and returns that skill's result.
 tools: Read, Glob, Grep
 skills:
   - reviewing-code

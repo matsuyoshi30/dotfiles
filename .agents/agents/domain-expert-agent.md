@@ -1,6 +1,6 @@
 ---
 name: domain-expert-agent
-description: Reusable domain-expert subagent. Given a target domain and focus questions, writes a general-domain briefing that separates source-backed facts, model-knowledge hypotheses, and questions for a real stakeholder. Used by domain-requirements-workflow and standalone for domain understanding.
+description: Reusable domain-expert subagent. Given a target domain, focus questions, and an output path, writes a general-domain briefing that separates source-backed facts, model-knowledge hypotheses, and questions for a real stakeholder.
 tools: Read, Glob, Grep, WebSearch, WebFetch, Write
 model: sonnet
 ---

@@ -186,6 +186,4 @@ description: 独立した実行者によるシナリオ評価で、重要な ski
 
 ## 関連
 
-- `superpowers:writing-skills` — skill 作成時の TDD アプローチ。本 skill の「subagent で baseline → 修正 → 再実行」と本質的に同じ
 - `retrospective-codify` — タスク後の学び固定化。本 skill はプロンプト開発中、retrospective-codify はタスク終了後、と使い分ける
-- `superpowers:dispatching-parallel-agents` — 複数シナリオを並列で走らせるときの作法

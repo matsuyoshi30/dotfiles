@@ -6,7 +6,7 @@ allowed-tools: Agent, Skill, Bash, Read, Glob, Grep, Write
 
 # explain-diff
 
-Turns a diff/PR into a self-contained local HTML page that teaches the reader what changed and why — a plain-language overview, diagrams in the notations the change calls for, background, the core idea, a guided code walkthrough, and a 5-question quiz to check their own understanding. This is for a human who has to review or work with a change they didn't write and don't have context on. It does not hunt for bugs, does not produce adopt/reject findings, and never sends the diff or code anywhere external — for `diff-review` (blind + plan cross-check, findings) or `code-review` (bug / simplification findings), use those skills instead.
+Turns a diff/PR into a self-contained local HTML page that teaches the reader what changed and why — a plain-language overview, diagrams in the notations the change calls for, background, the core idea, a guided code walkthrough, and a 5-question quiz to check their own understanding. This is for a human who has to review or work with a change they didn't write and don't have context on. It does not hunt for bugs, does not produce adopt/reject findings, and never sends the diff or code anywhere external — for `reviewing-code` (findings) or `code-review` (bug / simplification findings), use those skills instead.
 
 Copy this checklist into your visible reply and check off items as you go:
 
@@ -169,11 +169,11 @@ decorated file list.
 Three rules make it worth having rather than actively misleading:
 
 - **Group by role, never by a reading priority.** "必読" / "飛ばしてよい" per
-  file is a verdict, and verdicts belong to `diff-review`. Ordering by role
+  file is a verdict, and verdicts belong to `reviewing-code`. Ordering by role
   gives the reader the same "start with these three" without this page
   issuing a judgment it isn't entitled to.
 - **Order by comprehension, not by risk.** This page ranks changes by what
-  has to be understood before the rest makes sense. `diff-review` ranks the
+  has to be understood before the rest makes sense. `reviewing-code` ranks the
   same diff by what is most likely to be wrong. Blending the two turns the
   explainer into a second-rate review.
 - **Every role claim is observable or sourced, never in between.**
@@ -363,7 +363,7 @@ carries a row for each of them.)
   Notion, no Claude Artifact, no network calls from the generated page. The
   HTML is 100% local and self-contained.
 - This skill explains; it does not review. Don't add a findings list,
-  severity ratings, or adopt/reject affordances — that's `diff-review` /
+  severity ratings, or adopt/reject affordances — that's `reviewing-code` /
   `code-review`. The sharpest version of that line is the ordering: this page
   orders a diff by comprehension (what must be understood first), those skills
   order it by risk (what is most likely to be wrong). A reading order is

@@ -13,7 +13,7 @@ usage() { sed -n 4,5p "$0" | sed 's/^# *//' >&2; exit 2; }
 out=$1 mode=$2
 shift 2
 mkdir -p "$out"
-parse_diff="$(cd "$(dirname "$0")" && pwd)/../../diff-review/scripts/parse_diff.py"
+parse_diff="$(cd "$(dirname "$0")" && pwd)/parse_diff.py"
 
 owner_repo() { sed -E 's#^(https?://|ssh://)?([^@/]+@)?[^/:]+[/:]##; s#\.git$##; s#^(([^/]+)/([^/]+)).*#\1#'; }
 

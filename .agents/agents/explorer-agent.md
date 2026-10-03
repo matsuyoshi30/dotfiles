@@ -1,6 +1,6 @@
 ---
 name: explorer-agent
-description: Codebase exploration subagent. Surveys structure, patterns, dependencies, and existing similar implementations to produce an exploration document for the downstream planner. Used by the devflow skill.
+description: Codebase exploration subagent. Surveys structure, patterns, dependencies, and existing similar implementations to produce an exploration document for the downstream planner.
 tools: Read, Glob, Grep, Write
 model: sonnet
 ---

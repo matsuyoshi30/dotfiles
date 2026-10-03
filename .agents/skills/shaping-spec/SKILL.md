@@ -3,7 +3,7 @@ name: shaping-spec
 description: Turn a vague idea about an existing codebase into a concise downstream-ready specification without choosing an implementation plan or writing production code.
 # `allowed-tools` and `user-invocable` are Claude Code harness extensions
 # beyond Anthropic's required name/description. Other harnesses ignore them.
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent(Explore), Skill(devflow, superpowers:writing-plans)
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent(Explore), Skill(devflow, design-doc)
 ---
 
 # Shaping Spec
@@ -12,7 +12,6 @@ Bridge from "I have a rough idea about this codebase" to "here is a spec a downs
 
 ## Positioning vs Adjacent Skills
 
-- **superpowers:brainstorming** — general design-doc dialogue, not codebase-aware; use when there is no existing codebase to ground the idea against.
 - **devflow** — autonomous end-to-end implementation; expects a clear, codebase-grounded spec or plan as input. Use when the work is ready to execute.
 - **shaping-spec (this skill)** — codebase-aware shaping of a vague idea into a downstream-ready spec. Use when the idea is too vague to hand to an implementation-bound skill.
 
@@ -109,7 +108,7 @@ Propose a downstream skill, then let the user choose:
 | Suggest | When |
 |---|---|
 | **devflow** | Goal + DoD are sharp; work is a straight extension of existing code; approach has clear precedent. |
-| **superpowers:writing-plans** | New design elements; the shape of the solution still needs to be decided. |
+| **design-doc** | New design elements; the shape of the solution still needs to be decided. |
 | **Stop here** | User prefers to take the spec elsewhere manually. |
 
 Display in this form:

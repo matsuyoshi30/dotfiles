@@ -1,6 +1,6 @@
 ---
 name: fix-agent
-description: Code fix subagent. Applies review findings to the codebase, verifies the result, and reports outcome. Used by iterative-review and spec-review skills.
+description: Code fix subagent. Applies review findings to the codebase, verifies the result, and reports outcome. Requires findings keyed by [file:line] and a priority order.
 tools: Read, Glob, Grep, Edit, Write, Bash
 skills:
   - verify-completion

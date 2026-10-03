@@ -28,28 +28,6 @@ def get_branch(path):
     except Exception:
         return ""
 
-def relay_context_usage(data):
-    """Hand the context-usage numbers to hooks, which never receive them.
-
-    The statusline is the only place Claude Code reports actual usage, and the
-    transcript is no substitute: it records the model as `claude-opus-5` whether
-    the window is 200k or 1M, so the percentage cannot be recomputed from it.
-    Consumed by .claude/hooks/context-handoff-guard.sh.
-    """
-    session_id = data.get("session_id")
-    window = data.get("context_window") or {}
-    pct = window.get("used_percentage")
-    if not session_id or pct is None:
-        return
-    state_dir = os.path.join(os.environ.get("TMPDIR", "/tmp"), "claude-ctx")
-    os.makedirs(state_dir, exist_ok=True)
-    path = os.path.join(state_dir, f"{session_id}.json")
-    # Renders can overlap, so swap the file in atomically rather than truncating it.
-    tmp = f"{path}.{os.getpid()}"
-    with open(tmp, "w") as f:
-        json.dump({"pct": pct, "size": window.get("context_window_size")}, f)
-    os.replace(tmp, path)
-
 def relay_rate_limits(data):
     """Feed the SwiftBar plugin (swiftbar/codex_claude_usage.5m.sh).
 
@@ -72,7 +50,7 @@ def relay_rate_limits(data):
 
 data = json.load(sys.stdin)
 
-for relay in (relay_context_usage, relay_rate_limits):
+for relay in (relay_rate_limits,):
     try:
         relay(data)
     except Exception:

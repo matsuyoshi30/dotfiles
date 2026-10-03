@@ -23,7 +23,7 @@ Stakeholder count alone is not a trigger — a domain with many roles but one so
 
 Lightweight run: skip the JSON ledgers and run the spine in markdown — decision question, what real sources said (with where it came from), needs, requirements, undecided items, human confirmation. Add ledgers only when one of the escalation triggers appears.
 
-When not to use: for shaping a rough idea or stress-testing one design, use brainstorming, shaping-spec, or grill-me — they are faster and do not impose source traceability.
+When not to use: for shaping a rough idea or stress-testing one design, use shaping-spec — it is faster and does not impose source traceability.
 
 ## Run Setup
 

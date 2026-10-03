@@ -1,6 +1,6 @@
 ---
 name: implementer-agent
-description: Implementation subagent. Implements tasks with TDD, commits work, and self-reviews before reporting. Used by devflow skill.
+description: Implementation subagent. Implements tasks with TDD, commits work, and self-reviews before reporting.
 tools: Read, Glob, Grep, Edit, Write, Bash
 skills:
   - practicing-tdd-tidy-first

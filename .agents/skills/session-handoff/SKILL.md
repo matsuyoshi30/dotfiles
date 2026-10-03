@@ -1,6 +1,6 @@
 ---
 name: session-handoff
-description: Save the state needed to continue unfinished work in a new session. Also used by the context-limit stop hook.
+description: Save the state needed to continue unfinished work in a new session.
 allowed-tools: Read, Write, Grep, Glob, Bash
 ---
 
@@ -9,7 +9,7 @@ allowed-tools: Read, Write, Grep, Glob, Bash
 From the current session state, generate a handoff md that a new session can read standalone to resume work,
 and present a short start prompt to paste into the new session.
 
-The handoff md is created as a self-contained snapshot + pointers that survives even if short-term/current.md is overwritten by another task.
+The handoff md is created as a self-contained snapshot + pointers that survives even after this session's short-term file is pruned or the work moves to another session.
 Because memory-manager is user-invocable: false (hook-driven) and cannot be called directly, Write it yourself following the format defined in memory-manager SKILL.md (do not manage it in two places).
 
 ## Base Directory Resolution
@@ -23,8 +23,7 @@ Use the first one found, in the following priority order, as `{base}`. If neithe
 
 1. Resolve `{base}`.
 2. Because memory-manager is user-invocable: false (hook-driven) and cannot be called directly, Write it yourself following the format defined in memory-manager SKILL.md.
-   - If the `{base}/memory/short-term/` directory does not exist, create it.
-   - Always update `{base}/memory/short-term/current.md` every time session-handoff runs (regardless of whether it is a task boundary). Follow the memory-manager Current Session format.
+   - Always update this session's short-term file (the path the memory-manager hooks gave this session; skip if none was given) every time session-handoff runs, regardless of whether it is a task boundary. Create `{base}/memory/short-term/` if it does not exist. Follow the memory-manager Current Session format.
    - If a `task-id` (branch name / ticket ID, etc.) can be identified, create the `{base}/memory/mid-term/{task-id}/` directory if it does not exist, and update `{base}/memory/mid-term/{task-id}/state.md`. Follow the memory-manager Task format. Write it even if it is not a formal task boundary (commit / PR / branch switch), as long as a task-id can be identified. If no task-id can be identified, skip writing to mid-term and rely on the self-contained handoff md.
 3. Extract and consolidate the information needed for the handoff from the conversation. Rather than copying memory verbatim,
    articulate "the specific first move the new session should take" and "decisions / gotchas not yet written to memory".

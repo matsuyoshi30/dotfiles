@@ -1,6 +1,6 @@
 ---
 name: diff-blind-reviewer
-description: Plan-blind diff reviewer. Groups a diff by intent, orders by risk, and flags findings — reading existing repo code to catch misuse of unchanged functions, but never reading the plan. Used by the diff-review skill.
+description: Plan-blind diff reviewer. Groups a diff by intent, orders by risk, and flags findings — reading existing repo code to catch misuse of unchanged functions, but never reading the plan. Requires a dispatch prompt with a ctx-prefixed diff and an output schema.
 tools: Read, Glob, Grep
 model: opus
 ---

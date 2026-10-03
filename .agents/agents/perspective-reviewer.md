@@ -1,6 +1,6 @@
 ---
 name: perspective-reviewer
-description: Read-only code change reviewer for a single perspective. Returns candidate findings for the orchestrator to merge. Used by the reviewing-code skill.
+description: Read-only code change reviewer for a single perspective. Returns candidate findings for the orchestrator to merge.
 tools: Read, Glob, Grep
 model: opus
 ---
