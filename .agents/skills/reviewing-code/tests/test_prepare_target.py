@@ -83,5 +83,58 @@ class TestPrepareTargetLocal(unittest.TestCase):
         self.assertIn("+2      | B", diff)
 
 
+FAKE_GH = r"""#!/usr/bin/env bash
+filter= args=()
+while [ $# -gt 0 ]; do
+  case $1 in -q|--jq) filter=$2; shift 2 ;; *) args+=("$1"); shift ;; esac
+done
+case "${args[*]}" in
+  "pr view 7 --json url") json='{"url":"https://github.com/o/r/pull/7"}' ;;
+  "pr view 7 --json author,comments") json=$(cat "$FAKE_GH_DIR/comments.json") ;;
+  "pr view 7") echo "title: Add foo"; exit ;;
+  "pr diff 7") cat "$FAKE_GH_DIR/pr.diff"; exit ;;
+  *) echo "unexpected gh call: ${args[*]}" >&2; exit 1 ;;
+esac
+jq -r "$filter" <<<"$json"
+"""
+
+
+class TestPrepareTargetPr(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        root = Path(self.tmp.name)
+        fake = root / "bin"
+        fake.mkdir()
+        (fake / "gh").write_text(FAKE_GH)
+        (fake / "gh").chmod(0o755)
+        (fake / "pr.diff").write_text((Path(__file__).parent / "fixtures" / "sample.diff").read_text())
+        (fake / "comments.json").write_text(json.dumps({
+            "author": {"login": "alice"},
+            "comments": [
+                {"author": {"login": "alice"}, "body": "Spec: https://linear.app/x/issue/ABC-1"},
+                {"author": {"login": "bob"}, "body": "drive-by remark"},
+            ],
+        }))
+        self.env = {**os.environ, "PATH": f"{fake}:{os.environ['PATH']}", "FAKE_GH_DIR": str(fake),
+                    "GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CONFIG_NOSYSTEM": "1"}
+        self.work = root / "work"
+        subprocess.run(["git", "init", "-q", str(self.work)], env=self.env, check=True)
+        subprocess.run(["git", "remote", "add", "origin", "https://github.com/o/r.git"],
+                       cwd=self.work, env=self.env, check=True)
+        self.out = root / "out"
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_intent_includes_only_the_pr_authors_comments(self):
+        proc = subprocess.run([str(SCRIPT), str(self.out), "pr", "7"],
+                              cwd=self.work, env=self.env, capture_output=True, text=True)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        intent = (self.out / "intent.md").read_text()
+        self.assertIn("title: Add foo", intent)
+        self.assertIn("https://linear.app/x/issue/ABC-1", intent)
+        self.assertNotIn("drive-by remark", intent)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -4,7 +4,7 @@ You are reviewing a code change from one perspective: {perspective_name}. Other 
 
 - Target kind: {target_kind}
 - Working directory: {cwd}. For `pr`, it is a checkout of the merge-target state, not the PR head: code the PR adds or changes exists only in the diff. For `local`, it already contains the change. Either way, follow callers, references, and sibling implementations into the existing code here
-- Stated intent (PR title and body, or commit messages): {intent_path}
+- Stated intent (PR title and body, the PR author's comments, commit messages for a local change, and excerpts of pages they link to): {intent_path}
 - Annotated diff: {diff_path}. Every line carries a line number: `+N` is an added line at line N of the after-image, `-N` a deleted line at line N of the before-image, `ctxN` unchanged context at after-image line N. Context lines are not part of the change; never describe them as added or changed by this change
 - Review rules: {rules_path}. Read the whole file before reviewing. Substantiation, dispositions, and anchoring follow it
 - Review criteria passed by the caller (the `repository` perspective only; otherwise "none"): {project_criteria}

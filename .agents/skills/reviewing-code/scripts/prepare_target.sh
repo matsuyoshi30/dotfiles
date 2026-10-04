@@ -15,6 +15,11 @@ shift 2
 mkdir -p "$out"
 parse_diff="$(cd "$(dirname "$0")" && pwd)/parse_diff.py"
 
+author_comments() {
+  gh pr view "$@" --json author,comments \
+    --jq '.author.login as $a | .comments[] | select(.author.login == $a) | "\n## Comment by the PR author\n\n\(.body)"'
+}
+
 owner_repo() { sed -E 's#^(https?://|ssh://)?([^@/]+@)?[^/:]+[/:]##; s#\.git$##; s#^(([^/]+)/([^/]+)).*#\1#'; }
 
 case $mode in
@@ -29,6 +34,7 @@ pr)
     exit 3
   fi
   gh pr view "$pr" >"$out/intent.md"
+  author_comments "$pr" >>"$out/intent.md"
   gh pr diff "$pr" | python3 "$parse_diff" "$out/hunks.json" >"$out/diff.txt"
   ;;
 local)
@@ -46,7 +52,9 @@ local)
   fi
   {
     if pr_body=$(gh pr view 2>/dev/null); then
-      printf '%s\n\n' "$pr_body"
+      printf '%s\n' "$pr_body"
+      author_comments 2>/dev/null || true
+      echo
     fi
     git log --format='%s%n%n%b' "$base..HEAD"
   } >"$out/intent.md"
