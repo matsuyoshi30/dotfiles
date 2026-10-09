@@ -11,10 +11,16 @@ what the branch actually does.
 
 **Announce at start:** "Using create-pr skill to open this PR." (or "…to update this PR")
 
-Two paths run through the same rules: opening a new PR (steps 1-7) and pushing an update to a PR
-that already exists (step 8). Steps 1, 2, 3, and 6 apply to both.
+Two paths run through the same rules: opening a new PR (steps 0-7) and pushing an update to a PR
+that already exists (step 8). Steps 0, 1, 2, 3, and 6 apply to both.
 
 ## Steps
+
+### 0. Stop on unanswered questions
+
+Before touching anything, look back through the conversation for questions you put to the user that they never answered — a question at the end of a message their reply skipped, or an AskUserQuestion they dismissed. If any remain, stop here: list them and ask again, and do not start step 1 until they are answered. This holds even when the user explicitly told you to open or update the PR — an instruction to open the PR is not an answer to the question.
+
+The answer can change the diff, and once the PR is out the question tends to get lost. If the user says to go ahead without deciding, proceed and carry the question into the body as an undecided point (step 6).
 
 ### 1. Cut the diff down
 
@@ -125,7 +131,7 @@ investigation trail, the alternatives you tried, and designs you discarded along
 
 ### 8. Updating an existing PR
 
-Cut the diff down (step 1), verify (step 2), and clean up the commits (step 3) as you would when
+Settle unanswered questions (step 0), cut the diff down (step 1), verify (step 2), and clean up the commits (step 3) as you would when
 opening — the reviewed-or-not check in step 3 decides both what step 1 reviews and whether you
 squash or stack.
 
@@ -141,6 +147,7 @@ frequently corrected item — after every push, check whether the body needs upd
 
 Stop and fix when any of these is true.
 
+- A question you asked the user is still unanswered and you are about to open or update the PR
 - The body does not fit on one screen
 - The body is in Japanese and uses です・ます調
 - The verification section is filled with CI-run items like `./gradlew ...`
