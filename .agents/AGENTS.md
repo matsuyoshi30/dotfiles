@@ -21,9 +21,11 @@
 - Keep working through failures caused by the requested change and rerun affected checks. Stop when completion requires a material product decision, new authority, unavailable external state, or when the remaining failure is demonstrated to be unrelated.
 - For substantial reviews, use an independent context that receives the diff and specification without the implementer's reasoning. Routine or mechanical edits do not require a separate reviewer.
 
-## Shared Writing
+## Writing
 
-- Keep PR bodies, errors, review comments, and shared documentation self-contained but concise. Do not assume the reader will reconstruct missing context, and do not include details that change neither understanding nor action.
+- Keep responses, PR bodies, errors, review comments, and shared documentation self-contained but concise. Do not assume the reader will reconstruct missing context, do not drop important conditions or exceptions to shorten the text, and do not include details that change neither understanding nor action.
+- Write so the reader can check the content quickly. State the conclusion first unless a loaded writing skill defines its own structure. Keep each sentence to one claim or one operation, use the same term for the same concept, and state an operation's conditions before the operation.
+- Distinguish facts, inferences, and unverified points. Use a diagram when relationships or structure are hard to follow in prose.
 - In notes and memos, avoid horizontal rules and bold emphasis; use plain text and headings for structure.
 - Do not hard-wrap prose in Markdown or shared prose artifacts, including notes, PR bodies, skill files, review comments, and design documents. Let the renderer wrap paragraphs; preserve structural line breaks for lists, tables, and code blocks. Commit messages are exempt.
 
