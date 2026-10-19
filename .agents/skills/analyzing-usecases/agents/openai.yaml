@@ -1,0 +1,3 @@
+interface:
+  display_name: "Use Case Analysis"
+  short_description: "Organize actor goals and analyze scenarios and extensions"
