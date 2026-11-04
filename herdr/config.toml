@@ -14,9 +14,13 @@ delivery = "system"
 [ui]
 agent_panel_sort = "priority"
 show_agent_labels_on_pane_borders = true
+status_indicators = "symbols"
+
+[ui.sidebar.agents.rows_by_agent]
+claude = [["state_icon", "terminal_title_stripped"], ["workspace", "tab", "agent", "$pr"]]
 
 [keys]
-prefix = "f12"
+prefix = "ctrl+q"
 
 [[keys.command]]
 key = "f5"
@@ -25,10 +29,16 @@ command = "herdr server reload-config"
 description = "reload config"
 
 [[keys.command]]
-key = "f6"
+key = "prefix+a"
 type = "shell"
 command = "herdr-switch"
 description = "focus next blocked/done agent"
+
+[[keys.command]]
+key = "prefix+u"
+type = "shell"
+command = "herdr-open-pr"
+description = "open the focused agent's PR"
 
 [[keys.command]]
 key = "prefix+t"

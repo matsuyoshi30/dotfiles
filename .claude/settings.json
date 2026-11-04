@@ -241,6 +241,11 @@
           {
             "type": "command",
             "command": "bash \"$HOME/.claude/hooks/memory-context.sh\""
+          },
+          {
+            "type": "command",
+            "command": "bash \"$HOME/.claude/hooks/herdr-pr-token.sh\"",
+            "timeout": 10
           }
         ]
       },
@@ -262,6 +267,11 @@
           {
             "type": "command",
             "command": "afplay /System/Library/Sounds/Submarine.aiff"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$HOME/.claude/hooks/herdr-pr-token.sh\"",
+            "timeout": 10
           }
         ]
       },
