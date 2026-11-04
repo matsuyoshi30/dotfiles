@@ -219,6 +219,7 @@ main() {
   create_symlink "$SCRIPT_DIR/.claude/statusline.py" "$HOME/.claude/statusline.py"
   create_symlink "$SCRIPT_DIR/.claude/hooks/pr-conventions.sh" "$HOME/.claude/hooks/pr-conventions.sh"
   create_symlink "$SCRIPT_DIR/.claude/hooks/memory-context.sh" "$HOME/.claude/hooks/memory-context.sh"
+  create_symlink "$SCRIPT_DIR/.claude/hooks/herdr-pr-token.sh" "$HOME/.claude/hooks/herdr-pr-token.sh"
   create_symlink "$SCRIPT_DIR/.agents/AGENTS.md" "$HOME/.claude/CLAUDE.md"
   create_symlink "$SCRIPT_DIR/.agents/skills" "$HOME/.claude/skills"
   create_symlink "$SCRIPT_DIR/.agents/agents" "$HOME/.claude/agents"
