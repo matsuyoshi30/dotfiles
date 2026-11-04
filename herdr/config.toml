@@ -20,7 +20,7 @@ status_indicators = "symbols"
 claude = [["state_icon", "terminal_title_stripped"], ["workspace", "tab", "agent", "$pr"]]
 
 [keys]
-prefix = "f12"
+prefix = "ctrl+q"
 
 [[keys.command]]
 key = "f5"
