@@ -29,7 +29,7 @@ command = "herdr server reload-config"
 description = "reload config"
 
 [[keys.command]]
-key = "f6"
+key = "prefix+a"
 type = "shell"
 command = "herdr-switch"
 description = "focus next blocked/done agent"
