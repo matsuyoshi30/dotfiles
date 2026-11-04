@@ -35,6 +35,12 @@ command = "herdr-switch"
 description = "focus next blocked/done agent"
 
 [[keys.command]]
+key = "prefix+u"
+type = "shell"
+command = "herdr-open-pr"
+description = "open the focused agent's PR"
+
+[[keys.command]]
 key = "prefix+t"
 type = "popup"
 command = "exec \"${SHELL:-sh}\""

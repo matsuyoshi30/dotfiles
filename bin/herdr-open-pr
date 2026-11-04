@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+#
+# herdr-open-pr
+#
+# フォーカス中の Claude Code エージェントのサイドバーに出ている PR ($pr トークン) をブラウザで開く。
+# サイドバーの値は herdr が制御文字を落とすのでリンクにできず、クリックでは飛べない。その代わり。
+#
+# $pr には番号しか入らないので、URL はセッションのトランスクリプトの pr-link から引く。
+# 番号で絞るのは、$pr が open な PR だけに絞り込まれた結果だから。
+set -euo pipefail
+
+notify() {
+  herdr notification show "herdr-open-pr" --body "$1" --sound none >/dev/null
+  exit 0
+}
+
+PANE_ID=$(herdr agent list | jq -r '.result.agents[] | select(.focused == true) | .pane_id')
+[ -n "$PANE_ID" ] || notify "フォーカス中のエージェントがありません"
+
+PANE_JSON=$(herdr pane get "$PANE_ID")
+NUMBERS=$(printf '%s' "$PANE_JSON" | jq -r '.result.pane.tokens.pr // empty')
+[ -n "$NUMBERS" ] || notify "このエージェントに open な PR はありません"
+
+SESSION_ID=$(printf '%s' "$PANE_JSON" | jq -r '.result.pane.agent_session.value // empty')
+TRANSCRIPT=$(find "$HOME/.claude/projects" -maxdepth 2 -name "$SESSION_ID.jsonl" -print -quit)
+[ -n "$SESSION_ID" ] && [ -n "$TRANSCRIPT" ] || notify "セッションのトランスクリプトが見つかりません"
+
+grep -F '"type":"pr-link"' "$TRANSCRIPT" |
+  jq -r --arg numbers "$NUMBERS" 'select(("#\(.prNumber)") as $n | $numbers | split(" ") | index($n)) | .prUrl' |
+  awk '!seen[$0]++' |
+  while IFS= read -r url; do open "$url"; done
