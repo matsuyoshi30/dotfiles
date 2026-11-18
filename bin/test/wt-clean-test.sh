@@ -40,7 +40,7 @@ assert_not_candidate() {
     ng "$what は候補外 (dry-run が完走していない: rc=$rc, 出力=$([[ -z "$out" ]] && echo 空 || echo 非空))"
     return
   fi
-  if grep -E "[[:space:]](reachable|squash|merged-else|closed-pr|landed-pr)[[:space:]]" <<<"$out" \
+  if grep -E "[[:space:]](reachable|squash|merged-else|closed-pr|landed-pr|landed-same)[[:space:]]" <<<"$out" \
      | grep -qF "$what"; then
     ng "$what は候補に出てはいけない"
   else
@@ -259,6 +259,45 @@ case_landed_pr_branch() {
   export GH_MERGED="reworked"
 }
 
+# landed-pr の形 (tip≠headRefOid、headRefOid は main の祖先) を作る下ごしらえ。
+# main に PR 相当のコミット (pr_cmd) を積んで push し、その後に after_cmd を積む。
+# ローカルのブランチは PR の親から分岐させ、local_cmd で中身を作る。
+make_landed_shape() {
+  local repo="$1" br="$2" pr_cmd="$3" after_cmd="$4" local_cmd="$5" parent pr_oid
+  git -C "$repo" checkout --quiet main
+  git -C "$repo" pull --quiet origin main
+  parent="$(git -C "$repo" rev-parse HEAD)"
+  ( cd "$repo" && eval "$pr_cmd" )
+  pr_oid="$(git -C "$repo" rev-parse HEAD)"
+  ( cd "$repo" && eval "$after_cmd" )
+  git -C "$repo" push --quiet origin main
+  git -C "$repo" checkout --quiet -b "$br" "$parent"
+  ( cd "$repo" && eval "$local_cmd" )
+  git -C "$repo" checkout --quiet main
+  git -C "$repo" worktree add --quiet "$repo/.wt/$br" "$br"
+  echo "$pr_oid" > "$FAKE_GH_STATE/$br.oid"
+  export GH_MERGED="${GH_MERGED:-} $br"
+}
+
+# ケース: PR と同じパッチをローカルで別コミットとして持ち、main が後で同じファイルを
+# 書き換えた -> landed-same (cherry で拾う)。マージは add/add で衝突するので
+# merge-tree では拾えない。rebase 前の手元の枝が残った形。
+case_landed_same_cherry() {
+  make_landed_shape "$1" relanded-cp \
+    'echo x > cp; git add cp; git commit --quiet -m "pr cp"' \
+    'echo y > cp; git commit --quiet -am "later edit cp"' \
+    'echo x > cp; git add cp; git commit --quiet -m "local cp"'
+}
+
+# ケース: PR と同じ中身を 2 コミットに分けて作った -> landed-same (merge-tree で拾う)。
+# パッチが PR と違うので cherry では拾えない。レビューで形を変えて出し直した形。
+case_landed_same_merge() {
+  make_landed_shape "$1" relanded-mt \
+    'printf "one\ntwo\n" > mt; git add mt; git commit --quiet -m "pr mt"' \
+    ':' \
+    'echo one > mt; git add mt; git commit --quiet -m "mt 1"; printf "one\ntwo\n" > mt; git commit --quiet -am "mt 2"'
+}
+
 # ケース: default ではなく別の feature ブランチに合流済み -> merged-else
 # child の commit を parent に取り込んで parent だけ push する。
 case_merged_else() {
@@ -403,6 +442,8 @@ main() {
   case_claude_orphan   "$repo"
   case_empty_dir       "$repo"
   case_landed_pr_branch "$repo"
+  case_landed_same_cherry "$repo"
+  case_landed_same_merge  "$repo"
   case_merged_else     "$repo"
   case_merged_else_open_pr "$repo"
   case_untracked_pushed "$repo"
@@ -433,6 +474,14 @@ main() {
   # 出ないはず (worker() の cand ルーティングで landed-pr は R_PATH 行きになる)。
   assert_reported      "$out" 'reworked' 'reworked (landed-pr) は要確認として報告される'
   assert_not_candidate "$out" "$rc" reworked
+  assert_reported      "$out" '差分あり.*reworked' 'tip にしか無い中身がある landed-pr は差分ありと出る'
+  assert_reported      "$out" "worktree remove .*\.wt/reworked" '要確認の行に打つべき worktree remove が出る'
+
+  # landed-same は既定では要確認に一致として出るだけで、削除候補には入らない。
+  assert_reported      "$out" '一致.*relanded-cp' '同じパッチが default にある landed-pr は一致と出る'
+  assert_reported      "$out" '一致.*relanded-mt' 'マージしても何も足さない landed-pr は一致と出る'
+  assert_not_candidate "$out" "$rc" relanded-cp
+  assert_not_candidate "$out" "$rc" relanded-mt
 
   assert_tier          "$out" child merged-else
   assert_not_candidate "$out" "$rc" child-open
@@ -450,6 +499,12 @@ main() {
 
   local out2; out2="$(run_wtclean "$T/fx" --jobs 1 --include-closed-pr)"
   assert_tier "$out2" dead-pr closed-pr
+
+  local out3; out3="$(run_wtclean "$T/fx" --jobs 1 --include-landed-pr)"
+  local rc3=$?
+  assert_tier          "$out3" relanded-cp landed-same
+  assert_tier          "$out3" relanded-mt landed-same
+  assert_not_candidate "$out3" "$rc3" reworked
 
   assert_reported "$out" 'prunable' 'prunable として報告される'
   if git -C "$repo" worktree list --porcelain | grep -q 'prunable'; then

@@ -35,11 +35,22 @@
 #                     付けたときだけ削除候補に入る。
 #   tier3 landed-pr : tip が headRefOid と一致しないが、headRefOid 自体が
 #                     origin/<default> から到達可能。PR の中身が取り込まれたことは
-#                     確実だが、ローカル tip はそこに到達しないので、tip 側のコミットが
-#                     取り込み済みの重複なのか後から積んだ作業なのかを git では
-#                     判別できない (両者は別の base に乗っており、中身の比較は
-#                     default 側の後続変更で必ず汚れる)。
-#                     よって削除はせず「要確認」として本数・容量つきで報告する。
+#                     確実だが、ローカル tip はそこに到達しないので、コミットの
+#                     到達性だけでは tip 側が重複か後から積んだ作業かを判別できない。
+#                     そこで次のどちらかが成り立てば landed-same とする。
+#                     (a) git cherry: tip 側の全コミットに同じパッチのコミットが default にある
+#                     (b) git merge-tree: tip を default へ衝突なしでマージでき、
+#                         結果が default の木と同じ (tip が足すものが何も無い)
+#                     どちらも成り立てば確実に取り込み済みで、成り立たないときは
+#                     landed-pr に残るだけ (安全側の取りこぼし) で誤削除にはならない。
+#                     (a) は default が後で同じ箇所を書き換えても効くが、rebase で
+#                     パッチが変わると外れる。(b) はパッチが変わっても効くが、
+#                     default が後で消した箇所をマージが古い base から復活させると外れる。
+#                     ファイルや木をそのまま比べる方法は、default 側の後続変更で
+#                     必ず汚れるので使わない。
+#                     landed-same は既定では「要確認」に報告するだけで、
+#                     --include-landed-pr を付けたときだけ削除候補に入る。
+#                     一致しないもの (landed-pr) は常に報告だけ。
 #                     PR が入ったあとに積み直したブランチはこの型に落ちる。
 #
 # 稼働中ガード:
@@ -92,6 +103,7 @@
 #   wt-clean ~/ghq --keep-branch       # worktree のみ削除しブランチは残す
 #   wt-clean ~/ghq --jobs 16           # 並列数 (既定 8)
 #   wt-clean ~/ghq --include-closed-pr # close 済み PR の worktree も削除対象に含める
+#   wt-clean ~/ghq --include-landed-pr # 中身が取り込み済みと照合できた landed-pr も削除対象に含める
 #
 set -uo pipefail
 
@@ -189,6 +201,17 @@ is_closed_pr() {
   git -C "$repo" merge-base --is-ancestor "$tip" "$up" 2>/dev/null
 }
 
+# tip にしか無い変更が default に残っていないか (ヘッダの landed-pr の (a)(b))。
+# git が失敗したときは一致と読まない。空出力を「+ が無い」と読むと誤削除に倒れる。
+landed_content_matches() {
+  local repo="$1" tip="$2" def="$3" out merged
+  if out="$(git -C "$repo" cherry "$def" "$tip" 2>/dev/null)" && ! grep -q '^+' <<<"$out"; then
+    return 0
+  fi
+  merged="$(git -C "$repo" merge-tree --write-tree --no-messages "$def" "$tip" 2>/dev/null)" || return 1
+  [[ "$merged" == "$(git -C "$repo" rev-parse "$def^{tree}" 2>/dev/null)" ]]
+}
+
 # 候補 worktree の中に、別リポジトリの worktree や clone が入れ子になっていないか。
 # `git worktree remove --force` はディレクトリごと消すので、入れ子側に未 push の
 # コミットがあるとどの ref からも到達不能なまま失われる。しかも入れ子側は直前の
@@ -257,8 +280,11 @@ worker() {
                      --json headRefOid -q '.[0].headRefOid' 2>/dev/null)"
             if [[ -n "$oid" ]]; then
               if [[ "$oid" == "$tip" ]]; then tier="squash"
-              elif git -C "$REPO" merge-base --is-ancestor "$oid" "origin/$default_branch" 2>/dev/null
-              then tier="landed-pr"   # 報告のみ。削除はしない
+              elif git -C "$REPO" merge-base --is-ancestor "$oid" "origin/$default_branch" 2>/dev/null; then
+                if landed_content_matches "$REPO" "$tip" "origin/$default_branch"
+                then tier="landed-same"
+                else tier="landed-pr"   # 報告のみ。削除はしない
+                fi
               else echo "${C_YEL}skip (tip≠merged SHA かつ PR 頭も default に無い): ${REPO##*/}:$br${C_RST}" >&2; fi
             elif is_closed_pr "$repo_url" "$br" "$REPO" "$wt" "$tip"; then
               tier="closed-pr"
@@ -266,7 +292,8 @@ worker() {
           fi
         fi
         # landed-pr は既に要確認 (R_PATH) 行きで削除されないので、入れ子検査は不要。
-        # それ以外の tier は候補としてこの後 --apply で丸ごと rm される経路に乗るため、
+        # それ以外の tier (--include-landed-pr で候補に入りうる landed-same を含む) は
+        # 候補としてこの後 --apply で丸ごと rm される経路に乗るため、
         # 消す前に入れ子の別リポジトリが無いか確認する。
         if [[ -n "$tier" && "$tier" != "landed-pr" ]] && has_nested_repo "$wt"; then
           echo "${C_YEL}skip (別リポジトリが入れ子): ${wt} (tier=${tier})${C_RST}" >&2
@@ -308,12 +335,13 @@ if [[ "${1:-}" == "--worker" ]]; then
 fi
 
 # ───────────────────────────── メイン ─────────────────────────────
-APPLY=0; KEEP_BRANCH=0; JOBS=8; ROOT=""; INCLUDE_CLOSED_PR=0
+APPLY=0; KEEP_BRANCH=0; JOBS=8; ROOT=""; INCLUDE_CLOSED_PR=0; INCLUDE_LANDED_PR=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --apply)       APPLY=1 ;;
     --keep-branch) KEEP_BRANCH=1 ;;
     --include-closed-pr) INCLUDE_CLOSED_PR=1 ;;
+    --include-landed-pr) INCLUDE_LANDED_PR=1 ;;
     --jobs)        JOBS="$2"; shift ;;
     # ヘッダコメントを行番号ではなく「最初の非コメント行まで」で切る (範囲がずれない)
     -h|--help)     awk 'NR>1 && !/^#/{exit} NR>1' "${BASH_SOURCE[0]}"; exit 0 ;;
@@ -362,7 +390,7 @@ printf '%s\n' "${REPO_ROOTS[@]}" \
   | sort > "$TMP"
 
 declare -a D_ROOT=() D_PATH=() D_BR=() D_TIER=() D_KB=() D_UNT=()
-declare -a R_PATH=() R_BR=() R_KB=()
+declare -a R_PATH=() R_ROOT=() R_BR=() R_KB=() R_TIER=()
 declare -a O_PATH=() O_KB=()
 declare -a C_PATH=() C_BR=() C_KB=()
 declare -a P_ROOT=() P_PATH=()
@@ -370,8 +398,8 @@ declare -a N_PATH=() N_BR=()
 while IFS=$'\t' read -r kind f1 f2 f3 f4 f5 f6; do
   case "$kind" in
     # landed-pr は削除候補に混ぜない (自動削除の対象外)
-    cand)   if [[ "$f4" == "landed-pr" ]]; then
-              R_PATH+=("$f2"); R_BR+=("$f3"); R_KB+=("$f5")
+    cand)   if [[ "$f4" == "landed-pr" || ( "$f4" == "landed-same" && "$INCLUDE_LANDED_PR" != 1 ) ]]; then
+              R_ROOT+=("$f1"); R_PATH+=("$f2"); R_BR+=("$f3"); R_KB+=("$f5"); R_TIER+=("$f4")
             elif [[ "$f4" == "closed-pr" && "${INCLUDE_CLOSED_PR:-0}" != 1 ]]; then
               C_PATH+=("$f2"); C_BR+=("$f3"); C_KB+=("$f5")
             else
@@ -392,12 +420,15 @@ report_review() {
   [[ ${#R_PATH[@]} -eq 0 ]] && return 0
   printf '\n%s要確認%s  PR は取り込み済みだがローカル tip がそこに到達しない (%d 本 / %s)\n' \
     "$C_YEL" "$C_RST" "${#R_PATH[@]}" "$(sumsize "${R_KB[@]}")"
-  local i
+  local i content
   for i in "${!R_PATH[@]}"; do
-    printf '%-8s %s\n' "$(fmtsize "${R_KB[$i]}")" "${R_BR[$i]}"
+    content="差分あり"; [[ "${R_TIER[$i]}" == "landed-same" ]] && content="一致"
+    printf '%-8s %s %s\n' "$(fmtsize "${R_KB[$i]}")" "$content" "${R_BR[$i]}"
+    printf '         %s$ git -C %q worktree remove %q%s\n' "$C_DIM" "${R_ROOT[$i]}" "${R_PATH[$i]}" "$C_RST"
   done
-  printf '%stip 側のコミットが重複か後から積んだ作業かは git では判別できない。%s\n' "$C_DIM" "$C_RST"
-  printf '%s中身を見て問題なければ git worktree remove で消すこと。%s\n' "$C_DIM" "$C_RST"
+  printf '%s一致 = tip の変更はすべて default に入っている。--include-landed-pr で削除対象に入る。%s\n' "$C_DIM" "$C_RST"
+  printf '%s差分あり = git では取り込み済みと言い切れない。rebase で形が変わっただけのことも多いので、中身を見てから消すこと。%s\n' "$C_DIM" "$C_RST"
+  printf '%s表示のコマンドはブランチを残すので、コミットは失われない。%s\n' "$C_DIM" "$C_RST"
 }
 
 report_closed_pr() {
