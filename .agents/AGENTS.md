@@ -28,6 +28,7 @@
 - Distinguish facts, inferences, and unverified points. Use a diagram when relationships or structure are hard to follow in prose.
 - In notes and memos, avoid horizontal rules and bold emphasis; use plain text and headings for structure.
 - Do not hard-wrap prose in Markdown or shared prose artifacts, including notes, PR bodies, skill files, review comments, and design documents. Let the renderer wrap paragraphs; preserve structural line breaks for lists, tables, and code blocks. Commit messages are exempt.
+- Avoid unnecessary secondary labels and descriptions. Let the layout do the explaining.
 
 ## Japanese Writing Style
 
